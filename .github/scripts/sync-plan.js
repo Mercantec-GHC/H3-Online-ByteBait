@@ -52,12 +52,9 @@ module.exports = async ({ github, context, core }) => {
   const num = {};
   const created = new Set();
   for (const it of plan.issues) {
+    // Find kun via nøglen (<!-- key: X -->) eller præcis titel. Et titel-præfiks som "Kan:" er ikke entydigt
+    // og fik tidligere NTH12 til at blive koblet på et andet backlog-issue i stedet for at blive oprettet.
     let issue = byKey.get(it.key) || byTitle.get(it.title);
-    if (!issue && it.managed !== 'create') {
-      // Fald tilbage til titel-præfiks, fx "DoD 5:", hvis titlen er blevet ændret
-      const prefix = it.title.split(':')[0] + ':';
-      issue = all.find((i) => i.title.startsWith(prefix));
-    }
     if (!issue) {
       if (!it.body) { core.warning(`Mangler issue: ${it.title}`); continue; }
       const res = await github.rest.issues.create({
