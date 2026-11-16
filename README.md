@@ -45,11 +45,11 @@ Brug i stedet `dotnet user-secrets` eller miljøvariabler lokalt, og del eksempe
 
 | Område | Regel | Eksempel |
 |--------|-------|----------|
-| Sprog | **Kun engelsk** i spillet og koden: brugerflade, fejlbeskeder, cookie-politik, kode, felter, JSON og URL'er | "Username is already taken", `POST /api/account/register`, `{ "userName": "..." }` |
+| Sprog | **Kun engelsk** i spillet og koden: brugerflade, fejlbeskeder, cookie-politik og -banner, kode, felter, JSON og URL'er | "Username is already taken", `POST /api/account/register`, `{ "userName": "..." }` |
 | Fejlsvar fra API'et | ASP.NET Core **ProblemDetails** (RFC 9457) med `title`/`detail` på engelsk | `{ "status": 409, "title": "Username is already taken", ... }` |
 | Login | ASP.NET Core Identity med **cookie** (`HttpOnly`, `Secure`, `SameSite=Strict`) – spil og API ligger på samme domæne | – |
 | Bruger-ID | Unikt `Guid` pr. spiller i databasen | – |
-| Cookies | Kun nødvendige cookies. Cookie-banner ("Accept necessary cookies") og cookie-politik på `/cookies` (EU's cookie-regler) | – |
+| Cookies | Kun teknisk nødvendige cookies (login, antiforgery). De kræver ikke samtykke, så login virker uden klik på banneret. Et informationsbanner ("Got it") og cookie-politikken på `/cookies` fortæller, hvilke cookies vi bruger ([cookievejledningen](https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/)) | – |
 
 ## Deployment (Dokploy)
 
