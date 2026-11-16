@@ -1,0 +1,32 @@
+name: ✨ Opgave / feature
+description: Ny funktion eller opgave
+labels: [sprint-task]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Mål
+      description: Hvad skal opnås, og hvorfor?
+    validations:
+      required: true
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Opgaver
+      value: |
+        - [ ]
+  - type: textarea
+    id: done
+    attributes:
+      label: Færdig når
+      value: Koden er merget til `dev` via en PR med `Closes #<dette issue>`, og CI er grøn.
+  - type: input
+    id: depends
+    attributes:
+      label: Afhænger af
+      placeholder: "Fx #12, #15"
+  - type: input
+    id: epic
+    attributes:
+      label: Bidrager til (epic)
+      placeholder: "Fx DoD3: Fight"
