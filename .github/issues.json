@@ -1167,6 +1167,16 @@
       ],
       "managed": "backlog",
       "body": "<!-- key: NTH11 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH12",
+      "title": "Kan: Sporings-cookies til analyse af spilleradfærd (kræver samtykke)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH12 -->\n\nNice to have. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige.\n\n## Mål\nSe hvordan spillerne interagerer med spillet (fx hvor mange kast der rammer grønt, hvor ofte fisk slipper, hvor længe man er på hver bane) og brug data til at forbedre og balancere spillet.\n\n## Opgaver\n- [ ] Beslut hvilke hændelser der måles, og hvad data skal bruges til\n- [ ] Sporings-cookies sættes **først efter aktivt samtykke** – cookie-banneret fra S2.15 udvides med \"Accept\" og \"Decline\" (lige synlige), og \"Decline\" er standard\n- [ ] Samtykket kan trækkes tilbage lige så let, som det blev givet (fx på `/cookies`)\n- [ ] Cookie-politikken på `/cookies` opdateres med formål, levetid og evt. tredjepart\n- [ ] Ingen tredjeparts-trackere uden databehandleraftale – foretræk egen løsning, hvor data gemmes i Neon\n- [ ] Data anonymiseres/aggregeres, så de ikke kan føres tilbage til en bestemt spiller\n- [ ] Visning af data i admin-panelets statistik\n- [ ] Al tekst i spillet på engelsk\n\n## Bemærk\nSporings-cookies er **ikke** teknisk nødvendige og kræver derfor samtykke, før de sættes. Se [cookievejledningen](https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/)."
     }
   ],
   "close": []
