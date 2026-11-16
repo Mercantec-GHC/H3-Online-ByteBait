@@ -1,0 +1,115 @@
+name: CI
+
+# Bygger og tester de tre dele ved hver PR og hver push til dev.
+# Et job springes over (grønt), så længe den del endnu ikke har noget projekt.
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev, main]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend + Blazor – build & test (.NET)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bytebait
+          POSTGRES_PASSWORD: bytebait
+          POSTGRES_DB: bytebait_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U bytebait"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      # Tests kører mod en lokal PostgreSQL-container – aldrig mod Neon.
+      ConnectionStrings__Default: Host=localhost;Port=5432;Database=bytebait_test;Username=bytebait;Password=bytebait
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find .NET-projekt
+        id: find
+        run: |
+          SLN=$(find . -name '*.sln' -o -name '*.slnx' | head -n 1)
+          if [ -z "$SLN" ]; then SLN=$(find Backend Frontend -name '*.csproj' 2>/dev/null | head -n 1); fi
+          echo "target=$SLN" >> "$GITHUB_OUTPUT"
+          if [ -z "$SLN" ]; then echo "::notice::Intet .NET-projekt endnu – backend-jobbet springes over."; fi
+
+      - uses: actions/setup-dotnet@v4
+        if: steps.find.outputs.target != ''
+        with:
+          dotnet-version: 10.0.x   # ret hvis I bruger en anden .NET-version
+
+      - name: Restore
+        if: steps.find.outputs.target != ''
+        run: dotnet restore "${{ steps.find.outputs.target }}"
+
+      - name: Build
+        if: steps.find.outputs.target != ''
+        run: dotnet build "${{ steps.find.outputs.target }}" --no-restore --configuration Release
+
+      - name: Test
+        if: steps.find.outputs.target != ''
+        run: dotnet test "${{ steps.find.outputs.target }}" --no-build --configuration Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
+
+      - name: Upload test results
+        if: always() && steps.find.outputs.target != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: TestResults
+          if-no-files-found: ignore
+
+  game-js:
+    name: Spil (JavaScript) – syntaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tjek JavaScript-syntaks
+        run: |
+          FILES=$(find Frontend -name '*.js' -not -path '*/node_modules/*' -not -path '*/bin/*' -not -path '*/obj/*' -not -path '*/lib/*' -not -name '*.min.js' 2>/dev/null || true)
+          if [ -z "$FILES" ]; then echo "::notice::Ingen JavaScript-filer endnu – springes over."; exit 0; fi
+          for f in $FILES; do echo "node --check $f"; node --check "$f"; done
+
+  arduino:
+    name: Arduino – kompilér sketch (MKR WiFi 1010)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find sketches
+        id: find
+        run: |
+          if find Arduino -name '*.ino' 2>/dev/null | grep -q .; then echo "found=true" >> "$GITHUB_OUTPUT";
+          else echo "found=false" >> "$GITHUB_OUTPUT"; echo "::notice::Ingen Arduino-sketch endnu – springes over."; fi
+
+      - name: Dummy arduino_secrets.h (rigtige koder ligger aldrig i repoet)
+        if: steps.find.outputs.found == 'true'
+        run: |
+          for ex in $(find Arduino -name 'arduino_secrets.example.h'); do
+            cp "$ex" "$(dirname "$ex")/arduino_secrets.h"
+          done
+
+      - uses: arduino/compile-sketches@v1
+        if: steps.find.outputs.found == 'true'
+        with:
+          fqbn: arduino:samd:mkrwifi1010
+          sketch-paths: |
+            - Arduino
+          libraries: |
+            - name: Arduino_MKRIoTCarrier
+            - name: WiFiNINA
+            - name: ArduinoHttpClient

@@ -1,0 +1,46 @@
+name: Sync sprint-plan
+
+# Kør manuelt fra Actions → "Sync sprint-plan" → Run workflow.
+# Kører også automatisk, når .github/issues.json ændres på dev.
+#
+# Opretter/opdaterer labels, milestones (med deadlines), epics, sprint-opgaver og release-issues
+# med ansvarlige. Kan køres igen uden dubletter – og overskriver ikke tekst I selv har skrevet i opgaverne.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [dev]
+    paths:
+      - .github/issues.json
+      - .github/scripts/sync-plan.js
+
+permissions:
+  issues: write
+  contents: read
+  actions: write
+
+concurrency:
+  group: sync-plan
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync sprint-plan
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const run = require('./.github/scripts/sync-plan.js');
+            await run({ github, context, core });
+
+      - name: Opdatér sprint-board
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner, repo: context.repo.repo,
+              workflow_id: 'sprint-board.yml', ref: context.payload.repository?.default_branch || 'dev',
+            });
