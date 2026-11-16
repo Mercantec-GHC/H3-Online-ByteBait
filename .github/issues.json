@@ -538,12 +538,12 @@
         "Frederik",
         "Abdi"
       ],
-      "body": "<!-- key: S2.12 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.3}}, {{S2.5}}, {{S2.6}}, {{S2.8}}, {{S2.14}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nDen spilbare kerne virker hele vejen i Test-ByteBait.\n\n## Opgaver\n- [ ] Log ind med en spillerkonto\n- [ ] Kast → krogning → fight → fisk fanget\n- [ ] Fisken vælges på serveren og gemmes på spillerens konto i Neon\n- [ ] LED'er og buzzer følger\n- [ ] Notér fejl som issues\n\n## Færdig når\nHele gruppen har fanget en fisk på bane 1 i Test-ByteBait, og fundne fejl er oprettet som issues.",
+      "body": "<!-- key: S2.12 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.3}}, {{S2.5}}, {{S2.6}}, {{S2.8}}, {{S2.14}}, {{S2.15}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nDen spilbare kerne virker hele vejen i Test-ByteBait.\n\n## Opgaver\n- [ ] Log ind med en spillerkonto\n- [ ] Kast → krogning → fight → fisk fanget\n- [ ] Fisken vælges på serveren og gemmes på spillerens konto i Neon\n- [ ] LED'er og buzzer følger\n- [ ] Notér fejl som issues\n\n## Færdig når\nHele gruppen har fanget en fisk på bane 1 i Test-ByteBait, og fundne fejl er oprettet som issues.",
       "managed": "create"
     },
     {
       "key": "S2.13",
-      "title": "[S2.13] Player accounts: opret konto og login med ASP.NET Core Identity (API)",
+      "title": "[S2.13] Player accounts: opret konto og login med ASP.NET Core Identity og cookie (API)",
       "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
       "labels": [
         "sprint-task",
@@ -554,7 +554,7 @@
         "Frederik",
         "Bjarke"
       ],
-      "body": "<!-- key: S2.13 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S1.11}}, {{S1.10}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren opretter en konto med eget navn og password, og hver spiller får et unikt bruger-ID (Guid) i databasen.\n\n## Opgaver\n- [ ] ASP.NET Core Identity med Guid som nøgle, gemt i Neon via EF Core (migration)\n- [ ] Unikt brugernavn – tydelig fejl, hvis navnet er taget\n- [ ] Password-regler og hashing via Identity (passwords gemmes aldrig i klartekst)\n- [ ] Endpoints: opret konto, log ind, log ud, hent aktuel spiller\n- [ ] Rollen `admin` oprettes (startdata)\n- [ ] Fangster, penge og akvarium kobles til spillerens ID\n- [ ] Opdatér API-kontrakten\n- [ ] Tests: opret, dublet-navn, forkert password, log ud\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "body": "<!-- key: S2.13 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S1.11}}, {{S1.10}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren opretter en konto med eget navn og password, og hver spiller får et unikt bruger-ID (Guid) i databasen. Login bruger en cookie, fordi spil og API ligger på samme domæne i én container.\n\n## Opgaver\n- [ ] ASP.NET Core Identity med Guid som nøgle, gemt i Neon via EF Core (migration)\n- [ ] Unikt brugernavn – fejl som ProblemDetails, hvis navnet er taget\n- [ ] Password-regler og hashing via Identity (passwords gemmes aldrig i klartekst)\n- [ ] Cookie-login: `HttpOnly`, `Secure`, `SameSite=Strict` – ingen bearer-tokens\n- [ ] Beskyttelse mod CSRF på endpoints, der ændrer data (antiforgery)\n- [ ] Endpoints (engelske navne): `POST /api/account/register`, `POST /api/account/login`, `POST /api/account/logout`, `GET /api/account/me`\n- [ ] Alle fejlsvar som ProblemDetails (RFC 9457) – al tekst på engelsk\n- [ ] Rollen `admin` oprettes (startdata)\n- [ ] Fangster, penge og akvarium kobles til spillerens ID\n- [ ] Opdatér API-kontrakten\n- [ ] Tests: opret, dublet-navn, forkert password, log ud, uden login → 401\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
       "managed": "create"
     },
     {
@@ -572,6 +572,22 @@
       "managed": "create"
     },
     {
+      "key": "S2.15",
+      "title": "[S2.15] Cookie-politik og cookie-banner (information om nødvendige cookies)",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Frederik"
+      ],
+      "body": "<!-- key: S2.15 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Bjarke (med Frederik)\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.13}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren bliver informeret om, hvilke cookies ByteBait bruger. Vi bruger kun teknisk nødvendige cookies (login og antiforgery), som ikke kræver samtykke, så banneret er information og kvittering – ikke et samtykkekrav. Se Digitaliseringsstyrelsens cookievejledning: https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/\n\n## Opgaver\n- [ ] Liste over alle cookies (login-cookie, antiforgery) med formål og levetid\n- [ ] Side `/cookies` med cookie-politik (på engelsk)\n- [ ] Informationsbanner i Blazor ved første besøg: forklarer, at der kun bruges nødvendige cookies, med knappen \"Got it\" og link til `/cookies` (al tekst på engelsk)\n- [ ] Login og antiforgery virker uden forudgående klik på banneret (cookies markeret `IsEssential = true`)\n- [ ] Kvitteringen gemmes, så banneret ikke vises igen\n- [ ] ASP.NET Core `CookiePolicyOptions`: `MinimumSameSitePolicy`, `Secure`\n- [ ] Ingen tracking- eller statistik-cookies – hvis de kommer senere, kræver de aktivt samtykke, før de sættes\n- [ ] Link til cookie-politikken i bunden af alle sider\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
       "key": "R2",
       "title": "[R2] Release v0.2.0",
       "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
@@ -584,7 +600,7 @@
         "Andreas",
         "Abdi"
       ],
-      "body": "<!-- key: R2 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.2}}, {{S2.3}}, {{S2.4}}, {{S2.5}}, {{S2.6}}, {{S2.7}}, {{S2.8}}, {{S2.9}}, {{S2.10}}, {{S2.11}}, {{S2.12}}, {{S2.13}}, {{S2.14}}\n\n## Releasemål\nÉn bane kan spilles fra kast til fanget fisk kun med Oplà'en. Fisken vælges på serveren og gemmes.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v0.2.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
+      "body": "<!-- key: R2 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.2}}, {{S2.3}}, {{S2.4}}, {{S2.5}}, {{S2.6}}, {{S2.7}}, {{S2.8}}, {{S2.9}}, {{S2.10}}, {{S2.11}}, {{S2.12}}, {{S2.13}}, {{S2.14}}, {{S2.15}}\n\n## Releasemål\nÉn bane kan spilles fra kast til fanget fisk kun med Oplà'en. Fisken vælges på serveren og gemmes.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v0.2.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
       "managed": "create"
     },
     {
@@ -1034,7 +1050,7 @@
     },
     {
       "key": "DOD11",
-      "title": "DoD11: Spillerkonti med login og admin-rolle",
+      "title": "DoD11: Spillerkonti med cookie-login, admin-rolle og cookie-politik",
       "milestone": "Projekt-DoD",
       "labels": [
         "epic"
@@ -1151,6 +1167,16 @@
       ],
       "managed": "backlog",
       "body": "<!-- key: NTH11 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH12",
+      "title": "Kan: Sporings-cookies til analyse af spilleradfærd (kræver samtykke)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH12 -->\n\nNice to have. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige.\n\n## Mål\nSe hvordan spillerne interagerer med spillet (fx hvor mange kast der rammer grønt, hvor ofte fisk slipper, hvor længe man er på hver bane) og brug data til at forbedre og balancere spillet.\n\n## Opgaver\n- [ ] Beslut hvilke hændelser der måles, og hvad data skal bruges til\n- [ ] Sporings-cookies sættes **først efter aktivt samtykke** – cookie-banneret fra S2.15 udvides med \"Accept\" og \"Decline\" (lige synlige), og \"Decline\" er standard\n- [ ] Samtykket kan trækkes tilbage lige så let, som det blev givet (fx på `/cookies`)\n- [ ] Cookie-politikken på `/cookies` opdateres med formål, levetid og evt. tredjepart\n- [ ] Ingen tredjeparts-trackere uden databehandleraftale – foretræk egen løsning, hvor data gemmes i Neon\n- [ ] Data anonymiseres/aggregeres, så de ikke kan føres tilbage til en bestemt spiller\n- [ ] Visning af data i admin-panelets statistik\n- [ ] Al tekst i spillet på engelsk\n\n## Bemærk\nSporings-cookies er **ikke** teknisk nødvendige og kræver derfor samtykke, før de sættes. Se [cookievejledningen](https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/)."
     }
   ],
   "close": []
