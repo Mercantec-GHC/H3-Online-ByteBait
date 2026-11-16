@@ -17,7 +17,7 @@ Afsluttende projekt på H3 – et online retro-fiskespil med Arduino-integration
 - **Backend:** ASP.NET Core Web API
 - **Database:** [Neon.tech](https://neon.tech/) (serverless PostgreSQL)
 - **Hardware:** Arduino Oplà IoT Kit (MKR WiFi 1010) – forbindes over både USB og WiFi
-- **Deployment:** Skolens Dokploy – Test-ByteBait (fra `dev`) og Main-ByteBait (fra `main`)
+- **Deployment:** Skolens Dokploy – Test-ByteBait (fra `dev`) og Main-ByteBait (fra `main`), se [Deployment](#deployment-dokploy)
 
 ## Hemmeligheder
 
@@ -39,7 +39,24 @@ Brug i stedet `dotnet user-secrets` eller miljøvariabler lokalt, og del eksempe
 1. Tag dit næste issue fra det fastgjorte issue **📋 Sprint-board**.
 2. Lav en branch fra `dev`, fx `S1-5-kast-detektion`.
 3. Åbn en PR mod `dev` med `Closes #<nr>` i beskrivelsen.
-4. En anden reviewer, CI bliver grøn, og PR'en merges. Issuet lukkes, og Test-ByteBait opdateres automatisk.
+4. En anden reviewer, CI bliver grøn, og PR'en merges. Issuet lukkes, og Dokploy deployer Test-ByteBait automatisk.
+
+## Deployment (Dokploy)
+
+Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
+
+| App | Branch | Deployes når |
+|-----|--------|--------------|
+| **Test-ByteBait** | `dev` | Der merges til `dev` (Autodeploy) |
+| **Main-ByteBait** | `main` | Release-PR'en merges til `main` om fredagen (Autodeploy) |
+
+- Begge apps bygges fra `Dockerfile` i roden af repoet. API'et serverer også Blazor-filerne, så hver app er én container, der lytter på port 8080.
+- Da `dev` og `main` kun kan opdateres via en PR med grøn CI, deployes der kun kode, der har bestået CI.
+- Domæner: Dokploys standard indtil videre.
+- Miljøvariabler sættes i Dokploy under **Environment** – aldrig i repoet:
+  - `ASPNETCORE_ENVIRONMENT` (`Staging` i test, `Production` i produktion)
+  - `ASPNETCORE_URLS=http://+:8080`
+  - `ConnectionStrings__Default` – Neon connection string (test-branch til Test-ByteBait, produktions-branch til Main-ByteBait). Udfyldes, når Neon er oprettet (S1.10).
 
 ## Sprints og releases
 
@@ -57,8 +74,8 @@ Hver release har et release-issue med den fælles release-DoD. Planen ligger i `
 | Workflow | Hvad den gør |
 |----------|--------------|
 | **CI** | Bygger og tester .NET (mod en PostgreSQL-container, aldrig Neon), tjekker JavaScript-syntaks og kompilerer Arduino-sketchen. Kører ved PR og push til `dev` |
-| **Deploy test** | Når CI er grøn på `dev`, deployes Test-ByteBait via Dokploy-webhook (`DOKPLOY_WEBHOOK_TEST`) |
-| **Release** | Ved merge til `main`: CI, tag + GitHub Release ud fra sprint-milestonen, lukker milestonen og deployer Main-ByteBait (`DOKPLOY_WEBHOOK_PROD`) |
+| **Deploy test** | Valgfri reserve: kalder et Dokploy-webhook, hvis secret `DOKPLOY_WEBHOOK_TEST` er sat. Ellers springes den over – deploy sker via Dokploys Autodeploy |
+| **Release** | Ved merge til `main`: CI, tag + GitHub Release ud fra sprint-milestonen og lukker milestonen. Main-ByteBait deployes af Dokploys Autodeploy |
 | **Sync sprint-plan** | Opretter labels, milestones og issues ud fra `.github/issues.json`. Overskriver ikke tekst i eksisterende issues |
 | **Sprint-board** | Opdaterer **📋 Sprint-board** ved ændringer og hver hverdag kl. 07:30 |
 | **PR → issue-status** | En PR med `Closes #12` sætter label `i-gang` på #12 |
