@@ -1,0 +1,6 @@
+<Project>
+  <!-- Shared by all projects in Backend/, so the API and dotnet ef read the same user-secrets -->
+  <PropertyGroup>
+    <UserSecretsId>bytebait-backend</UserSecretsId>
+  </PropertyGroup>
+</Project>
