@@ -573,7 +573,7 @@
     },
     {
       "key": "S2.15",
-      "title": "[S2.15] Cookie-politik og cookie-banner (EU-regler)",
+      "title": "[S2.15] Cookie-politik og cookie-banner (information om nødvendige cookies)",
       "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
       "labels": [
         "sprint-task",
@@ -584,7 +584,7 @@
         "Bjarke",
         "Frederik"
       ],
-      "body": "<!-- key: S2.15 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Bjarke (med Frederik)\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.13}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren får at vide, hvilke cookies ByteBait bruger, og accepterer de nødvendige, før de sættes – i tråd med EU's cookie-regler (ePrivacy/GDPR).\n\n## Opgaver\n- [ ] Liste over alle cookies (login-cookie, antiforgery) med formål og levetid\n- [ ] Side `/cookies` med cookie-politik (på engelsk)\n- [ ] Cookie-banner i Blazor ved første besøg: forklarer de nødvendige cookies og har knappen \"Accept necessary cookies\" (al tekst på engelsk)\n- [ ] Valget gemmes, så banneret ikke vises igen\n- [ ] ASP.NET Core `CookiePolicyOptions`: `CheckConsentNeeded`, `MinimumSameSitePolicy`, `Secure`\n- [ ] Ingen tracking- eller statistik-cookies uden aktivt samtykke (vi bruger ingen lige nu)\n- [ ] Link til cookie-politikken i bunden af alle sider\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "body": "<!-- key: S2.15 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Bjarke (med Frederik)\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.13}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren bliver informeret om, hvilke cookies ByteBait bruger. Vi bruger kun teknisk nødvendige cookies (login og antiforgery), som ikke kræver samtykke, så banneret er information og kvittering – ikke et samtykkekrav. Se Digitaliseringsstyrelsens cookievejledning: https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/\n\n## Opgaver\n- [ ] Liste over alle cookies (login-cookie, antiforgery) med formål og levetid\n- [ ] Side `/cookies` med cookie-politik (på engelsk)\n- [ ] Informationsbanner i Blazor ved første besøg: forklarer, at der kun bruges nødvendige cookies, med knappen \"Got it\" og link til `/cookies` (al tekst på engelsk)\n- [ ] Login og antiforgery virker uden forudgående klik på banneret (cookies markeret `IsEssential = true`)\n- [ ] Kvitteringen gemmes, så banneret ikke vises igen\n- [ ] ASP.NET Core `CookiePolicyOptions`: `MinimumSameSitePolicy`, `Secure`\n- [ ] Ingen tracking- eller statistik-cookies – hvis de kommer senere, kræver de aktivt samtykke, før de sættes\n- [ ] Link til cookie-politikken i bunden af alle sider\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
       "managed": "create"
     },
     {
