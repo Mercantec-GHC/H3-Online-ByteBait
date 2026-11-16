@@ -41,6 +41,17 @@ Brug i stedet `dotnet user-secrets` eller miljøvariabler lokalt, og del eksempe
 3. Åbn en PR mod `dev` med `Closes #<nr>` i beskrivelsen.
 4. En anden reviewer, CI bliver grøn, og PR'en merges. Issuet lukkes, og Dokploy deployer Test-ByteBait automatisk.
 
+## Konventioner
+
+| Område | Regel | Eksempel |
+|--------|-------|----------|
+| Tekst til brugeren | Dansk | "Brugernavnet er allerede taget" |
+| Kode, felter, JSON og URL'er | Engelsk | `POST /api/account/register`, `{ "userName": "...", "catchId": "..." }` |
+| Fejlsvar fra API'et | ASP.NET Core **ProblemDetails** (RFC 9457) med `title`/`detail` på dansk | `{ "status": 409, "title": "Brugernavnet er taget", ... }` |
+| Login | ASP.NET Core Identity med **cookie** (`HttpOnly`, `Secure`, `SameSite=Strict`) – spil og API ligger på samme domæne | – |
+| Bruger-ID | Unikt `Guid` pr. spiller i databasen | – |
+| Cookies | Kun nødvendige cookies. Cookie-banner og cookie-politik på `/cookies` (EU's cookie-regler) | – |
+
 ## Deployment (Dokploy)
 
 Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
