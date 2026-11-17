@@ -8,14 +8,24 @@ Connection string gemmes med `dotnet user-secrets` eller som miljøvariabel – 
 
 | Projekt | Indhold |
 |---------|---------|
+| `ByteBait.Api` | ASP.NET Core Web API med controllers (endpoints efter `docs/api-contract.md`) |
+| `ByteBait.Api.Tests` | Tests af endpoints med `WebApplicationFactory` |
 | `ByteBait.Data` | DbContext, entiteter, EF-konfiguration og migrations |
 | `ByteBait.Data.Tests` | Tests af datamodellen og databasen |
 
-API-projektet (S1.9) refererer til `ByteBait.Data` og tilføjer databasen i `Program.cs`:
+API-projektet refererer til `ByteBait.Data` og tilføjer databasen i `Program.cs`:
 
 ```csharp
 builder.Services.AddByteBaitData(builder.Configuration);
 ```
+
+Start API'et lokalt (bruger connection string fra user-secrets, se "Kom i gang lokalt"):
+
+```bash
+dotnet run --project Backend/ByteBait.Api
+```
+
+`Backend/ByteBait.Api/ByteBait.Api.http` har et eksempel på `POST /api/casts`, som kan sendes direkte fra VS Code eller Visual Studio.
 
 ## Neon
 
