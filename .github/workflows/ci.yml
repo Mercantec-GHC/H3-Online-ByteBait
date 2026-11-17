@@ -84,6 +84,9 @@ jobs:
           if [ -z "$FILES" ]; then echo "::notice::Ingen JavaScript-filer endnu – springes over."; exit 0; fi
           for f in $FILES; do echo "node --check $f"; node --check "$f"; done
 
+      - name: Test game module
+        run: node --test Frontend/ByteBait.Client.Tests/game.test.mjs
+
   arduino:
     name: Arduino – kompilér sketch (MKR WiFi 1010)
     runs-on: ubuntu-24.04
