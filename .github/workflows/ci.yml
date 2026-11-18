@@ -56,6 +56,13 @@ jobs:
         if: steps.find.outputs.target != ''
         run: dotnet build "${{ steps.find.outputs.target }}" --no-restore --configuration Release
 
+      # Data- og Api-testene kører i hver sin proces. Migreres databasen først, skal de ikke gøre det på samme tid.
+      - name: Migrér testdatabasen
+        if: steps.find.outputs.target != ''
+        run: |
+          dotnet tool restore
+          dotnet ef database update -p Backend/ByteBait.Data --configuration Release --no-build
+
       - name: Test
         if: steps.find.outputs.target != ''
         run: dotnet test "${{ steps.find.outputs.target }}" --no-build --configuration Release --logger "trx;LogFileName=results.trx" --results-directory TestResults

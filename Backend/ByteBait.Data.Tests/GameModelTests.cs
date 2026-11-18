@@ -5,7 +5,8 @@ using Npgsql;
 namespace ByteBait.Data.Tests;
 
 // Tests the relations and check constraints from S1.11 against a real PostgreSQL database
-public class GameModelTests(PostgresDatabase database) : IClassFixture<PostgresDatabase>
+[Collection(PostgresCollection.Name)]
+public class GameModelTests(PostgresDatabase database)
 {
     [PostgresFact]
     public async Task Catch_chances_and_zone_multipliers_are_seeded()
