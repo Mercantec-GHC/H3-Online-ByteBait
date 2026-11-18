@@ -4,7 +4,9 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <!-- OverrideHtmlAssetPlaceholders is off on purpose: the placeholders in index.html are not replaced when
+         ByteBait.Api publishes the client (open .NET 10 bug, dotnet/runtime#121993), so the game would not start
+         in the container. index.html therefore references _framework/blazor.webassembly.js directly. -->
   </PropertyGroup>
 
   <ItemGroup>
