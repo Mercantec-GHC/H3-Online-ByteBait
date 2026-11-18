@@ -25,6 +25,8 @@ Start API'et lokalt (bruger connection string fra user-secrets, se "Kom i gang l
 dotnet run --project Backend/ByteBait.Api
 ```
 
+API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på http://localhost:5250/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
+
 `Backend/ByteBait.Api/ByteBait.Api.http` har et eksempel på `POST /api/casts`, som kan sendes direkte fra VS Code eller Visual Studio.
 
 ## Neon

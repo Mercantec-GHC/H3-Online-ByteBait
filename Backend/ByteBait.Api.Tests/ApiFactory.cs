@@ -16,6 +16,9 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
         // Not "Development", so user-secrets are not loaded
         builder.UseEnvironment("Testing");
 
+        // Blazor files from Frontend/ByteBait.Client are only found automatically in Development
+        builder.UseStaticWebAssets();
+
         // Validation tests never reach the database, so they can run without one
         builder.UseSetting("ConnectionStrings:Default", HasDatabase ? ConnectionString : "Host=localhost;Database=unused");
     }
