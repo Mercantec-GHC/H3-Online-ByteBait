@@ -68,6 +68,35 @@ jobs:
           path: TestResults
           if-no-files-found: ignore
 
+  docker:
+    name: Docker – byg image og start containeren
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Byg image (samme Dockerfile som Dokploy)
+        run: docker build -t bytebait:ci .
+
+      # Uden database og migration: tjekker kun, at API'et starter og udleverer Blazor-klienten
+      - name: Start containeren og hent spillet
+        run: |
+          docker run -d --name bytebait -p 8080:8080 \
+            -e ConnectionStrings__Default="Host=localhost;Database=unused" \
+            bytebait:ci
+
+          for i in $(seq 1 30); do
+            curl -fsS http://localhost:8080/ > /dev/null && break
+            sleep 1
+          done
+
+          curl -fsS http://localhost:8080/ | grep -q 'blazor.webassembly.js'
+          curl -fsS -o /dev/null http://localhost:8080/_framework/blazor.webassembly.js
+          echo "Containeren starter og udleverer spillet."
+
+      - name: Containerens log
+        if: always()
+        run: docker logs bytebait || true
+
   game-js:
     name: Spil (JavaScript) – syntaks
     runs-on: ubuntu-latest

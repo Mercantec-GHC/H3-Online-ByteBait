@@ -1,4 +1,5 @@
 using ByteBait.Data;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,7 +15,22 @@ builder.Services.AddProblemDetails();
 // Locally the connection string comes from user-secrets, in CI and Dokploy from ConnectionStrings__Default
 builder.Services.AddByteBaitData(builder.Configuration);
 
+// On Dokploy, Traefik handles HTTPS and passes the request on to the container as plain HTTP.
+// The X-Forwarded headers tell the API the original scheme and client IP, so HTTPS redirection
+// and Secure cookies see the request as HTTPS.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    // Traefik's address inside Docker isn't fixed, and the container can only be reached through it
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
+
+// First, so everything after it sees the original scheme
+app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

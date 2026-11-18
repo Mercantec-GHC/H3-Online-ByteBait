@@ -17,6 +17,15 @@ public static class DataServiceCollectionExtensions
                 "Missing connection string 'Default'. Set it with dotnet user-secrets or ConnectionStrings__Default.");
 
         services.AddDbContext<ByteBaitDbContext>(options => ConfigureDbContext(options, connectionString));
+
+        var databaseOptions = configuration.GetSection(DatabaseOptions.SectionName).Get<DatabaseOptions>()
+            ?? new DatabaseOptions();
+
+        if (databaseOptions.MigrateOnStartup)
+        {
+            services.AddHostedService<DatabaseMigrator>();
+        }
+
         return services;
     }
 
