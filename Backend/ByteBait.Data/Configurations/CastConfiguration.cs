@@ -12,19 +12,33 @@ public class CastConfiguration : IEntityTypeConfiguration<Cast>
         builder.ToTable("casts", table =>
         {
             table.HasCheckConstraint("ck_casts_strength_range", "strength >= 0 AND strength <= 1");
-            table.HasCheckConstraint("ck_casts_zone", "zone IN ('red', 'yellow', 'green')");
+            table.HasCheckConstraint("ck_casts_zone", LowercaseEnum.Check<CastZone>("zone"));
+            table.HasCheckConstraint("ck_casts_weight_positive", "weight_kg > 0");
+            table.HasCheckConstraint("ck_casts_length_positive", "length_cm > 0");
         });
 
         builder.HasKey(c => c.Id);
 
-        // Store the zone as "red"/"yellow"/"green" instead of 0/1/2 (same values as the API contract)
-        builder.Property(c => c.Zone)
-            .HasConversion(
-                zone => zone.ToString().ToLowerInvariant(),
-                text => Enum.Parse<CastZone>(text, ignoreCase: true))
-            .HasMaxLength(10);
+        builder.Property(c => c.Zone).HasLowercaseConversion();
 
         builder.Property(c => c.CreatedAt)
             .HasDefaultValueSql("now()");
+
+        // Deleting a player also deletes their casts and catches
+        builder.HasOne(c => c.Player)
+            .WithMany(p => p.Casts)
+            .HasForeignKey(c => c.PlayerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // A level or species that has been fished on can't be deleted, the statistics depend on it
+        builder.HasOne(c => c.Level)
+            .WithMany()
+            .HasForeignKey(c => c.LevelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(c => c.FishSpecies)
+            .WithMany()
+            .HasForeignKey(c => c.FishSpeciesId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
