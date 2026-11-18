@@ -1,3 +1,4 @@
+using ByteBait.Api.Weather;
 using ByteBait.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
@@ -14,6 +15,16 @@ builder.Services.AddProblemDetails();
 
 // Locally the connection string comes from user-secrets, in CI and Dokploy from ConnectionStrings__Default
 builder.Services.AddByteBaitData(builder.Configuration);
+
+// Weather from Open-Meteo, cached per town (S2.9). The timeout keeps a slow Open-Meteo from holding up the game.
+builder.Services.AddHttpClient(OpenMeteoClient.HttpClientName, client =>
+{
+    client.BaseAddress = new Uri("https://api.open-meteo.com/");
+    client.Timeout = TimeSpan.FromSeconds(5);
+});
+builder.Services.AddSingleton<OpenMeteoClient>();
+builder.Services.AddSingleton<WeatherService>();
+builder.Services.AddSingleton(TimeProvider.System);
 
 // On Dokploy, Traefik handles HTTPS and passes the request on to the container as plain HTTP.
 // The X-Forwarded headers tell the API the original scheme and client IP, so HTTPS redirection

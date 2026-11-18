@@ -10,3 +10,8 @@ Content-Type: application/json
 }
 
 ###
+
+GET {{ByteBait.Api_HostAddress}}/api/lanes/3/weather
+Accept: application/json
+
+###
