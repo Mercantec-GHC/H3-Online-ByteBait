@@ -51,9 +51,14 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # Samme kald som i deploy-test.yml: Dokploy kræver et GitHub-push til main og Autodeploy slået til
       - name: Kald Dokploy-webhook (produktion)
         env:
           HOOK: ${{ secrets.DOKPLOY_WEBHOOK_PROD }}
         run: |
           if [ -z "$HOOK" ]; then echo "::warning::DOKPLOY_WEBHOOK_PROD er ikke sat endnu – intet deployet."; exit 0; fi
-          curl -fsS -X POST "$HOOK" && echo "Main-ByteBait deploy startet."
+          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST "$HOOK" \
+            -H 'Content-Type: application/json' -H 'X-GitHub-Event: push' \
+            -d '{"ref":"refs/heads/main"}')
+          echo "Dokploy svarede $status: $(cat response.txt)"
+          if [ "$status" != "200" ]; then echo "::error::Main-ByteBait blev ikke deployet."; exit 1; fi

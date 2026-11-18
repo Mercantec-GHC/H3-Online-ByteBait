@@ -61,9 +61,9 @@ Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
 | **Main-ByteBait** | `main` | Release-PR'en merges til `main` om fredagen (workflow **Release**) |
 
 - Begge apps bygges fra `Dockerfile` i roden af repoet. API'et serverer også Blazor-filerne, så hver app er én container, der lytter på port 8080.
-- Deploy sker via Dokploys deploy-webhooks, som ligger som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PROD`. Workflowet kalder først webhooket, når CI er grøn, så der kun deployes kode, der har bestået CI. Autodeploy er slået fra i begge apps, så der ikke deployes to gange.
+- Deploy sker via Dokploys deploy-webhooks, som ligger som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PROD`. Workflowet kalder først webhooket, når CI er grøn, så der kun deployes kode, der har bestået CI. Autodeploy skal være slået til i begge apps, ellers afviser Dokploy webhooket med 400.
 - Dokploy (Traefik) står for HTTPS. Containeren får requesten som HTTP, og API'et læser den oprindelige protokol fra `X-Forwarded-Proto`.
-- Domæner: Dokploys standard indtil videre.
+- Domæner: Test-ByteBait kører på https://bytebait-test.mercantec.tech. Skolen står for HTTPS foran Dokploy, så HTTPS er slået fra på domænet i Dokploy.
 - Miljøvariabler sættes i Dokploy under **Environment** – aldrig i repoet:
   - `ASPNETCORE_ENVIRONMENT` (`Staging` i test, `Production` i produktion)
   - `ASPNETCORE_URLS=http://+:8080`
