@@ -43,3 +43,24 @@ Starting request 6
 HTTP request=6 connection=reused status=200 response_ms=85
 Round ended. Reset to repeat.
 ```
+
+## Ét fysisk kast over WiFi til browseren (4.4b)
+
+1. Åbn [WiFi throw test på Test-ByteBait](https://bytebait-test.mercantec.tech/api/test/wifi-throw).
+   Vent på **Ready**. Klik **Send simulated throw**. Siden skal vise
+   **Simulated · THROW:72** og **Physical throws: 0**.
+2. Hold fanen åben. Kopiér dens **Test ID for the Oplà**. En genindlæsning giver et nyt ID.
+3. Åbn [spillets sketch](bytebait/bytebait.ino). Kopiér dens
+   [eksempelkonfiguration](bytebait/arduino_secrets.example.h) til `arduino_secrets.h`
+   i samme mappe, hvis filen mangler. Sæt `WIFI_THROW_PROBE` til `1`, udfyld de lokale
+   WiFi-felter og indsæt ID'et i `SECRET_PROBE_ID`. Brug TLS-certifikatet fra 4.3.
+4. Upload til **Arduino MKR WiFi 1010** med bibliotekerne Arduino_MKRIoTCarrier,
+   WiFiNINA og ArduinoHttpClient. Åbn Serial Monitor ved **115200 baud**. Tryk Reset
+   og vent på **WiFi connected**. Hold boardet i ro, indtil browseren viser **Ready**.
+5. Lav ét kast. Serial Monitor skal vise `THROW:<styrke>` og `HTTP 204`. Browseren
+   skal vise samme linje og tælle fra **0 til 1**. USB-kablet bruges her til strøm og log.
+
+HTTP `409` betyder, at ID'et mangler en åben modtager. Kontrollér fanen og dens ID.
+Ved manglende svar tjekkes browseren, før man kaster igen. Sketchen sender kun én
+forespørgsel pr. kast og kan genbruge TLS-forbindelsen ved næste kast.
+Sæt `WIFI_THROW_PROBE` til `0` og upload igen for at bruge USB-protokollen.

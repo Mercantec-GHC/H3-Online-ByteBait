@@ -135,6 +135,11 @@ jobs:
             cp "$ex" "$(dirname "$ex")/arduino_secrets.h"
           done
 
+          # Compile the default USB sketch and the opt-in WiFi transport with dummy settings.
+          mkdir -p Arduino/ci-wifi
+          cp -R Arduino/bytebait Arduino/ci-wifi/bytebait
+          sed -i 's/^#define WIFI_THROW_PROBE 0/#define WIFI_THROW_PROBE 1/' Arduino/ci-wifi/bytebait/arduino_secrets.h
+
       - uses: arduino/compile-sketches@v1
         if: steps.find.outputs.found == 'true'
         with:
