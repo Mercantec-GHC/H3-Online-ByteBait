@@ -3,7 +3,7 @@ name: Release
 # Kører når release-PR'en fra dev merges til main (fredag).
 # 1) CI køres igen  2) version læses fra den aktuelle sprint-milestone, fx "Sprint 1 – Hele kæden (v0.1.0)"
 # 3) tag + GitHub Release med release notes  4) milestone lukkes  5) produktion (Main-ByteBait) deployes.
-# Kræver repository secret DOKPLOY_WEBHOOK_PROD.
+# Kræver repository secret DOKPLOY_WEBHOOK_PRO.
 
 on:
   push:
@@ -54,9 +54,9 @@ jobs:
       # Samme kald som i deploy-test.yml: Dokploy kræver et GitHub-push til main og Autodeploy slået til
       - name: Kald Dokploy-webhook (produktion)
         env:
-          HOOK: ${{ secrets.DOKPLOY_WEBHOOK_PROD }}
+          HOOK: ${{ secrets.DOKPLOY_WEBHOOK_PRO }}
         run: |
-          if [ -z "$HOOK" ]; then echo "::warning::DOKPLOY_WEBHOOK_PROD er ikke sat endnu – intet deployet."; exit 0; fi
+          if [ -z "$HOOK" ]; then echo "::warning::DOKPLOY_WEBHOOK_PRO er ikke sat endnu – intet deployet."; exit 0; fi
           status=$(curl -sS -o response.txt -w '%{http_code}' -X POST "$HOOK" \
             -H 'Content-Type: application/json' -H 'X-GitHub-Event: push' \
             -d '{"ref":"refs/heads/main"}')

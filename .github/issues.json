@@ -318,7 +318,7 @@
         "Frederik",
         "Bjarke"
       ],
-      "body": "<!-- key: S1.13 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.9}}, {{S1.10}}, {{S1.12}}\n**Bidrager til:** {{DOD9}}, {{DOD10}}\n\n## Mål\nSpillet kører online fra onsdag, så alle kan se den seneste udgave af dev.\n\n## Opgaver\n- [ ] Dockerfile til API + Blazor (én container)\n- [ ] App Test-ByteBait i Dokploy fra `dev` og Main-ByteBait fra `main`\n- [ ] Neon connection string som miljøvariabel i hver app\n- [ ] Deploy-webhooks som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PROD`\n- [ ] Domæner sat op og noteret i README\n\n## Færdig når\nTest-ByteBait opdateres automatisk ved merge til `dev`, og Main-ByteBait kan deployes fra `main`.",
+      "body": "<!-- key: S1.13 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.9}}, {{S1.10}}, {{S1.12}}\n**Bidrager til:** {{DOD9}}, {{DOD10}}\n\n## Mål\nSpillet kører online fra onsdag, så alle kan se den seneste udgave af dev.\n\n## Opgaver\n- [ ] Dockerfile til API + Blazor (én container)\n- [ ] App Test-ByteBait i Dokploy fra `dev` og Main-ByteBait fra `main`\n- [ ] Neon connection string som miljøvariabel i hver app\n- [ ] Deploy-webhooks som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PRO`\n- [ ] Domæner sat op og noteret i README\n\n## Færdig når\nTest-ByteBait opdateres automatisk ved merge til `dev`, og Main-ByteBait kan deployes fra `main`.",
       "managed": "create"
     },
     {
