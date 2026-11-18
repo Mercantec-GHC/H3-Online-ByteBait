@@ -93,14 +93,20 @@ I sprint 1 kræver endpointet ikke login.
 | Felt | Type | Krav |
 |------|------|------|
 | `zone` | string | `"red"`, `"yellow"` eller `"green"` |
-| `strength` | number | Kastets styrke, `0.0`–`1.0` (se forslaget nedenfor) |
+| `strength` | number | Normalized throw strength, `0.0`–`1.0` (see normalization below) |
 | `castAt` | string | Tidspunktet for kastet (ISO 8601, UTC) |
 
-<!-- FORSLAG | af: @Bmantaz | berører: S1.3 (#3) | ejer: @AssisDk, @Zikka1987 | status: ikke besluttet -->
-> [!WARNING]
-> **FORSLAG fra Bjarke (@Bmantaz) – ikke besluttet.**
-> Berører S1.3 (#3, Abdi @AssisDk og Andreas @Zikka1987).
-> `strength` sendes til API'et som et tal fra `0.0` (blødeste kast) til `1.0` (hårdeste kast). Hvis protokollen i `protocol.md` bruger et andet interval, omregner spillet, før det kalder API'et.
+**Throw strength normalization**
+
+The Oplà protocol sends `THROW:<strength>` with a value from `0` to `100`. Before calling
+`POST /api/casts`, the game converts that value once using `strength = throwStrength / 100`.
+The API receives a number from `0.0` (softest throw) to `1.0` (hardest throw).
+
+| Protocol message | API `strength` |
+|------------------|----------------|
+| `THROW:0` | `0.0` |
+| `THROW:72` | `0.72` |
+| `THROW:100` | `1.0` |
 
 **Response `201 Created`**
 

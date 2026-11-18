@@ -1,0 +1,254 @@
+@* Owns demo controls and HTML feedback; JavaScript reports turns and owns canvas animation. *@
+@page "/game"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<Game> Logger
+
+<PageTitle>Game | ByteBait</PageTitle>
+
+<main class="game-page">
+    <div class="game-content">
+        <header class="game-header">
+            <h1>ByteBait</h1>
+            <a href="/">Back to home</a>
+        </header>
+
+        <p id="game-demo-description" class="game-description">Animation demo</p>
+
+        <section class="canvas-frame" aria-label="Game view">
+            @* The drawing buffer stays small while CSS scales the display for the current window. *@
+            <canvas @ref="gameCanvas" id="game-canvas" width="320" height="180" role="img"
+                    aria-label="ByteBait game area" aria-describedby="game-demo-description">
+                Your browser does not support the game canvas.
+            </canvas>
+        </section>
+
+        <div class="demo-controls" role="group" aria-label="Animation demo controls"
+             aria-busy="@(isBusy ? "true" : "false")">
+            <button type="button" @onclick="StartDemoAsync" disabled="@(!CanStart)">Start demo</button>
+            <button type="button" @onclick="StopDemoAsync" disabled="@(!CanStop)">Stop demo</button>
+        </div>
+
+        <section class="game-status" aria-labelledby="game-status-heading">
+            <h2 id="game-status-heading">Game status</h2>
+            <p role="status" aria-live="polite">@Status</p>
+            <div class="demo-events" aria-live="polite" aria-atomic="true">
+                <p>Turns: @receivedTurnCount</p>
+                <p>Last turn: @LastTurnLabel</p>
+            </div>
+        </section>
+    </div>
+</main>
+
+@code {
+    private ElementReference gameCanvas;
+    private IJSObjectReference? module;
+    private DotNetObjectReference<Game>? callbackReference;
+    private Task? initializationTask;
+    private Task? commandTask;
+    private bool disposed;
+    private bool isBusy;
+    private DemoState state = DemoState.Loading;
+    private string errorMessage = "Unable to load demo.";
+    private int receivedTurnCount;
+    private string? lastTurnSide;
+
+    private string LastTurnLabel => lastTurnSide switch
+    {
+        "right" => "Right",
+        "left" => "Left",
+        _ => "None",
+    };
+
+    private bool CanStart => !disposed && !isBusy && (state is DemoState.Ready or DemoState.Stopped);
+    private bool CanStop => !disposed && !isBusy && state == DemoState.Running;
+
+    private string Status => state switch
+    {
+        DemoState.Loading => "Loading demo…",
+        DemoState.Ready => "Demo ready",
+        DemoState.Running => "Demo running",
+        DemoState.Stopped => "Demo stopped",
+        DemoState.ReducedMotion => "Reduced motion is enabled. Animation is disabled.",
+        _ => errorMessage,
+    };
+
+    // This state describes the demo controls, not a server-owned fishing game session.
+    private enum DemoState { Loading, Ready, Running, Stopped, ReducedMotion, Error }
+
+    // The DOM reference is populated only after rendering. Later renders keep the same demo.
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return Task.CompletedTask;
+        }
+
+        initializationTask = InitializeAsync();
+        return initializationTask;
+    }
+
+    /// <summary>
+    /// Imports the demo and initializes the canvas. Startup errors stay in the status area;
+    /// the original exception is logged for diagnosis. No per-frame calls cross into C#.
+    /// </summary>
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/game.js");
+            if (disposed)
+            {
+                return;
+            }
+
+            callbackReference = DotNetObjectReference.Create(this);
+            var canAnimate = await module.InvokeAsync<bool>("initialize", gameCanvas, callbackReference);
+            if (disposed)
+            {
+                return;
+            }
+
+            state = canAnimate ? DemoState.Ready : DemoState.ReducedMotion;
+        }
+        catch (JSException exception)
+        {
+            if (!disposed)
+            {
+                Logger.LogError(exception, "Unable to initialize the ByteBait animation demo.");
+                state = DemoState.Error;
+            }
+        }
+
+        // OnAfterRenderAsync does not schedule another render when its asynchronous work ends.
+        if (!disposed)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private Task StartDemoAsync() => ExecuteCommandAsync(start: true);
+    private Task StopDemoAsync() => ExecuteCommandAsync(start: false);
+
+    /// <summary>
+    /// Accepts one valid control action at a time. The guard also protects against clicks
+    /// queued before the browser has rendered the disabled buttons.
+    /// </summary>
+    private Task ExecuteCommandAsync(bool start)
+    {
+        if (module is null || !(start ? CanStart : CanStop))
+        {
+            return Task.CompletedTask;
+        }
+
+        isBusy = true;
+        commandTask = InvokeCommandAsync(module, start);
+        return commandTask;
+    }
+
+    /// <summary>
+    /// Updates control status only after JavaScript confirms the command. Failures disable
+    /// both buttons; navigation remains available to dispose the demo and open a fresh page.
+    /// </summary>
+    private async Task InvokeCommandAsync(IJSObjectReference demoModule, bool start)
+    {
+        try
+        {
+            if (start)
+            {
+                var running = await demoModule.InvokeAsync<bool>("start", gameCanvas);
+                if (!disposed)
+                {
+                    state = running ? DemoState.Running : DemoState.ReducedMotion;
+                }
+            }
+            else
+            {
+                await demoModule.InvokeVoidAsync("stop", gameCanvas);
+                if (!disposed)
+                {
+                    state = DemoState.Stopped;
+                }
+            }
+        }
+        catch (JSException exception)
+        {
+            if (!disposed)
+            {
+                Logger.LogError(exception, "Unable to control the ByteBait animation demo.");
+                errorMessage = "Unable to control demo.";
+                state = DemoState.Error;
+            }
+        }
+        finally
+        {
+            if (!disposed)
+            {
+                isBusy = false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Receives a JavaScript turning-point event. Only valid, newer totals update the HTML;
+    /// a turn already sent before Stop remains valid without changing the control state.
+    /// </summary>
+    [JSInvokable]
+    public Task OnDemoTurnedAsync(string side, int turnCount)
+    {
+        if (disposed || turnCount <= 0 || side is not ("right" or "left"))
+        {
+            return Task.CompletedTask;
+        }
+
+        return InvokeAsync(() =>
+        {
+            // Disposal or a newer callback may have happened while this UI update was queued.
+            if (disposed || turnCount <= receivedTurnCount)
+            {
+                return;
+            }
+
+            receivedTurnCount = turnCount;
+            lastTurnSide = side;
+            StateHasChanged();
+        });
+    }
+
+    /// <summary>
+    /// Awaits pending work before releasing the module and its C# callback target. JavaScript
+    /// observes canvas removal and performs its own DOM-related cleanup.
+    /// </summary>
+    public async ValueTask DisposeAsync()
+    {
+        if (disposed)
+        {
+            return;
+        }
+
+        disposed = true;
+        try
+        {
+            if (initializationTask is not null)
+            {
+                await initializationTask;
+            }
+
+            if (commandTask is not null)
+            {
+                await commandTask;
+            }
+
+            if (module is not null)
+            {
+                await module.DisposeAsync();
+            }
+        }
+        finally
+        {
+            // This also covers failed initialization and errors while releasing the module.
+            callbackReference?.Dispose();
+            callbackReference = null;
+        }
+    }
+}
