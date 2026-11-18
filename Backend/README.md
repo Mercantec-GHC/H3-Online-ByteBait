@@ -27,6 +27,13 @@ dotnet run --project Backend/ByteBait.Api
 
 API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på http://localhost:5250/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
 
+Det samme image, som Dokploy bygger, kan bygges lokalt fra roden af repoet (kræver Docker):
+
+```bash
+docker build -t bytebait .
+docker run -p 8080:8080 -e ConnectionStrings__Default="<connection string>" bytebait
+```
+
 `Backend/ByteBait.Api/ByteBait.Api.http` har et eksempel på `POST /api/casts`, som kan sendes direkte fra VS Code eller Visual Studio.
 
 ## Neon
@@ -75,6 +82,15 @@ dotnet ef migrations script --idempotent -p Backend/ByteBait.Data
 ```
 
 Glemmer man at lave en migration, fejler testen `Model_has_no_changes_missing_a_migration` i CI.
+
+### På Test-ByteBait og Main-ByteBait
+
+Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=true` sat, så `DatabaseMigrator` kører de manglende migrations, når containeren starter, og før API'et tager imod requests. En merge til `dev` opdaterer derfor også tabellerne på Neon-branchen `test`, og en release opdaterer `production`.
+
+- Det kan lade sig gøre, fordi hvert miljø kun kører én container, så to containere aldrig migrerer samme database på én gang.
+- Fejler en migration, starter containeren ikke, og fejlen står i loggen i Dokploy.
+- Indstillingen er slået fra som standard, så tests og `dotnet run` aldrig ændrer en database af sig selv.
+- Migrations skal kunne køre på en database, der allerede har data. Er man i tvivl, så prøv dem først på Neon-branchen `dev`, og læs SQL'en med `dotnet ef migrations script --idempotent`.
 
 ## Konventioner i databasen
 
