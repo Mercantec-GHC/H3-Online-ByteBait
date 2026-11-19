@@ -64,8 +64,6 @@ Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
 - Deploy sker via Dokploys deploy-webhooks, som ligger som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PRO`. Workflowet kalder først webhooket, når CI er grøn, så der kun deployes kode, der har bestået CI. Autodeploy skal være slået til i begge apps, ellers afviser Dokploy webhooket med 400.
 - Dokploy (Traefik) står for HTTPS. Containeren får requesten som HTTP, og API'et læser den oprindelige protokol fra `X-Forwarded-Proto`.
 - Domæner: Test-ByteBait kører på https://bytebait-test.mercantec.tech og Main-ByteBait på https://bytebait.mercantec.tech. Skolen står for HTTPS foran Dokploy (Cloudflare), så HTTPS er slået fra på domænerne i Dokploy.
-- **Placement constraint:** Skolens Dokploy kører Docker Swarm på to servere (`MAGS-Hosting` og `mags-hp`), men imaget bygges kun på `MAGS-Hosting`. Starter Swarm containeren på `mags-hp`, bliver den afvist (*Rejected*), og den gamle container kører videre – selvom deployet står som *done*. Begge apps skal derfor have `node.hostname == MAGS-Hosting` under **Advanced → Placement Constraints**.
-- Tjek efter et deploy: under **Logs** (slå *Swarm* til) skal den nye container stå som *running* med `Hosting environment: …` fra i dag. Står der kun *Rejected*-forsøg, er containeren ikke skiftet.
 - Miljøvariabler sættes i Dokploy under **Environment** – aldrig i repoet:
   - `ASPNETCORE_ENVIRONMENT` (`Staging` i test, `Production` i produktion)
   - `ASPNETCORE_URLS=http://+:8080`
