@@ -1,0 +1,230 @@
+@* Shows the active USB session, the estimated cast zone and the API's save status. *@
+@implements IAsyncDisposable
+@using System.Globalization
+@using System.Net
+@using ByteBait.Client.Casts
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject ILogger<UsbController> Logger
+
+<section aria-labelledby="usb-title">
+    <h2 id="usb-title">USB controller</h2>
+    <div class="meter-controls">
+        <button type="button" @onclick="ConnectAsync" disabled="@(!CanConnect)">Connect USB</button>
+        <button type="button" @onclick="DisconnectAsync" disabled="@(state != "connected")">Disconnect USB</button>
+    </div>
+    <p role="status">@StatusMessage</p>
+    @if (state == "connected")
+    {
+        @if (latency is { } measurement)
+        {
+            <p>Round-trip time: @FormatMs(measurement.RoundTripMs)</p>
+            <p>Estimated one-way time: @FormatMs(measurement.OneWayMs)</p>
+        }
+        else
+        {
+            <p>Measuring USB latency…</p>
+        }
+    }
+    <div aria-live="polite" aria-atomic="true">
+        <p>Last throw strength: @(lastThrow?.Strength.ToString() ?? "—")</p>
+        <p>Throws received: @throwCount</p>
+        @if (lastThrow is { } result)
+        {
+            <p>@CastMessage(result)</p>
+            @if (saveMessage is not null)
+            {
+                <p>@saveMessage</p>
+            }
+        }
+    </div>
+</section>
+
+@code {
+    [Parameter, EditorRequired] public ElementReference MeterCanvas { get; set; }
+    [Parameter] public IJSObjectReference? MeterModule { get; set; }
+
+    // The meter has already assessed the zone at this throw's estimated UTC trigger time.
+    public sealed record UsbThrowResult(int Strength, double ReceivedAtMs, string? Zone, DateTimeOffset? CastAt, string? Reason);
+
+    private IJSObjectReference? module;
+    private IJSObjectReference? controller;
+    private DotNetObjectReference<UsbController>? receiver;
+    private Task initialization = Task.CompletedTask;
+    private bool disposed;
+    private string state = "loading";
+    private UsbThrowResult? lastThrow;
+    private string? saveMessage;
+    private int throwCount;
+    private (double RoundTripMs, double OneWayMs)? latency;
+
+    private static string FormatMs(double value) => value.ToString("F1", CultureInfo.InvariantCulture) + " ms";
+    private static string CastMessage(UsbThrowResult result)
+    {
+        if (result.Zone is { } zone) return $"Last cast zone: {CultureInfo.InvariantCulture.TextInfo.ToTitleCase(zone)}";
+        return result.Reason == "missingLatency"
+            ? "Cast not scored. Waiting for USB latency."
+            : "Cast not scored. No meter history for this throw.";
+    }
+    private bool CanConnect => state is "disconnected" or "cancelled" or "openFailed" or "selectionFailed"
+        or "readFailed" or "writeFailed" or "timedOut";
+    private string StatusMessage => state switch
+    {
+        "loading" => "Loading USB controls…",
+        "unsupported" => "Web Serial is unavailable. Open the game in Chrome or Edge on localhost or HTTPS.",
+        "connecting" => "Connecting to USB…",
+        "connected" => "USB connected.",
+        "disconnecting" => "Disconnecting USB…",
+        "disconnected" => "USB disconnected.",
+        "cancelled" => "No USB port selected.",
+        "selectionFailed" => "Unable to select a USB port. Check your browser’s device permissions.",
+        "openFailed" => "Unable to open the USB port. Close Serial Monitor or another app using the port and try again.",
+        "readFailed" => "USB disconnected. Check the cable and connect again.",
+        "writeFailed" => "Unable to write to the USB port. Check the cable and connect again.",
+        "timedOut" => "USB connection lost. No reply for 15 seconds.",
+        _ => "Unable to load the USB controls."
+    };
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return Task.CompletedTask;
+        initialization = InitializeAsync();
+        return initialization;
+    }
+
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/usb-controller.js");
+            if (disposed) return;
+            receiver = DotNetObjectReference.Create(this);
+            controller = await module.InvokeAsync<IJSObjectReference>("createUsbController", receiver);
+            if (disposed) return;
+            state = await controller.InvokeAsync<bool>("isSupported") ? "disconnected" : "unsupported";
+        }
+        catch (JSException exception)
+        {
+            if (disposed) return;
+            Logger.LogError(exception, "Unable to initialize the USB controls.");
+            state = "loadFailed";
+        }
+
+        if (!disposed) StateHasChanged();
+    }
+
+    private Task ConnectAsync() => CanConnect ? RunCommandAsync("connect", "connecting", MeterCanvas, MeterModule) : Task.CompletedTask;
+    private Task DisconnectAsync() => state == "connected" ? RunCommandAsync("disconnect", "disconnecting") : Task.CompletedTask;
+
+    private async Task RunCommandAsync(string command, string pendingState, params object?[] args)
+    {
+        if (disposed || controller is null) return;
+        state = pendingState;
+        try
+        {
+            await controller.InvokeVoidAsync(command, args);
+        }
+        catch (JSException exception)
+        {
+            if (disposed) return;
+            Logger.LogError(exception, "Unable to run USB command {Command}.", command);
+            state = command == "connect" ? "openFailed" : "readFailed";
+        }
+    }
+
+    /// <summary>Only a successfully opened port starts a new throw count.</summary>
+    [JSInvokable]
+    public void OnUsbStatus(string status)
+    {
+        if (disposed) return;
+        state = status;
+        latency = null;
+        if (status == "connected")
+        {
+            lastThrow = null;
+            saveMessage = null;
+            throwCount = 0;
+        }
+        StateHasChanged();
+    }
+
+    /// <summary>Keep the active connection's full precision estimate. Only its display is rounded.</summary>
+    [JSInvokable]
+    public void OnUsbLatency(double roundTripMs, double oneWayMs)
+    {
+        if (disposed || state != "connected") return;
+        latency = (roundTripMs, oneWayMs);
+        StateHasChanged();
+    }
+
+    /// <summary>Count every valid THROW once and replace the previous assessment, including on a miss.</summary>
+    [JSInvokable]
+    public void OnUsbThrow(UsbThrowResult result)
+    {
+        if (disposed || state != "connected" || result.Strength is < 0 or > 100 || !double.IsFinite(result.ReceivedAtMs)) return;
+        lastThrow = result;
+        throwCount++;
+        saveMessage = null;
+        if (result.Reason is null && result.Zone is "red" or "yellow" or "green" && result.CastAt is { } castAt)
+        {
+            saveMessage = "Saving cast…";
+            var request = new SaveCastRequest(result.Zone, result.Strength / 100.0, castAt.UtcDateTime);
+            // The serial read loop awaits this callback. Let it accept the next THROW or PONG immediately.
+            _ = SaveCastAsync(result, request);
+        }
+        StateHasChanged();
+    }
+
+    /// <summary>Send one POST. Only the throw still on screen may publish its receipt.</summary>
+    private async Task SaveCastAsync(UsbThrowResult source, SaveCastRequest request)
+    {
+        const string unconfirmed = "Cast save could not be confirmed.";
+        string message;
+        try
+        {
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            using var response = await Http.PostAsJsonAsync("api/casts", request, CastJsonContext.Default.SaveCastRequest, timeout.Token);
+            message = response.StatusCode switch
+            {
+                HttpStatusCode.Created => "Cast saved.",
+                HttpStatusCode.BadRequest => "Cast rejected by the server.",
+                _ => unconfirmed
+            };
+        }
+        catch (HttpRequestException)
+        {
+            // A lost response can follow a committed insert. Replaying the POST could duplicate the cast.
+            message = unconfirmed;
+        }
+        catch (OperationCanceledException)
+        {
+            message = unconfirmed;
+        }
+
+        if (disposed || !ReferenceEquals(lastThrow, source)) return;
+        saveMessage = message;
+        StateHasChanged();
+    }
+
+    /// <summary>Detach the receiver and stop the port before releasing the interop references.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        try
+        {
+            await initialization;
+            if (controller is not null)
+            {
+                await using (controller)
+                {
+                    await controller.InvokeVoidAsync("dispose");
+                }
+            }
+        }
+        finally
+        {
+            receiver?.Dispose();
+            if (module is not null) await module.DisposeAsync();
+        }
+    }
+}

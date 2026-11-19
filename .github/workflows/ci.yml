@@ -121,7 +121,7 @@ jobs:
           for f in $FILES; do echo "node --check $f"; node --check "$f"; done
 
       - name: Test game module
-        run: node --test Frontend/ByteBait.Client.Tests/game.test.mjs
+        run: node --test "Frontend/ByteBait.Client.Tests/*.test.mjs"
 
   arduino:
     name: Arduino – kompilér sketch (MKR WiFi 1010)
