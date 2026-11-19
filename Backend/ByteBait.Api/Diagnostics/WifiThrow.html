@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>WiFi throw test · ByteBait</title>
+  <style>
+    :root { color-scheme: dark; background: #101f29; color: #f4f4e8; font: 1rem/1.5 system-ui, sans-serif; }
+    main { max-width: 35rem; margin: 9vh auto; padding: 1.25rem; }
+    h1 { margin: 0; font-size: 2rem; }
+    #status { color: #b5e6b4; }
+    .reading { padding: 1rem 1.25rem; background: #172f3c; border-left: .2rem solid #91c690; }
+    .reading p { margin: 0; }
+    #last { display: block; margin: .4rem 0; font: 1.6rem monospace; overflow-wrap: anywhere; }
+    label { display: block; margin-top: 1.25rem; }
+    input, button { padding: .6rem; border: 1px solid #91c690; border-radius: .2rem; }
+    input { box-sizing: border-box; display: block; width: 100%; font: 1rem monospace; }
+    button { margin-top: 1rem; font: inherit; }
+    :focus-visible { outline: 3px solid #b5e6b4; outline-offset: 3px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>WiFi throw test</h1>
+    <p id="status" role="status">Connecting…</p>
+    <div class="reading" aria-live="polite" aria-atomic="true">
+      <p>Latest message</p>
+      <strong id="last">—</strong>
+      <p>Physical throws: <span id="count">0</span></p>
+    </div>
+    <label for="run-id">Test ID for the Oplà</label>
+    <input id="run-id" readonly spellcheck="false">
+    <button type="button" id="simulate" disabled>Send simulated throw</button>
+    <p id="feedback" role="status"></p>
+  </main>
+  <script type="module">
+    // The board uses this tab's ID. EventSource reconnects to the same run after a network interruption.
+    const id = crypto.randomUUID();
+    const endpoint = "/api/test/wifi-throw/" + id;
+    const status = document.querySelector("#status");
+    const simulate = document.querySelector("#simulate");
+    const last = document.querySelector("#last");
+    const count = document.querySelector("#count");
+    const feedback = document.querySelector("#feedback");
+    document.querySelector("#run-id").value = id;
+    let stream;
+    let physicalThrows = 0;
+    let ready = false;
+    let sending = false;
+
+    function connect() {
+      stream = new EventSource(endpoint + "/events");
+      stream.addEventListener("ready", () => {
+        ready = true;
+        status.textContent = "Ready";
+        simulate.disabled = sending;
+      });
+      stream.addEventListener("throw", event => {
+        last.textContent = event.data;
+        count.textContent = String(++physicalThrows);
+      });
+      stream.addEventListener("simulated-throw", event => {
+        last.textContent = "Simulated · " + event.data;
+      });
+      stream.onerror = () => {
+        ready = false;
+        simulate.disabled = true;
+        status.textContent = stream.readyState === EventSource.CLOSED ? "Disconnected" : "Reconnecting…";
+      };
+    }
+
+    simulate.addEventListener("click", async () => {
+      sending = true;
+      simulate.disabled = true;
+      feedback.textContent = "";
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain", "X-Probe-Source": "simulated" },
+          body: "THROW:72\n"
+        });
+        if (!response.ok) feedback.textContent = "Simulation failed (HTTP " + response.status + ").";
+      } catch {
+        feedback.textContent = "Simulation could not reach the server.";
+      } finally {
+        sending = false;
+        simulate.disabled = !ready;
+      }
+    });
+
+    connect();
+    window.addEventListener("pagehide", () => {
+      stream.close();
+      ready = false;
+      simulate.disabled = true;
+    });
+    window.addEventListener("pageshow", event => { if (event.persisted) connect(); });
+  </script>
+</body>
+</html>

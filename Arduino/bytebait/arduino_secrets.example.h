@@ -1,11 +1,9 @@
-// Kopiér denne fil til arduino_secrets.h og udfyld den.
-// arduino_secrets.h står i .gitignore og må ALDRIG i git (WiFi-koden er hemmelig).
-// Mangler arduino_secrets.h, kører Oplaen kun over USB.
+// Copy to the git-ignored arduino_secrets.h beside bytebait.ino for a WiFi throw test.
+#pragma once
 
-#define SECRET_SSID "navn-på-dit-wifi"
-#define SECRET_PASS "wifi-koden"
-
-// Tunnel-adressen UDEN https:// og uden skråstreg, fx "ord-ord-ord.ngrok-free.dev".
-// Root-certifikatet for adressen skal uploades til Oplaen (se docs/protocol.md).
-#define SECRET_HOST "din-adresse.ngrok-free.dev"
+#define WIFI_THROW_PROBE 0  // Set to 1 locally for the probe. USB is the default.
+#define SECRET_SSID ""
+#define SECRET_PASS ""
+#define SECRET_HOST "bytebait-test.mercantec.tech"
 #define SECRET_PORT 443
+#define SECRET_PROBE_ID ""  // Copy the test ID from the open browser tab.

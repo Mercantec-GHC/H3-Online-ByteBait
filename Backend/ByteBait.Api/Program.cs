@@ -1,3 +1,4 @@
+using ByteBait.Api.Diagnostics;
 using ByteBait.Data;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
@@ -51,6 +52,11 @@ app.MapStaticAssets();
 app.UseAuthorization();
 
 app.MapControllers();
+
+if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
+{
+    WifiThrowProbe.MapRoutes(app);
+}
 
 // Unknown /api routes stay a 404 ProblemDetails instead of falling through to the Blazor page
 app.MapFallback("/api/{**path}", () => Results.NotFound());

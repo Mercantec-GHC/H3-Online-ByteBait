@@ -1,11 +1,15 @@
-// ByteBait - Oplà som fiskestang (S1.5: kastgenkendelse over USB)
-//
-// Et kast giver præcis én besked: THROW:<styrke>  (0-100, se docs/protocol.md)
-// Hardware: Arduino MKR WiFi 1010 + MKR IoT Carrier Rev2
-//
-// Tuning: sæt PLOT_MODE til true, åbn Tools -> Serial Plotter (115200 baud),
-// lav nogle bløde og hårde kast, og justér konstanterne herunder efter kurven.
+// Detect casts on the MKR WiFi 1010 + IoT Carrier Rev2 and emit one THROW per gesture.
+// USB is the default. The optional WiFi probe sends the same strength to a test browser.
 #include <Arduino_MKRIoTCarrier.h>
+#if __has_include("arduino_secrets.h")
+#include "arduino_secrets.h"
+#endif
+#ifndef WIFI_THROW_PROBE
+#define WIFI_THROW_PROBE 0
+#endif
+#if WIFI_THROW_PROBE
+#include "wifi_throw_probe.h"
+#endif
 
 MKRIoTCarrier carrier;
 
@@ -37,11 +41,17 @@ void setup() {
   CARRIER_CASE = false;                        // true hvis Oplà'en sidder i sit etui
   carrier.begin();
 
+#if WIFI_THROW_PROBE
+  if (!PLOT_MODE) WifiThrowProbe::begin();
+#else
   if (!PLOT_MODE) Serial.println("HELLO:USB:1");
+#endif
 }
 
 void loop() {
+#if !WIFI_THROW_PROBE
   readSerial();
+#endif
 
   if (!carrier.IMUmodule.accelerationAvailable()) return;
 
@@ -75,7 +85,7 @@ void loop() {
       if (now - stateStart >= WINDOW_MS) {
         sendThrow(peak);
         state = LOCKOUT;
-        stateStart = now;
+        stateStart = millis();  // Start the quiet period after any network wait.
       }
       break;
 
@@ -90,12 +100,16 @@ void loop() {
   }
 }
 
-// Omregn peak (g) til styrke 0-100 og send beskeden
+// Both transports use the strength derived from this acceleration peak.
 void sendThrow(float peakG) {
   float s = (peakG - MIN_PEAK_G) / (MAX_PEAK_G - MIN_PEAK_G) * 100.0f;
   int strength = constrain((int)(s + 0.5f), 0, 100);
+#if WIFI_THROW_PROBE
+  WifiThrowProbe::send(strength);
+#else
   Serial.print("THROW:");
   Serial.println(strength);
+#endif
 }
 
 // ---------- Beskeder fra spillet ----------
