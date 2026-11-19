@@ -10,7 +10,8 @@ public class LevelConfiguration : IEntityTypeConfiguration<Level>
     {
         builder.ToTable("levels", table =>
         {
-            table.HasCheckConstraint("ck_levels_number_positive", "number >= 1");
+            // Every lane has exactly two levels
+            table.HasCheckConstraint("ck_levels_number_range", "number BETWEEN 1 AND 2");
             table.HasCheckConstraint("ck_levels_required_fish_positive", "required_fish >= 1");
         });
 

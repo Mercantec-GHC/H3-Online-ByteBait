@@ -106,6 +106,30 @@ public class GameModelTests(PostgresDatabase database)
     }
 
     [PostgresFact]
+    public async Task Database_rejects_a_third_level_on_a_lane()
+    {
+        await using var data = await TestWorld.CreateAsync(database);
+        await using var db = database.CreateContext();
+
+        db.Levels.Add(new Level { LaneId = data.Lane.Id, Number = 3, RequiredFish = 5 });
+
+        await AssertRejected(db, PostgresErrorCodes.CheckViolation);
+    }
+
+    [PostgresFact]
+    public async Task Database_rejects_a_cast_with_species_but_no_weight()
+    {
+        await using var data = await TestWorld.CreateAsync(database);
+        await using var db = database.CreateContext();
+
+        var cast = data.NewCast();
+        cast.WeightKg = null;
+        db.Casts.Add(cast);
+
+        await AssertRejected(db, PostgresErrorCodes.CheckViolation);
+    }
+
+    [PostgresFact]
     public async Task Database_rejects_negative_money()
     {
         await using var db = database.CreateContext();

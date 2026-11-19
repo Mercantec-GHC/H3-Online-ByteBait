@@ -211,7 +211,7 @@ namespace ByteBait.Data.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_levels", x => x.id);
-                    table.CheckConstraint("ck_levels_number_positive", "number >= 1");
+                    table.CheckConstraint("ck_levels_number_range", "number BETWEEN 1 AND 2");
                     table.CheckConstraint("ck_levels_required_fish_positive", "required_fish >= 1");
                     table.ForeignKey(
                         name: "fk_levels_lanes_lane_id",
@@ -279,6 +279,11 @@ namespace ByteBait.Data.Migrations
                 name: "ix_casts_player_id",
                 table: "casts",
                 column: "player_id");
+
+            migrationBuilder.AddCheckConstraint(
+                name: "ck_casts_fish_complete",
+                table: "casts",
+                sql: "(fish_species_id IS NULL) = (weight_kg IS NULL) AND (fish_species_id IS NULL) = (length_cm IS NULL)");
 
             migrationBuilder.AddCheckConstraint(
                 name: "ck_casts_length_positive",
@@ -419,6 +424,10 @@ namespace ByteBait.Data.Migrations
 
             migrationBuilder.DropIndex(
                 name: "ix_casts_player_id",
+                table: "casts");
+
+            migrationBuilder.DropCheckConstraint(
+                name: "ck_casts_fish_complete",
                 table: "casts");
 
             migrationBuilder.DropCheckConstraint(

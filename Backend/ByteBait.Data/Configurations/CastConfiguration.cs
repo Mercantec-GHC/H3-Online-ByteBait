@@ -15,6 +15,10 @@ public class CastConfiguration : IEntityTypeConfiguration<Cast>
             table.HasCheckConstraint("ck_casts_zone", LowercaseEnum.Check<CastZone>("zone"));
             table.HasCheckConstraint("ck_casts_weight_positive", "weight_kg > 0");
             table.HasCheckConstraint("ck_casts_length_positive", "length_cm > 0");
+
+            // The server picks species, weight and length together, so a cast has all three or none
+            table.HasCheckConstraint("ck_casts_fish_complete",
+                "(fish_species_id IS NULL) = (weight_kg IS NULL) AND (fish_species_id IS NULL) = (length_cm IS NULL)");
         });
 
         builder.HasKey(c => c.Id);

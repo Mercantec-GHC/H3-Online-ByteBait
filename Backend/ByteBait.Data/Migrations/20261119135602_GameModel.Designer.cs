@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ByteBait.Data.Migrations
 {
     [DbContext(typeof(ByteBaitDbContext))]
-    [Migration("20261118103059_GameModel")]
+    [Migration("20261119135602_GameModel")]
     partial class GameModel
     {
         /// <inheritdoc />
@@ -88,6 +88,8 @@ namespace ByteBait.Data.Migrations
 
                     b.ToTable("casts", null, t =>
                         {
+                            t.HasCheckConstraint("ck_casts_fish_complete", "(fish_species_id IS NULL) = (weight_kg IS NULL) AND (fish_species_id IS NULL) = (length_cm IS NULL)");
+
                             t.HasCheckConstraint("ck_casts_length_positive", "length_cm > 0");
 
                             t.HasCheckConstraint("ck_casts_strength_range", "strength >= 0 AND strength <= 1");
@@ -357,7 +359,7 @@ namespace ByteBait.Data.Migrations
 
                     b.ToTable("levels", null, t =>
                         {
-                            t.HasCheckConstraint("ck_levels_number_positive", "number >= 1");
+                            t.HasCheckConstraint("ck_levels_number_range", "number BETWEEN 1 AND 2");
 
                             t.HasCheckConstraint("ck_levels_required_fish_positive", "required_fish >= 1");
                         });

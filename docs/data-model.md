@@ -145,6 +145,8 @@ Databasen afviser ugyldige værdier, også hvis API'et glemmer at tjekke dem:
 
 - Enums må kun have de tilladte værdier (`ck_*_zone`, `ck_*_rarity`, osv.)
 - `casts.strength` mellem 0 og 1, `weight_kg` og `length_cm` over 0
+- `casts`: art, vægt og længde er enten alle sat eller alle tomme, fordi serveren vælger dem samtidig
+- `levels.number` er 1 eller 2
 - `fish_species`: min-vægt og min-længde over 0, max mindst lige så stor som min, pris mindst 0
 - `rarity_chances.base_chance` mellem 0 og 1, kun for `rare` og `legendary`
 - `zone_multipliers.multiplier` mindst 0
