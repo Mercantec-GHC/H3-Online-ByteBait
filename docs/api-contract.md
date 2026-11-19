@@ -208,6 +208,30 @@ Endpoints og navne er fastlagt i S2.13 (#76).
 | `PUT` | `/api/admin/levels/{id}` | Ret antal fisk pr. niveau |
 | `GET` | `/api/admin/stats/catches` | Antal fangster pr. art og bane |
 
+## WiFi-kasteprøve til #4
+
+I Development og Staging åbner `GET /api/test/wifi-throw` en testside med et nyt
+test-ID (GUID). Siden lytter på `GET /api/test/wifi-throw/{id}/events` med
+Server-Sent Events (SSE). Hændelsen `ready` bekræfter, at modtageren er registreret.
+Sessionen lever i API-processens hukommelse, mens forbindelsen er åben.
+
+Oplà'en sender `POST /api/test/wifi-throw/{id}` med `Content-Type: text/plain`.
+Body er én ASCII-linje fra [protokollen](protocol.md), fx `THROW:72\n`, med heltal
+0–100 og LF eller CRLF som linjeafslutning. API'et videresender linjen som
+SSE-hændelsen `throw`. Sidens simulationsknap sender samme format med headeren
+`X-Probe-Source: simulated`, som giver hændelsen `simulated-throw`. Kun `throw`
+øger sidens fysiske tæller. Prøven skriver ingen spil- eller testdata i databasen.
+
+| HTTP-status | Betydning |
+|---|---|
+| `204` | Beskeden er lagt i den åbne modtagers kø. Visning verificeres i browseren. |
+| `400` / `415` | Ugyldig linje eller kilde / forkert medietype. |
+| `409` | POST mangler en aktiv modtager, eller en anden forbindelse lytter allerede på ID'et. |
+| `503` | Modtagerens kø er fuld, eller alle testforbindelser er optaget. |
+| `404` | Prøvens ruter er utilgængelige i Production. |
+
+Se [hardwareprøven](../Arduino/README.md) for opsætning og godkendelseskriterier.
+
 ## Åbne spørgsmål
 
 1. **Antiforgery (Frederik @Juuul999, S2.13):** Hvordan henter Blazor og spillet tokenet, og hvilken header sendes det i?
