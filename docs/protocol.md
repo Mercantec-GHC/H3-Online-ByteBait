@@ -46,7 +46,8 @@ Brug af `LED`:
 - Svar højst én gang pr. sekund med `ERR:<kode>`: `UNKNOWN`, `ARGS`, `RANGE`, `TOOLONG`.
 - Over 32 tegn: kassér resten af linjen, send `ERR:TOOLONG`.
 - Dårlig input må aldrig få programmet til at crashe eller hænge.
-- Spillet sender `PING` hvert 5. sek. Intet `PONG` i 15 sek. betyder, at forbindelsen er tabt, og der prøves igen.
+- Spillet sender `PING` hvert femte sekund. Hvis spillet ikke har modtaget et matchende `PONG` i 15 sekunder, er forbindelsen tabt.
+- Ved USB-timeout frigiver spillet porten og viser `USB connection lost. No reply for 15 seconds.` Spilleren vælger **Connect USB** for at oprette en ny forbindelse.
 
 ## 5. Forsinkelse
 

@@ -169,8 +169,8 @@ zone, UTC trigger time, missing history, fractional latency at the 500 ms limit,
 order of throws and replies in a single delivery.
 LED tests check both sweeps, pause, tab visibility, unplugging, navigation and reconnecting
 mid-sweep. A simulated slow port checks that old colors are dropped and casts still arrive.
-It also runs the existing animation foundation tests. The original square demo and its
-verification record are documented in the [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBait/blob/9387ca0ba1fd2f6276a42b8521d9fd6aa212f69a/Frontend/README.md).
+
+The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBait/blob/9387ca0ba1fd2f6276a42b8521d9fd6aa212f69a/Frontend/README.md) documents the original square demo and its test results.
 
 ## Browser checks
 
