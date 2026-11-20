@@ -48,7 +48,7 @@ void throwUpdate() {
       if (now - stateStart >= WINDOW_MS) {
         protocolSendThrow(strengthFromPeak(peak));
         state = LOCKOUT;
-        stateStart = now;
+        stateStart = millis();  // Start the quiet period after any network wait.
       }
       break;
 

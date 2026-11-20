@@ -3,8 +3,8 @@
 
 // Line format and messages, see docs/protocol.md.
 
-void protocolPoll();                  // call in loop(): reads and handles messages from the game
-void protocolSendHello();             // HELLO:USB:1
+void protocolBegin();                 // announce USB or connect the optional HTTPS throw probe
+void protocolPoll();                  // read game commands in USB mode
 void protocolSendThrow(int strength); // THROW:<0-100>
 void protocolSendHook();              // HOOK            (#17)
 void protocolSendTilt(char dir);      // TILT:L / TILT:R (#17)

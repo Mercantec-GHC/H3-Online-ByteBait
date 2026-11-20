@@ -27,7 +27,7 @@ void setup() {
   hwBegin();
   calibrationRun();                           // TODO(#18): empty for now
   // linkBegin();                             // TODO(#38): enable when protocol.cpp uses link* (move Serial.begin here)
-  if (!PLOT_MODE) protocolSendHello();
+  if (!PLOT_MODE) protocolBegin();
 }
 
 void loop() {

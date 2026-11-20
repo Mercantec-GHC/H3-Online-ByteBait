@@ -138,7 +138,11 @@ jobs:
           # Compile the default USB sketch and the opt-in WiFi transport with dummy settings.
           mkdir -p Arduino/ci-wifi
           cp -R Arduino/bytebait Arduino/ci-wifi/bytebait
-          sed -i 's/^#define WIFI_THROW_PROBE 0/#define WIFI_THROW_PROBE 1/' Arduino/ci-wifi/bytebait/arduino_secrets.h
+          # Give the compiler a usable dummy configuration so it retains the HTTPS send path.
+          sed -i -e 's/^#define WIFI_THROW_PROBE 0/#define WIFI_THROW_PROBE 1/' \
+                 -e 's/^#define SECRET_SSID ""/#define SECRET_SSID "ci-only"/' \
+                 -e 's/^#define SECRET_PROBE_ID ""/#define SECRET_PROBE_ID "00000000-0000-0000-0000-000000000001"/' \
+                 Arduino/ci-wifi/bytebait/arduino_secrets.h
 
       - uses: arduino/compile-sketches@v1
         if: steps.find.outputs.found == 'true'
@@ -146,7 +150,23 @@ jobs:
           fqbn: arduino:samd:mkrwifi1010
           sketch-paths: |
             - Arduino
+          cli-compile-flags: |
+            - --export-binaries
           libraries: |
             - name: Arduino_MKRIoTCarrier
             - name: WiFiNINA
             - name: ArduinoHttpClient
+
+      - name: Verify the WiFi throw probe is linked only into the opt-in firmware
+        if: steps.find.outputs.found == 'true'
+        run: |
+          binary=build/arduino.samd.mkrwifi1010/bytebait.ino.bin
+          usb="Arduino/bytebait/$binary"
+          wifi="Arduino/ci-wifi/bytebait/$binary"
+          test -s "$usb"
+          test -s "$wifi"
+          if grep -aFq '/api/test/wifi-throw/' "$usb"; then
+            echo "::error::The USB firmware contains the WiFi probe endpoint."
+            exit 1
+          fi
+          grep -aFq '/api/test/wifi-throw/' "$wifi" || { echo "::error::The WiFi probe endpoint is missing."; exit 1; }

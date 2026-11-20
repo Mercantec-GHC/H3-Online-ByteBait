@@ -46,6 +46,10 @@ Round ended. Reset to repeat.
 
 ## Ét fysisk kast over WiFi til browseren (4.4b)
 
+Spillets modulære sketch bruger USB som standard, også uden `arduino_secrets.h`.
+I USB-tilstand svarer den på `PING` og `LED` og sender kast via Serial. I WiFi-prøven
+bruges Serial Monitor som log, og hvert fysisk kast sendes én gang til den åbne testfane.
+
 1. Åbn [WiFi throw test på Test-ByteBait](https://bytebait-test.mercantec.tech/api/test/wifi-throw).
    Vent på **Ready**. Klik **Send simulated throw**. Siden skal vise
    **Simulated · THROW:72** og **Physical throws: 0**.

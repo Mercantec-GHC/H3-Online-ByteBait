@@ -1,6 +1,17 @@
+// Routes controller messages over USB or the optional Sprint 1 WiFi throw probe.
 #include "protocol.h"
 #include "config.h"
 #include "leds.h"
+
+#if __has_include("arduino_secrets.h")
+#include "arduino_secrets.h"
+#endif
+#ifndef WIFI_THROW_PROBE
+#define WIFI_THROW_PROBE 0
+#endif
+#if WIFI_THROW_PROBE
+#include "wifi_throw_probe.h"
+#endif
 
 static char    buf[MAX_LINE + 1];
 static uint8_t len = 0;
@@ -32,6 +43,7 @@ static void handleLine(char* line) {
 }
 
 void protocolPoll() {
+  if (WIFI_THROW_PROBE) return;  // In probe mode Serial is only a diagnostic output.
   while (Serial.available()) {
     char c = Serial.read();
     if (c == '\r') continue;
@@ -46,13 +58,22 @@ void protocolPoll() {
   }
 }
 
-void protocolSendHello() {
+void protocolBegin() {
+#if WIFI_THROW_PROBE
+  WifiThrowProbe::begin();
+#else
   Serial.println("HELLO:USB:1");
+#endif
 }
 
 void protocolSendThrow(int strength) {
+  strength = constrain(strength, 0, 100);
+#if WIFI_THROW_PROBE
+  WifiThrowProbe::send(strength);
+#else
   Serial.print("THROW:");
-  Serial.println(constrain(strength, 0, 100));
+  Serial.println(strength);
+#endif
 }
 
 // ---------- New messages from the Oplà to the game (#17) ----------

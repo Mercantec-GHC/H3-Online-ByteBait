@@ -56,6 +56,10 @@ Brug af `LED`:
 
 ## 6. Valg af USB eller WiFi
 
+I sprint 1 bruger spillets sketch USB som standard. Den særskilte [WiFi-prøve](../Arduino/README.md#ét-fysisk-kast-over-wifi-til-browseren-44b) vælges ved at bygge med `WIFI_THROW_PROBE=1`. Den sender ét `THROW` pr. kast over HTTPS til testfanen og bruger Serial til log.
+
+Trinnene nedenfor beskriver det automatiske transportvalg, der er planlagt i #38.
+
 1. Ved opstart venter Oplà'en op til 2 sek. på, at USB-porten åbnes (`Serial`).
 2. Åbnes den, bruges USB. Ellers bruges WiFi.
 3. Hold touch-knap 0 nede ved opstart for at tvinge WiFi.
