@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/Backend/">
+    <Project Path="Backend/ByteBait.Api.Tests/ByteBait.Api.Tests.csproj" />
+    <Project Path="Backend/ByteBait.Api/ByteBait.Api.csproj" />
+    <Project Path="Backend/ByteBait.Data.Tests/ByteBait.Data.Tests.csproj" />
+    <Project Path="Backend/ByteBait.Data/ByteBait.Data.csproj" />
+  </Folder>
+  <Folder Name="/Frontend/">
+    <Project Path="Frontend/ByteBait.Client/ByteBait.Client.csproj" />
+  </Folder>
+</Solution>

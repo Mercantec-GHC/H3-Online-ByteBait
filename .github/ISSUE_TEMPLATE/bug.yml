@@ -1,0 +1,40 @@
+name: 🐞 Fejl
+description: Noget virker ikke som forventet
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Område
+      options: [Arduino, Spil (canvas/JS), Frontend (Blazor), Backend/API, Database, Deployment, Andet]
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Hvor skete det?
+      options: [Lokalt, Test-ByteBait (dev), Main-ByteBait (produktion)]
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Oplà-forbindelse
+      options: [USB, WiFi, Ingen Oplà]
+  - type: textarea
+    id: what
+    attributes:
+      label: Hvad skete der?
+      placeholder: Fx "Et yank blev ikke registreret, selvom LED'erne var blå"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Sådan genskabes fejlen
+      placeholder: |
+        1. Vælg bane 1
+        2. Kast i det grønne
+        3. ...
+  - type: textarea
+    id: expected
+    attributes:
+      label: Forventet resultat

@@ -1,0 +1,24 @@
+# Build output from Windows. obj/ has local paths that break the restore in the container
+**/bin/
+**/obj/
+TestResults/
+
+# Secrets never go into the image. Dokploy provides them as environment variables
+.env
+.env.*
+.neon
+**/secrets.json
+**/appsettings.Development.json
+**/appsettings.Local.json
+**/arduino_secrets.h
+
+# Not part of the image
+.git/
+.github/
+.vs/
+.vscode/
+Arduino/
+docs/
+**/node_modules/
+**/*.Tests/
+*.md

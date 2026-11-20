@@ -1,0 +1,12 @@
+@ByteBait.Api_HostAddress = http://localhost:5250
+
+POST {{ByteBait.Api_HostAddress}}/api/casts
+Content-Type: application/json
+
+{
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-17T09:15:30.123Z"
+}
+
+###

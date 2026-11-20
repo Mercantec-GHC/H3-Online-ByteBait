@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Produktbeskrivelse og Definition of Done
+    url: https://github.com/Mercantec-GHC/H3-Online-ByteBait/tree/dev/docs
+    about: Se krav, scope og Definition of Done i docs-mappen

@@ -16,7 +16,8 @@ Afsluttende projekt på H3 – et online retro-fiskespil med Arduino-integration
 - **Spil:** HTML5 `<canvas>` + JavaScript, evt. med [Phaser](https://phaser.io/) til retro-pixelgrafik
 - **Backend:** ASP.NET Core Web API
 - **Database:** [Neon.tech](https://neon.tech/) (serverless PostgreSQL)
-- **Hardware:** Arduino
+- **Hardware:** Arduino Oplà IoT Kit (MKR WiFi 1010) – forbindes over både USB og WiFi
+- **Deployment:** Skolens Dokploy – Test-ByteBait (fra `dev`) og Main-ByteBait (fra `main`), se [Deployment](#deployment-dokploy)
 
 ## Hemmeligheder
 
@@ -28,3 +29,65 @@ Koder, nøgler og connection strings må **aldrig** committes. Følgende er igno
 - Certifikater og nøglefiler (`*.pem`, `*.key`, `*.pfx` …)
 
 Brug i stedet `dotnet user-secrets` eller miljøvariabler lokalt, og del eksempel-filer (fx `.env.example`) uden rigtige værdier.
+
+## Branches og arbejdsgang
+
+- **`dev`** er standard-branch. Alt arbejde kommer ind via pull requests mod `dev`.
+- **`main`** bruges kun til releases. Hver fredag merges `dev` til `main` via en release-PR.
+- Begge branches er beskyttet: ingen direkte push, mindst én godkendelse, og CI skal være grøn.
+
+1. Tag dit næste issue fra det fastgjorte issue **📋 Sprint-board**.
+2. Lav en branch fra `dev`, fx `S1-5-kast-detektion`.
+3. Åbn en PR mod `dev` med `Closes #<nr>` i beskrivelsen.
+4. En anden reviewer, CI bliver grøn, og PR'en merges. Issuet lukkes, og Dokploy deployer Test-ByteBait automatisk.
+
+## Konventioner
+
+| Område | Regel | Eksempel |
+|--------|-------|----------|
+| Sprog | **Kun engelsk** i spillet og koden: brugerflade, fejlbeskeder, cookie-politik og -banner, kode, felter, JSON og URL'er | "Username is already taken", `POST /api/account/register`, `{ "userName": "..." }` |
+| Fejlsvar fra API'et | ASP.NET Core **ProblemDetails** (RFC 9457) med `title`/`detail` på engelsk | `{ "status": 409, "title": "Username is already taken", ... }` |
+| Login | ASP.NET Core Identity med **cookie** (`HttpOnly`, `Secure`, `SameSite=Strict`) – spil og API ligger på samme domæne | – |
+| Bruger-ID | Unikt `Guid` pr. spiller i databasen | – |
+| Cookies | Kun teknisk nødvendige cookies (login, antiforgery). De kræver ikke samtykke, så login virker uden klik på banneret. Et informationsbanner ("Got it") og cookie-politikken på `/cookies` fortæller, hvilke cookies vi bruger ([cookievejledningen](https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/)) | – |
+
+## Deployment (Dokploy)
+
+Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
+
+| App | Branch | Deployes når |
+|-----|--------|--------------|
+| **Test-ByteBait** | `dev` | CI er grøn efter en merge til `dev` (workflow **Deploy test**) |
+| **Main-ByteBait** | `main` | Release-PR'en merges til `main` om fredagen (workflow **Release**) |
+
+- Begge apps bygges fra `Dockerfile` i roden af repoet. API'et serverer også Blazor-filerne, så hver app er én container, der lytter på port 8080.
+- Deploy sker via Dokploys deploy-webhooks, som ligger som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PRO`. Workflowet kalder først webhooket, når CI er grøn, så der kun deployes kode, der har bestået CI. Autodeploy skal være slået til i begge apps, ellers afviser Dokploy webhooket med 400.
+- Dokploy (Traefik) står for HTTPS. Containeren får requesten som HTTP, og API'et læser den oprindelige protokol fra `X-Forwarded-Proto`.
+- Domæner: Test-ByteBait kører på https://bytebait-test.mercantec.tech og Main-ByteBait på https://bytebait.mercantec.tech. Skolen står for HTTPS foran Dokploy (Cloudflare), så HTTPS er slået fra på domænerne i Dokploy.
+- Miljøvariabler sættes i Dokploy under **Environment** – aldrig i repoet:
+  - `ASPNETCORE_ENVIRONMENT` (`Staging` i test, `Production` i produktion)
+  - `ASPNETCORE_URLS=http://+:8080`
+  - `ConnectionStrings__Default` – Neon connection string i Npgsql-formatet `Host=...;Database=bytebait;Username=...;Password=...;SSL Mode=Require` (ikke `postgresql://...`, som Npgsql ikke kan læse). Branch `test` til Test-ByteBait, branch `production` til Main-ByteBait
+  - `Database__MigrateOnStartup=true` – API'et opdaterer databasen med nye migrations, når containeren starter (se [Backend/README.md](Backend/README.md#migrations))
+
+## Sprints og releases
+
+| Sprint | Periode | Release | Mål |
+|--------|---------|---------|-----|
+| 1 – Hele kæden | 16.–20. nov | v0.1.0 | Oplà → browser → backend → Neon, kører på Dokploy |
+| 2 – Spilbar kerne | 23.–27. nov | v0.2.0 | Fang en fisk på bane 1 kun med Oplà'en |
+| 3 – Feature complete | 30. nov – 4. dec | v0.3.0 | Alle skal-krav virker, brugertest. Feature freeze |
+| 4 – Finpudsning | 7.–11. dec | v1.0.0 | Fejlrettelser, balancering, docs og demo |
+
+Hver release har et release-issue med den fælles release-DoD. Planen ligger i `.github/issues.json`.
+
+## GitHub Actions
+
+| Workflow | Hvad den gør |
+|----------|--------------|
+| **CI** | Bygger og tester .NET (mod en PostgreSQL-container, aldrig Neon), bygger Docker-imaget og tjekker, at containeren starter, tjekker JavaScript-syntaks og kompilerer Arduino-sketchen. Kører ved PR og push til `dev` |
+| **Deploy test** | Når CI er grøn på `dev`: kalder Dokploy-webhooket `DOKPLOY_WEBHOOK_TEST`, så Test-ByteBait deployes |
+| **Release** | Ved merge til `main`: CI, tag + GitHub Release ud fra sprint-milestonen og lukker milestonen. Kalder derefter `DOKPLOY_WEBHOOK_PRO`, så Main-ByteBait deployes |
+| **Sync sprint-plan** | Opretter labels, milestones og issues ud fra `.github/issues.json`. Overskriver ikke tekst i eksisterende issues |
+| **Sprint-board** | Opdaterer **📋 Sprint-board** ved ændringer og hver hverdag kl. 07:30 |
+| **PR → issue-status** | En PR med `Closes #12` sætter label `i-gang` på #12 |

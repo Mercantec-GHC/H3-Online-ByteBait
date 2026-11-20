@@ -1,0 +1,34 @@
+name: Deploy test (Dokploy)
+
+# Når CI er grøn på dev, deployes test-miljøet Test-ByteBait på Dokploy.
+# Kræver repository secret DOKPLOY_WEBHOOK_TEST (deploy-webhook-URL fra Dokploy-appen).
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment: test
+    steps:
+      # Dokploy deployer kun, når kaldet ligner et push fra GitHub til den branch, appen bygger fra.
+      # Autodeploy skal være slået til i appen, ellers svarer Dokploy 400.
+      - name: Kald Dokploy-webhook (test)
+        env:
+          HOOK: ${{ secrets.DOKPLOY_WEBHOOK_TEST }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "::warning::DOKPLOY_WEBHOOK_TEST er ikke sat endnu – intet deployet."; exit 0; fi
+          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST "$HOOK" \
+            -H 'Content-Type: application/json' -H 'X-GitHub-Event: push' \
+            -d "{\"ref\":\"refs/heads/$BRANCH\"}")
+          echo "Dokploy svarede $status: $(cat response.txt)"
+          if [ "$status" != "200" ]; then echo "::error::Test-ByteBait blev ikke deployet ($BRANCH)."; exit 1; fi

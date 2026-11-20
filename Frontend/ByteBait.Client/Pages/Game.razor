@@ -1,0 +1,154 @@
+@* Blazor owns the controls and status. JavaScript draws the meter and tracks active time. *@
+@page "/game"
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@inject ILogger<Game> Logger
+
+<PageTitle>Casting meter | ByteBait</PageTitle>
+
+<main class="game-page">
+    <div class="game-content">
+        <header class="game-header">
+            <h1>Casting meter</h1>
+            <a href="/">Back to home</a>
+        </header>
+
+        <p id="meter-description" class="game-description">Follow the black needle. Green in the center, yellow on either side, red at the ends.</p>
+
+        <div class="canvas-frame">
+            <canvas @ref="gameCanvas" id="game-canvas" width="320" height="180" role="img"
+                    aria-label="Casting meter" aria-describedby="meter-description">
+                Your browser does not support the game canvas.
+            </canvas>
+        </div>
+
+        <div class="meter-controls" role="group" aria-label="Casting meter controls">
+            <button type="button" @onclick="() => ControlAsync(true)" disabled="@(!CanStart)">
+                @(state == MeterState.Paused ? "Resume meter" : "Start meter")
+            </button>
+            <button type="button" @onclick="() => ControlAsync(false)" disabled="@(!CanPause)">Pause meter</button>
+        </div>
+        <p role="status">@Status</p>
+        @if (state != MeterState.Loading)
+        {
+            <UsbController MeterCanvas="gameCanvas" MeterModule="module" />
+        }
+    </div>
+</main>
+
+@code {
+    private ElementReference gameCanvas;
+    private IJSObjectReference? module;
+    private Task pendingOperation = Task.CompletedTask;
+    private MeterState state = MeterState.Loading;
+    private bool busy;
+    private bool disposed;
+
+    private enum MeterState { Loading, Ready, Running, Paused, LoadError, ControlError }
+    private bool CanStart => !busy && (state is MeterState.Ready or MeterState.Paused);
+    private bool CanPause => !busy && state == MeterState.Running;
+    private string Status => state switch
+    {
+        MeterState.Loading => "Loading casting meter…",
+        MeterState.Ready => "Meter ready.",
+        MeterState.Running => "Meter running.",
+        MeterState.Paused => "Meter paused.",
+        MeterState.LoadError => "Unable to load the casting meter.",
+        _ => "Unable to control the casting meter."
+    };
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return Task.CompletedTask;
+        }
+
+        pendingOperation = InitializeAsync();
+        return pendingOperation;
+    }
+
+    /// <summary>Imports the module after mount and enables controls once the still frame exists.</summary>
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/timing-meter.js");
+            if (disposed)
+            {
+                return;
+            }
+
+            await module.InvokeVoidAsync("initialize", gameCanvas);
+            if (!disposed)
+            {
+                state = MeterState.Ready;
+            }
+        }
+        catch (JSException exception)
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            Logger.LogError(exception, "Unable to initialize the casting meter.");
+            state = MeterState.LoadError;
+        }
+
+        if (!disposed)
+        {
+            StateHasChanged();
+        }
+    }
+
+    // Guard against a second click before Blazor renders the disabled button.
+    private Task ControlAsync(bool start)
+    {
+        if (disposed || module is null || !(start ? CanStart : CanPause))
+        {
+            return Task.CompletedTask;
+        }
+
+        busy = true;
+        pendingOperation = ApplyCommandAsync(module, start);
+        return pendingOperation;
+    }
+
+    private async Task ApplyCommandAsync(IJSObjectReference meterModule, bool start)
+    {
+        try
+        {
+            await meterModule.InvokeVoidAsync(start ? "start" : "stop", gameCanvas);
+            if (!disposed)
+            {
+                state = start ? MeterState.Running : MeterState.Paused;
+            }
+        }
+        catch (JSException exception)
+        {
+            if (disposed)
+            {
+                return;
+            }
+
+            Logger.LogError(exception, "Unable to control the casting meter.");
+            state = MeterState.ControlError;
+        }
+        finally
+        {
+            busy = false;
+        }
+    }
+
+    /// <summary>Lets any pending interop finish before releasing the page's module reference.</summary>
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        await pendingOperation;
+        if (module is not null)
+        {
+            await module.DisposeAsync();
+        }
+    }
+}

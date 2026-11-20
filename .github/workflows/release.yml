@@ -1,0 +1,64 @@
+name: Release
+
+# Kører når release-PR'en fra dev merges til main (fredag).
+# 1) CI køres igen  2) version læses fra den aktuelle sprint-milestone, fx "Sprint 1 – Hele kæden (v0.1.0)"
+# 3) tag + GitHub Release med release notes  4) milestone lukkes  5) produktion (Main-ByteBait) deployes.
+# Kræver repository secret DOKPLOY_WEBHOOK_PRO.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (fx v0.1.0) – tom = læs fra sprint-milestone'
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    outputs:
+      created: ${{ steps.rel.outputs.created }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+
+      - id: rel
+        uses: actions/github-script@v7
+        env:
+          VERSION: ${{ inputs.version }}
+        with:
+          script: |
+            const run = require('./.github/scripts/release.js');
+            await run({ github, context, core });
+
+  deploy:
+    needs: release
+    if: needs.release.outputs.created == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      # Samme kald som i deploy-test.yml: Dokploy kræver et GitHub-push til main og Autodeploy slået til
+      - name: Kald Dokploy-webhook (produktion)
+        env:
+          HOOK: ${{ secrets.DOKPLOY_WEBHOOK_PRO }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "::warning::DOKPLOY_WEBHOOK_PRO er ikke sat endnu – intet deployet."; exit 0; fi
+          status=$(curl -sS -o response.txt -w '%{http_code}' -X POST "$HOOK" \
+            -H 'Content-Type: application/json' -H 'X-GitHub-Event: push' \
+            -d '{"ref":"refs/heads/main"}')
+          echo "Dokploy svarede $status: $(cat response.txt)"
+          if [ "$status" != "200" ]; then echo "::error::Main-ByteBait blev ikke deployet."; exit 1; fi

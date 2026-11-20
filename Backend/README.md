@@ -1,5 +1,110 @@
 # Backend
 
-ASP.NET Core Web API. Forbinder til Neon.tech (PostgreSQL).
+ASP.NET Core Web API. Forbinder til Neon.tech (PostgreSQL) via Entity Framework Core og Npgsql.
 
 Connection string gemmes med `dotnet user-secrets` eller som miljøvariabel – aldrig i `appsettings.json`.
+
+## Projekter
+
+| Projekt | Indhold |
+|---------|---------|
+| `ByteBait.Api` | ASP.NET Core Web API med controllers (endpoints efter `docs/api-contract.md`) |
+| `ByteBait.Api.Tests` | Tests af endpoints med `WebApplicationFactory` |
+| `ByteBait.Data` | DbContext, entiteter, EF-konfiguration og migrations |
+| `ByteBait.Data.Tests` | Tests af datamodellen og databasen |
+
+API-projektet refererer til `ByteBait.Data` og tilføjer databasen i `Program.cs`:
+
+```csharp
+builder.Services.AddByteBaitData(builder.Configuration);
+```
+
+Start API'et lokalt (bruger connection string fra user-secrets, se "Kom i gang lokalt"):
+
+```bash
+dotnet run --project Backend/ByteBait.Api
+```
+
+API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på http://localhost:5250/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
+
+Det samme image, som Dokploy bygger, kan bygges lokalt fra roden af repoet (kræver Docker):
+
+```bash
+docker build -t bytebait .
+docker run -p 8080:8080 -e ConnectionStrings__Default="<connection string>" bytebait
+```
+
+`Backend/ByteBait.Api/ByteBait.Api.http` har et eksempel på `POST /api/casts`, som kan sendes direkte fra VS Code eller Visual Studio.
+
+## Neon
+
+Neon-projektet hedder `ByteBait` (PostgreSQL 16, Frankfurt). Databasen hedder `bytebait`, og der er en branch pr. miljø:
+
+| Neon-branch | Bruges af | Connection string ligger i |
+|-------------|-----------|----------------------------|
+| `production` | Main-ByteBait | Dokploy, miljøvariablen `ConnectionStrings__Default` |
+| `test` | Test-ByteBait | Dokploy, miljøvariablen `ConnectionStrings__Default` |
+| `dev` | Lokal udvikling | `dotnet user-secrets` på din egen maskine |
+
+CI kører mod en PostgreSQL 16-container og bruger ikke Neon.
+
+Brug den pooled forbindelse fra Neon (værtsnavnet indeholder `-pooler`). Npgsql forstår ikke `postgresql://`-formatet, så den skal skrives sådan her:
+
+```text
+Host=<endpoint>-pooler.<region>.aws.neon.tech;Database=bytebait;Username=<bruger>;Password=<kode>;SSL Mode=Require
+```
+
+## Kom i gang lokalt
+
+Fra roden af repoet:
+
+```bash
+# Installerer dotnet-ef i den version, der står i dotnet-tools.json
+dotnet tool restore
+
+# Gem connection string til Neon-branchen dev
+dotnet user-secrets set "ConnectionStrings:Default" "<connection string>" -p Backend/ByteBait.Data
+
+# Opret tabellerne
+dotnet ef database update -p Backend/ByteBait.Data
+```
+
+Alle projekter i `Backend/` bruger samme `UserSecretsId` (se `Backend/Directory.Build.props`), så du kun skal sætte connection string én gang.
+
+## Migrations
+
+```bash
+# Ny migration efter en ændring i en entitet
+dotnet ef migrations add <Navn> -p Backend/ByteBait.Data -o Migrations
+
+# Se SQL'en, før den køres mod Neon
+dotnet ef migrations script --idempotent -p Backend/ByteBait.Data
+```
+
+Glemmer man at lave en migration, fejler testen `Model_has_no_changes_missing_a_migration` i CI.
+
+### På Test-ByteBait og Main-ByteBait
+
+Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=true` sat, så `DatabaseMigrator` kører de manglende migrations, når containeren starter, og før API'et tager imod requests. En merge til `dev` opdaterer derfor også tabellerne på Neon-branchen `test`, og en release opdaterer `production`.
+
+- Det kan lade sig gøre, fordi hvert miljø kun kører én container, så to containere aldrig migrerer samme database på én gang.
+- Fejler en migration, starter containeren ikke, og fejlen står i loggen i Dokploy.
+- Indstillingen er slået fra som standard, så tests og `dotnet run` aldrig ændrer en database af sig selv.
+- Migrations skal kunne køre på en database, der allerede har data. Er man i tvivl, så prøv dem først på Neon-branchen `dev`, og læs SQL'en med `dotnet ef migrations script --idempotent`.
+
+## Konventioner i databasen
+
+Alle tabeller, relationer og beslutninger bag dem står i [docs/data-model.md](../docs/data-model.md) med ER-diagram.
+
+- Tabeller og kolonner er i snake_case (fx `casts.cast_at`), så man ikke skal bruge anførselstegn i SQL
+- Tidspunkter gemmes i UTC (`timestamp with time zone`)
+- Enums gemmes som tekst med små bogstaver, fx `zone = 'green'`
+- CHECK-constraints i databasen afviser ugyldige værdier, fx `strength` uden for 0 til 1
+
+## Tests
+
+```bash
+dotnet test
+```
+
+Databasetestene kører kun, hvis miljøvariablen `ConnectionStrings__Default` er sat. Det er den i CI. Testene læser ikke user-secrets, så de kan ikke komme til at skrive i Neon.

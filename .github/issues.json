@@ -1,0 +1,1183 @@
+{
+  "people": {
+    "Bjarke": "Bmantaz",
+    "Andreas": "Zikka1987",
+    "Frederik": "Juuul999",
+    "Abdi": "AssisDk"
+  },
+  "labels": [
+    {
+      "name": "sprint-task",
+      "color": "0052CC",
+      "description": "Opgave i en sprint"
+    },
+    {
+      "name": "release",
+      "color": "0E8A16",
+      "description": "Fredags-release med release-DoD"
+    },
+    {
+      "name": "epic",
+      "color": "3E4B9E",
+      "description": "Projekt-DoD-krav – lukkes når sprint-opgaverne er færdige"
+    },
+    {
+      "name": "spike",
+      "color": "D93F0B",
+      "description": "Undersøg et usikkert punkt"
+    },
+    {
+      "name": "bug",
+      "color": "B60205",
+      "description": "Fejl"
+    },
+    {
+      "name": "user-test",
+      "color": "E99695",
+      "description": "Fund fra brugertest"
+    },
+    {
+      "name": "arduino",
+      "color": "00979D",
+      "description": "Arduino Oplà / sketch"
+    },
+    {
+      "name": "communication",
+      "color": "BFD4F2",
+      "description": "Protokol Oplà ⇄ spil (USB og WiFi)"
+    },
+    {
+      "name": "game",
+      "color": "F9A03F",
+      "description": "JavaScript-canvas og spil-loop"
+    },
+    {
+      "name": "frontend",
+      "color": "1D76DB",
+      "description": "Blazor-sider"
+    },
+    {
+      "name": "backend",
+      "color": "5319E7",
+      "description": "ASP.NET Core API og spillogik"
+    },
+    {
+      "name": "database",
+      "color": "006B75",
+      "description": "Neon, EF Core og migrations"
+    },
+    {
+      "name": "docs",
+      "color": "C5DEF5",
+      "description": "README, protokol, API-kontrakt"
+    },
+    {
+      "name": "test",
+      "color": "F9D0C4",
+      "description": "Tests og integrationstest"
+    },
+    {
+      "name": "ci",
+      "color": "5A5A5A",
+      "description": "GitHub Actions og deployment"
+    },
+    {
+      "name": "backlog",
+      "color": "EDEDED",
+      "description": "Bør/kan – kun ved overskud"
+    },
+    {
+      "name": "i-gang",
+      "color": "FBCA04",
+      "description": "Sættes automatisk når en PR linker til issuet"
+    },
+    {
+      "name": "blokeret",
+      "color": "D73A4A",
+      "description": "Venter på en anden opgave eller beslutning"
+    }
+  ],
+  "milestones": [
+    {
+      "title": "Sprint 1 – Hele kæden (v0.1.0)",
+      "due_on": "2026-11-20T12:00:00Z",
+      "description": "Man 16. – fre 20. nov. Hele kæden virker: Oplà registrerer et kast, browseren aflæser zonen, backend gemmer i Neon, og spillet kører på Dokploy."
+    },
+    {
+      "title": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "due_on": "2026-11-27T12:00:00Z",
+      "description": "Man 23. – fre 27. nov. Fang en fisk på bane 1 kun med Oplà'en: kast, krogning og fight. Fisken vælges på serveren."
+    },
+    {
+      "title": "Sprint 3 – Feature complete (v0.3.0)",
+      "due_on": "2026-12-04T12:00:00Z",
+      "description": "Man 30. nov – fre 4. dec. Alle skal-krav virker, USB og WiFi, brugertest torsdag. Feature freeze."
+    },
+    {
+      "title": "Sprint 4 – Finpudsning (v1.0.0)",
+      "due_on": "2026-12-11T12:00:00Z",
+      "description": "Man 7. – fre 11. dec. Ingen nye features: fejl fra brugertest, balancering, polish, docs og demo."
+    },
+    {
+      "title": "Projekt-DoD",
+      "description": "De 10 skal-krav. Overblik – arbejdet sker i sprint-opgaverne."
+    },
+    {
+      "title": "Backlog (bør/kan)",
+      "description": "Nice to have – tages kun hvis en sprint bliver færdig før tid."
+    }
+  ],
+  "issues": [
+    {
+      "key": "S1.1",
+      "title": "[S1.1] Opsæt GitHub: dev, branch-regler, labels, milestones, issues, skabeloner",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "ci",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.1 -->\n<!-- due: 2026-11-16 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** man 16/11\n\n**Bidrager til:** {{DOD10}}\n\n## Mål\nRepoet er klar til arbejdet: dev er standard-branch, main bruges kun til releases, og alle opgaver ligger som issues.\n\n## Opgaver\n- [ ] Opret `dev` og gør den til standard-branch\n- [ ] Branch-regler på `dev` og `main`: kun via PR, 1 godkendelse, CI grøn\n- [ ] Labels, milestones og issues via workflowet Sync sprint-plan\n- [ ] Issue- og PR-skabeloner\n- [ ] Slå secret scanning og push protection til\n- [ ] Alle fire har accepteret invitationen til repoet\n\n## Færdig når\nAlle issues findes med ansvarlige, og en test-PR mod `dev` kræver review og grøn CI.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.2",
+      "title": "[S1.2] API-kontrakt i docs/api-contract.md",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "backend",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.2 -->\n<!-- due: 2026-11-17 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** tir 17/11\n\n**Bidrager til:** {{DOD9}}\n\n## Mål\nAlle ved, hvordan spil, Blazor-sider og backend taler sammen, så vi kan bygge parallelt fra dag 1.\n\n## Opgaver\n- [ ] Endpoints til sprint 1: gem et kast (zone, styrke, tidspunkt)\n- [ ] Skitse af endpoints til sprint 2–3: start niveau, gem fangst, hub, akvarium, admin\n- [ ] JSON-format og fejlsvar\n- [ ] Godkendelse fra Andreas, Frederik og Abdi i PR'en\n\n## Færdig når\n`docs/api-contract.md` er merget til `dev` og godkendt af hele gruppen.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.3",
+      "title": "[S1.3] Beskedprotokol Oplà ⇄ spil i docs/protocol.md (ens for USB og WiFi)",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "communication",
+        "arduino",
+        "docs"
+      ],
+      "assignees": [
+        "Abdi",
+        "Andreas"
+      ],
+      "body": "<!-- key: S1.3 -->\n<!-- due: 2026-11-17 -->\n\n**Ansvarlig:** Abdi (med Andreas)\n**Deadline:** tir 17/11\n\n**Bidrager til:** {{DOD9}}\n\n## Mål\nOplà'en og spillet bruger de samme beskeder, uanset om forbindelsen er USB eller WiFi.\n\n## Opgaver\n- [ ] Beskeder Oplà → spil: kast (styrke), ryk, vip venstre/højre, hold stille, yank\n- [ ] Beskeder spil → Oplà: LED-farve/zone, blå (yank), grøn (fanget), buzzer (mistet)\n- [ ] Linjeformat, maks. længde og håndtering af ugyldige beskeder\n- [ ] Hvordan Oplà'en vælger USB eller WiFi\n- [ ] Godkendelse fra Andreas\n\n## Færdig når\n`docs/protocol.md` er merget til `dev` og godkendt af Andreas.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.4",
+      "title": "[S1.4] Spike: USB via Web Serial, WiFi til Dokploy (HTTPS) og forsinkelse",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "spike",
+        "communication"
+      ],
+      "assignees": [
+        "Abdi",
+        "Andreas"
+      ],
+      "body": "<!-- key: S1.4 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Abdi (med Andreas)\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.3}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nFind ud af, hvordan Oplà'en bedst forbindes over USB og WiFi, før vi bygger videre på det.\n\n## Opgaver\n- [ ] USB: Oplà'en sender linjer til browseren via Web Serial (Chrome/Edge)\n- [ ] WiFi: Oplà'en kan nå Test-ByteBait på Dokploy over HTTPS med WiFiNINA (root-certifikat uploadet til NINA-modulet)\n- [ ] Mål forsinkelsen fra bevægelse til besked i browseren for USB og WiFi\n- [ ] Skriv resultat og anbefaling i dette issue og i `docs/protocol.md`\n\n## Færdig når\nResultatet står i issuet, og gruppen har valgt fremgangsmåde for både USB og WiFi.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.5",
+      "title": "[S1.5] Arduino: genkend kast og kastets styrke, send kast-besked over USB",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S1.5 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.3}}\n**Bidrager til:** {{DOD1}}\n\n## Mål\nÉt kast med Oplà'en giver præcis én kast-besked med styrke.\n\n## Opgaver\n- [ ] Læs accelerometer og log data i Serial Plotter\n- [ ] Tærskel og pause mellem kast\n- [ ] Blødt/hårdt kast → styrke\n- [ ] Send kast-beskeden fra protokollen\n- [ ] `Arduino/<sketch>/arduino_secrets.example.h` uden rigtige koder (bruges af CI)\n- [ ] Test: 10 kast = 10 beskeder\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.6",
+      "title": "[S1.6] Arduino: de 5 LED'er viser zonens farve",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S1.6 -->\n<!-- due: 2026-11-19 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** tor 19/11\n\n**Afhænger af:** {{S1.5}}\n**Bidrager til:** {{DOD1}}\n\n## Mål\nSpilleren kan mærke rytmen i timingmåleren på Oplà'en.\n\n## Opgaver\n- [ ] Modtag zone-besked fra spillet\n- [ ] LED'er lyser grønt, gult eller rødt som zonen\n- [ ] Test sammen med Andreas' timingmåler\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.7",
+      "title": "[S1.7] Blazor WebAssembly-projekt med spilside, canvas og JS interop",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S1.7 -->\n<!-- due: 2026-11-17 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** tir 17/11\n\n**Bidrager til:** {{DOD9}}\n\n## Mål\nFundamentet til spillet: en Blazor-side med et canvas, som JavaScript styrer.\n\n## Opgaver\n- [ ] Opret Blazor WebAssembly-projekt i `Frontend/`\n- [ ] Spilside med `<canvas>` og JS-modul til spil-loopet\n- [ ] JS interop begge veje (fx resultat af kast → Blazor → API)\n- [ ] Tom side bygger i CI\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.8",
+      "title": "[S1.8] Timingmåler: bue, sort nål og aflæsning af zone med 0,5 s historik",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S1.8 -->\n<!-- due: 2026-11-19 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** tor 19/11\n\n**Afhænger af:** {{S1.7}}, {{S1.4}}\n**Bidrager til:** {{DOD1}}\n\n## Mål\nKastets kvalitet aflæses korrekt, selvom beskeden fra Oplà'en kommer lidt forsinket.\n\n## Opgaver\n- [ ] Bue med grøn midte, gule sider og røde ender\n- [ ] Sort nål frem og tilbage\n- [ ] Gem nålens position 0,5 s tilbage og aflæs zonen på kastets tidspunkt\n- [ ] Send zone til Oplà'en (LED) og kast-resultat til backend\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.9",
+      "title": "[S1.9] ASP.NET Core API, der også serverer Blazor, med endpoint til at gemme et kast",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "backend"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.9 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.2}}, {{S1.10}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nBackend kører og kan gemme et kast i Neon. Samme app serverer Blazor-filerne, så hvert miljø er én container.\n\n## Opgaver\n- [ ] Opret ASP.NET Core Web API i `Backend/` + solution-fil i roden\n- [ ] Host Blazor WebAssembly fra API'et\n- [ ] Endpoint til at gemme et kast efter API-kontrakten\n- [ ] Tests af endpointet (kører mod PostgreSQL i CI)\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.10",
+      "title": "[S1.10] Neon-projekt med branches til test og produktion, EF Core + Npgsql, første migration",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "database"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S1.10 -->\n<!-- due: 2026-11-17 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tir 17/11\n\n**Bidrager til:** {{DOD9}}\n\n## Mål\nDatabasen er klar, og ingen connection string ligger i repoet.\n\n## Opgaver\n- [ ] Opret Neon-projekt med branch til test og produktion\n- [ ] EF Core + Npgsql, DbContext og første migration (kast)\n- [ ] Connection string i `dotnet user-secrets` lokalt\n- [ ] Beskriv opsætningen i README\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.11",
+      "title": "[S1.11] Datamodel: spiller, fangst, fiskeart, bane, niveau, udstyr",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "database",
+        "docs"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S1.11 -->\n<!-- due: 2026-11-19 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tor 19/11\n\n**Afhænger af:** {{S1.10}}\n**Bidrager til:** {{DOD7}}, {{DOD8}}\n\n## Mål\nHele datamodellen er tegnet, så alle bygger mod de samme tabeller.\n\n## Opgaver\n- [ ] Spiller med unikt bruger-ID (Guid) som primærnøgle og unikt brugernavn – kobles til ASP.NET Core Identity\n- [ ] Entiteter: spiller, fangst, fiskeart, bane, niveau (2 pr. bane, krav 10/15/20/25 fisk), udstyr (stang, madding, line)\n- [ ] Fangstchancer og multiplikatorer som data\n- [ ] ER-diagram i `docs/`\n- [ ] Review fra Bjarke\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.12",
+      "title": "[S1.12] CI-workflow: byg backend, frontend og Arduino-sketch",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "ci"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.12 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.7}}, {{S1.9}}\n**Bidrager til:** {{DOD10}}\n\n## Mål\nHver PR bygges og testes automatisk.\n\n## Opgaver\n- [ ] CI bygger og tester .NET-solution (PostgreSQL-container, ikke Neon)\n- [ ] Tjekker JavaScript-syntaks\n- [ ] Kompilerer Arduino-sketchen med dummy `arduino_secrets.h`\n- [ ] CI er krævet tjek på `dev` og `main`\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.13",
+      "title": "[S1.13] Deployment: Dockerfile og to apps i Dokploy (Test-ByteBait og Main-ByteBait)",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "ci",
+        "backend"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.13 -->\n<!-- due: 2026-11-18 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 18/11\n\n**Afhænger af:** {{S1.9}}, {{S1.10}}, {{S1.12}}\n**Bidrager til:** {{DOD9}}, {{DOD10}}\n\n## Mål\nSpillet kører online fra onsdag, så alle kan se den seneste udgave af dev.\n\n## Opgaver\n- [ ] Dockerfile til API + Blazor (én container)\n- [ ] App Test-ByteBait i Dokploy fra `dev` og Main-ByteBait fra `main`\n- [ ] Neon connection string som miljøvariabel i hver app\n- [ ] Deploy-webhooks som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PRO`\n- [ ] Domæner sat op og noteret i README\n\n## Færdig når\nTest-ByteBait opdateres automatisk ved merge til `dev`, og Main-ByteBait kan deployes fra `main`.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.14",
+      "title": "[S1.14] Opdatér de to Word-filer i docs/",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S1.14 -->\n<!-- due: 2026-11-16 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** man 16/11\n\n**Bidrager til:** {{DOD10}}\n\n## Mål\nProdukt- og projektbeskrivelsen passer til beslutningerne.\n\n## Opgaver\n- [ ] Neon.tech i stedet for SQL Server/SQLite\n- [ ] Oplà'en over både USB og WiFi\n- [ ] 2 niveauer pr. bane og 10/15/20/25 fisk\n- [ ] Udstyr: stang, madding, line\n- [ ] Navigation med tastatur og mus\n- [ ] `dev`/`main` og Dokploy\n\n## Færdig når\nDe opdaterede Word-filer ligger i `docs/` på `dev`.",
+      "managed": "create"
+    },
+    {
+      "key": "S1.15",
+      "title": "[S1.15] Integrationstest i Test-ByteBait: kast på Oplà → zone i browser → gemt i Neon",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "sprint-task",
+        "test"
+      ],
+      "assignees": [
+        "Andreas",
+        "Bjarke",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: S1.15 -->\n<!-- due: 2026-11-20 -->\n\n**Ansvarlig:** Andreas (med Bjarke, Frederik, Abdi)\n**Deadline:** fre 20/11\n\n**Afhænger af:** {{S1.5}}, {{S1.6}}, {{S1.8}}, {{S1.9}}, {{S1.13}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nHele kæden virker fredag – den største risiko er væk.\n\n## Opgaver\n- [ ] Kast med Oplà'en over USB\n- [ ] Browseren aflæser zonen, LED'erne følger\n- [ ] Kastet gemmes i Neon og kan ses i databasen\n- [ ] Notér fejl som issues (skabelonen Fejl)\n\n## Færdig når\nHele gruppen har set kæden virke i Test-ByteBait, og fundne fejl er oprettet som issues.",
+      "managed": "create"
+    },
+    {
+      "key": "R1",
+      "title": "[R1] Release v0.1.0",
+      "milestone": "Sprint 1 – Hele kæden (v0.1.0)",
+      "labels": [
+        "release"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Andreas",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: R1 -->\n<!-- due: 2026-11-20 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** fre 20/11\n\n**Afhænger af:** {{S1.1}}, {{S1.2}}, {{S1.3}}, {{S1.4}}, {{S1.5}}, {{S1.6}}, {{S1.7}}, {{S1.8}}, {{S1.9}}, {{S1.10}}, {{S1.11}}, {{S1.12}}, {{S1.13}}, {{S1.14}}, {{S1.15}}\n\n## Releasemål\nHele kæden virker: Oplà registrerer et kast, browseren aflæser timingmålerens zone, backend gemmer resultatet i Neon, og spillet kører i Test-ByteBait og Main-ByteBait.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v0.1.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
+      "managed": "create"
+    },
+    {
+      "key": "S2.1",
+      "title": "[S2.1] Arduino: genkend ryk, vip til siderne, hold stille og yank",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S2.1 -->\n<!-- due: 2026-11-24 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** tir 24/11\n\n**Afhænger af:** {{S1.5}}\n**Bidrager til:** {{DOD2}}, {{DOD3}}\n\n## Mål\nAlle bevægelser til krogning og fight registreres pålideligt.\n\n## Opgaver\n- [ ] Ryk opad (krog)\n- [ ] Vip/træk til venstre og højre\n- [ ] Hold stille (giv line)\n- [ ] Yank (hurtigt træk opad)\n- [ ] Send beskederne fra protokollen\n- [ ] Test hver bevægelse 10 gange\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.2",
+      "title": "[S2.2] Arduino: kalibrering, så bevægelser virker ens for alle",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S2.2 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S2.1}}\n**Bidrager til:** {{DOD3}}\n\n## Mål\nSpillet føles ens, uanset hvem der holder Oplà'en.\n\n## Opgaver\n- [ ] Kalibrering ved start (hvileposition)\n- [ ] Justerbare tærskler\n- [ ] Test med alle fire i gruppen\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.3",
+      "title": "[S2.3] Arduino: LED'er blå/grøn under fight og buzzer ved mistet fisk",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S2.3 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.1}}\n**Bidrager til:** {{DOD3}}\n\n## Mål\nSpilleren får feedback i hånden under fighten.\n\n## Opgaver\n- [ ] Blå LED'er når man må yanke\n- [ ] Alle LED'er grønne når fisken er fanget\n- [ ] Buzzer \"EEEEEEEUUHH\" når fisken slipper\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.4",
+      "title": "[S2.4] Spil: krogning med nap, bid og flåd",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S2.4 -->\n<!-- due: 2026-11-24 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** tir 24/11\n\n**Afhænger af:** {{S1.8}}\n**Bidrager til:** {{DOD2}}\n\n## Mål\nSpilleren skal vente på det rigtige bid og rykke i tide.\n\n## Opgaver\n- [ ] Flådet dypper ved nap og går helt under ved bid\n- [ ] Ryk ved nap skræmmer fisken\n- [ ] Ryk for sent → fisken er væk\n- [ ] Hent fisken fra backend, når den er kroget\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.5",
+      "title": "[S2.5] Spil: fight med afstand, retningsskift, advarsler og yank",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S2.5 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.4}}, {{S2.1}}\n**Bidrager til:** {{DOD3}}\n\n## Mål\nFighten handler om afstanden til fisken og føles retfærdig.\n\n## Opgaver\n- [ ] Afstand bliver mindre ved rigtige bevægelser og større ved fejl\n- [ ] Tydelig advarsel før retningsskift/flugt (linens vinkel, plask)\n- [ ] Giv line → blå LED'er → yank\n- [ ] Fisk fanget / mistet sendes til Oplà og backend\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.6",
+      "title": "[S2.6] Spil: bane 1 Nordborg Sø i retro-førsteperson",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S2.6 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S1.7}}\n**Bidrager til:** {{DOD4}}\n\n## Mål\nDen første bane ser ud som et retro fiskespil.\n\n## Opgaver\n- [ ] Førstepersonsvisning med hænder og stang\n- [ ] Retro-grafik i lav opløsning\n- [ ] Sø-omgivelser for Nordborg Sø\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.7",
+      "title": "[S2.7] Backend: endpoints til start af niveau og gem fangst",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "backend"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S2.7 -->\n<!-- due: 2026-11-24 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** tir 24/11\n\n**Afhænger af:** {{S1.9}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nSpillet kan starte et niveau og gemme fangster via API'et.\n\n## Opgaver\n- [ ] Start niveau (bane, niveau, spiller)\n- [ ] Gem fangst (art, størrelse, bane, tidspunkt)\n- [ ] Opdatér API-kontrakten\n- [ ] Tests\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.8",
+      "title": "[S2.8] Backend: fangstchancer og kast-multiplikator på serveren + unit tests",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "backend",
+        "test"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S2.8 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S2.7}}, {{S2.10}}\n**Bidrager til:** {{DOD1}}\n\n## Mål\nFisken vælges på serveren, så man ikke kan snyde.\n\n## Opgaver\n- [ ] Chancer for almindelig/sjælden/legendarisk fra databasen\n- [ ] Multiplikator: rød ×0, gul ×1, grøn ×1,5 (kun sjældne)\n- [ ] Almindelig = 100 % minus resten\n- [ ] Unit tests af fordelingen\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.9",
+      "title": "[S2.9] Backend: Open-Meteo-klient med caching pr. by",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "backend"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S2.9 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S1.9}}\n**Bidrager til:** {{DOD5}}\n\n## Mål\nHver bane kender det aktuelle vejr i sin by uden at spamme Open-Meteo.\n\n## Opgaver\n- [ ] Hent vejr for Nordborg, Silkeborg, Ringkøbing og Vejle\n- [ ] Cache pr. by (fx 10 min.)\n- [ ] Endpoint til vejr pr. bane\n- [ ] Fejlhåndtering hvis Open-Meteo ikke svarer\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.10",
+      "title": "[S2.10] Data: startdata med fiskearter til alle fire baner, gem fangster",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "database"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S2.10 -->\n<!-- due: 2026-11-24 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tir 24/11\n\n**Afhænger af:** {{S1.11}}\n**Bidrager til:** {{DOD4}}, {{DOD8}}\n\n## Mål\nDatabasen har fiskearter, baner og niveauer, så spillet kan bruge rigtige data.\n\n## Opgaver\n- [ ] Seed fiskearter pr. bane (gedde, aborre, ørred, laks, skrubbe, hornfisk, torsk, makrel)\n- [ ] Seed baner og niveauer (2 pr. bane, 10/15/20/25 fisk)\n- [ ] Seed udstyr (stang, madding, line)\n- [ ] Tabel til fangster\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.11",
+      "title": "[S2.11] Admin-panel v1: opret, ret og slet fiskearter (API + Blazor)",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "backend"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S2.11 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.10}}\n**Bidrager til:** {{DOD8}}\n\n## Mål\nFiskearter kan vedligeholdes uden at ændre kode.\n\n## Opgaver\n- [ ] CRUD-endpoints for fiskearter\n- [ ] Blazor-side med liste og formular\n- [ ] Validering\n- [ ] Tests\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.12",
+      "title": "[S2.12] Integrationstest: fang en fisk på bane 1 kun med Oplà'en",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "test"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Andreas",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: S2.12 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.3}}, {{S2.5}}, {{S2.6}}, {{S2.8}}, {{S2.14}}, {{S2.15}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nDen spilbare kerne virker hele vejen i Test-ByteBait.\n\n## Opgaver\n- [ ] Log ind med en spillerkonto\n- [ ] Kast → krogning → fight → fisk fanget\n- [ ] Fisken vælges på serveren og gemmes på spillerens konto i Neon\n- [ ] LED'er og buzzer følger\n- [ ] Notér fejl som issues\n\n## Færdig når\nHele gruppen har fanget en fisk på bane 1 i Test-ByteBait, og fundne fejl er oprettet som issues.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.13",
+      "title": "[S2.13] Player accounts: opret konto og login med ASP.NET Core Identity og cookie (API)",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "backend",
+        "database"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke"
+      ],
+      "body": "<!-- key: S2.13 -->\n<!-- due: 2026-11-25 -->\n\n**Ansvarlig:** Frederik (med Bjarke)\n**Deadline:** ons 25/11\n\n**Afhænger af:** {{S1.11}}, {{S1.10}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren opretter en konto med eget navn og password, og hver spiller får et unikt bruger-ID (Guid) i databasen. Login bruger en cookie, fordi spil og API ligger på samme domæne i én container.\n\n## Opgaver\n- [ ] ASP.NET Core Identity med Guid som nøgle, gemt i Neon via EF Core (migration)\n- [ ] Unikt brugernavn – fejl som ProblemDetails, hvis navnet er taget\n- [ ] Password-regler og hashing via Identity (passwords gemmes aldrig i klartekst)\n- [ ] Cookie-login: `HttpOnly`, `Secure`, `SameSite=Strict` – ingen bearer-tokens\n- [ ] Beskyttelse mod CSRF på endpoints, der ændrer data (antiforgery)\n- [ ] Endpoints (engelske navne): `POST /api/account/register`, `POST /api/account/login`, `POST /api/account/logout`, `GET /api/account/me`\n- [ ] Alle fejlsvar som ProblemDetails (RFC 9457) – al tekst på engelsk\n- [ ] Rollen `admin` oprettes (startdata)\n- [ ] Fangster, penge og akvarium kobles til spillerens ID\n- [ ] Opdatér API-kontrakten\n- [ ] Tests: opret, dublet-navn, forkert password, log ud, uden login → 401\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.14",
+      "title": "[S2.14] Player accounts: Blazor-sider til opret konto/login + admin-rolle på admin-panelet",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "frontend"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S2.14 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.13}}, {{S2.11}}\n**Bidrager til:** {{DOD11}}, {{DOD8}}\n\n## Mål\nSpilleren kan oprette konto og logge ind i webappen, og kun admins kan åbne admin-panelet.\n\n## Opgaver\n- [ ] Side: opret konto (navn + password)\n- [ ] Side: log ind / log ud\n- [ ] Vis hvem der er logget ind\n- [ ] Spillet kræver login, før man vælger bane\n- [ ] Admin-panelet kræver rollen `admin` (både side og API)\n- [ ] Test i Test-ByteBait\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S2.15",
+      "title": "[S2.15] Cookie-politik og cookie-banner (information om nødvendige cookies)",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Frederik"
+      ],
+      "body": "<!-- key: S2.15 -->\n<!-- due: 2026-11-26 -->\n\n**Ansvarlig:** Bjarke (med Frederik)\n**Deadline:** tor 26/11\n\n**Afhænger af:** {{S2.13}}\n**Bidrager til:** {{DOD11}}\n\n## Mål\nSpilleren bliver informeret om, hvilke cookies ByteBait bruger. Vi bruger kun teknisk nødvendige cookies (login og antiforgery), som ikke kræver samtykke, så banneret er information og kvittering – ikke et samtykkekrav. Se Digitaliseringsstyrelsens cookievejledning: https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/\n\n## Opgaver\n- [ ] Liste over alle cookies (login-cookie, antiforgery) med formål og levetid\n- [ ] Side `/cookies` med cookie-politik (på engelsk)\n- [ ] Informationsbanner i Blazor ved første besøg: forklarer, at der kun bruges nødvendige cookies, med knappen \"Got it\" og link til `/cookies` (al tekst på engelsk)\n- [ ] Login og antiforgery virker uden forudgående klik på banneret (cookies markeret `IsEssential = true`)\n- [ ] Kvitteringen gemmes, så banneret ikke vises igen\n- [ ] ASP.NET Core `CookiePolicyOptions`: `MinimumSameSitePolicy`, `Secure`\n- [ ] Ingen tracking- eller statistik-cookies – hvis de kommer senere, kræver de aktivt samtykke, før de sættes\n- [ ] Link til cookie-politikken i bunden af alle sider\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "R2",
+      "title": "[R2] Release v0.2.0",
+      "milestone": "Sprint 2 – Spilbar kerne (v0.2.0)",
+      "labels": [
+        "release"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke",
+        "Andreas",
+        "Abdi"
+      ],
+      "body": "<!-- key: R2 -->\n<!-- due: 2026-11-27 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** fre 27/11\n\n**Afhænger af:** {{S2.1}}, {{S2.2}}, {{S2.3}}, {{S2.4}}, {{S2.5}}, {{S2.6}}, {{S2.7}}, {{S2.8}}, {{S2.9}}, {{S2.10}}, {{S2.11}}, {{S2.12}}, {{S2.13}}, {{S2.14}}, {{S2.15}}\n\n## Releasemål\nÉn bane kan spilles fra kast til fanget fisk kun med Oplà'en. Fisken vælges på serveren og gemmes.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v0.2.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
+      "managed": "create"
+    },
+    {
+      "key": "S3.1",
+      "title": "[S3.1] Spil: bane 2–4 (Gudenåen, Ringkøbing Havn, Vejle til havs)",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S3.1 -->\n<!-- due: 2026-12-01 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** tir 1/12\n\n**Afhænger af:** {{S2.6}}\n**Bidrager til:** {{DOD4}}\n\n## Mål\nAlle fire baner findes med egne omgivelser.\n\n## Opgaver\n- [ ] Gudenåen ved Silkeborg\n- [ ] Ringkøbing Havn\n- [ ] Til havs ved Vejle\n- [ ] Valg af bane\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.2",
+      "title": "[S3.2] Niveauer: 2 pr. bane, krav på 10/15/20/25 fisk, lås næste bane op",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "game",
+        "backend"
+      ],
+      "assignees": [
+        "Andreas",
+        "Bjarke"
+      ],
+      "body": "<!-- key: S3.2 -->\n<!-- due: 2026-12-02 -->\n\n**Ansvarlig:** Andreas (med Bjarke)\n**Deadline:** ons 2/12\n\n**Afhænger af:** {{S3.1}}, {{S2.7}}\n**Bidrager til:** {{DOD4}}\n\n## Mål\nProgressionen virker: man klarer en bane og åbner den næste.\n\n## Opgaver\n- [ ] 2 niveauer pr. bane\n- [ ] Krav: 10 fisk (bane 1), 15 (bane 2), 20 (bane 3), 25 (bane 4) fordelt på 2 niveauer\n- [ ] Fremskridt gemmes i backend\n- [ ] Næste bane låses op\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.3",
+      "title": "[S3.3] Spil: vis vejr og nat i byen",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S3.3 -->\n<!-- due: 2026-12-02 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** ons 2/12\n\n**Afhænger af:** {{S2.9}}\n**Bidrager til:** {{DOD5}}\n\n## Mål\nSpilleren kan se det rigtige vejr i byen.\n\n## Opgaver\n- [ ] Regn, blæst og storm vises\n- [ ] Nat når det er mørkt i byen\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.4",
+      "title": "[S3.4] Backend: vejrets effekter i spillogikken",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "backend"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S3.4 -->\n<!-- due: 2026-12-01 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** tir 1/12\n\n**Afhænger af:** {{S2.9}}, {{S2.8}}\n**Bidrager til:** {{DOD5}}\n\n## Mål\nVejret påvirker spillet som beskrevet i produktbeskrivelsen.\n\n## Opgaver\n- [ ] Blæst gør den grønne zone mindre\n- [ ] Regn giver flere bid\n- [ ] Storm giver større fisk og hårdere fights\n- [ ] Tests\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.5",
+      "title": "[S3.5] Hub: salg af fisk og køb af stang, madding og line (API + Blazor)",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "backend",
+        "frontend"
+      ],
+      "assignees": [
+        "Bjarke"
+      ],
+      "body": "<!-- key: S3.5 -->\n<!-- due: 2026-12-03 -->\n\n**Ansvarlig:** Bjarke\n**Deadline:** tor 3/12\n\n**Afhænger af:** {{S2.7}}\n**Bidrager til:** {{DOD6}}\n\n## Mål\nFangst bliver til penge, og penge bliver til bedre udstyr.\n\n## Opgaver\n- [ ] Sælg fisk for penge\n- [ ] Køb stang, madding og line\n- [ ] Udstyrets effekt i spillogikken\n- [ ] Blazor-side for hub'en (tastatur og mus)\n- [ ] Tests\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.6",
+      "title": "[S3.6] Akvarium: gem, vis og del de bedste fisk (API + Blazor)",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "database",
+        "frontend"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S3.6 -->\n<!-- due: 2026-12-02 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** ons 2/12\n\n**Afhænger af:** {{S2.10}}\n**Bidrager til:** {{DOD7}}\n\n## Mål\nSpilleren kan beholde sine bedste fisk og vise dem frem.\n\n## Opgaver\n- [ ] Gem fisk i akvariet i stedet for at sælge\n- [ ] Side hvor fiskene svømmer rundt\n- [ ] Del-link til andre\n- [ ] Art, størrelse, sted og tidspunkt vises\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.7",
+      "title": "[S3.7] Admin: fangstchancer, kast-multiplikatorer, priser og niveaukrav",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "backend"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S3.7 -->\n<!-- due: 2026-12-01 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tir 1/12\n\n**Afhænger af:** {{S2.11}}, {{S2.8}}\n**Bidrager til:** {{DOD8}}\n\n## Mål\nSpillet kan balanceres fra admin-panelet.\n\n## Opgaver\n- [ ] Redigér fangstchancer og multiplikatorer\n- [ ] Redigér priser på fisk og udstyr\n- [ ] Redigér antal fisk pr. niveau\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.8",
+      "title": "[S3.8] Admin: statistik over hvor ofte hver fisk fanges",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "database",
+        "frontend"
+      ],
+      "assignees": [
+        "Frederik"
+      ],
+      "body": "<!-- key: S3.8 -->\n<!-- due: 2026-12-03 -->\n\n**Ansvarlig:** Frederik\n**Deadline:** tor 3/12\n\n**Afhænger af:** {{S2.10}}\n**Bidrager til:** {{DOD8}}\n\n## Mål\nVi kan se, om balanceringen virker.\n\n## Opgaver\n- [ ] Antal fangster pr. art og bane\n- [ ] Visning i admin-panelet\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.9",
+      "title": "[S3.9] Arduino: WiFi direkte til Dokploy med samme beskeder som USB",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "arduino",
+        "communication"
+      ],
+      "assignees": [
+        "Abdi",
+        "Bjarke"
+      ],
+      "body": "<!-- key: S3.9 -->\n<!-- due: 2026-12-01 -->\n\n**Ansvarlig:** Abdi (med Bjarke)\n**Deadline:** tir 1/12\n\n**Afhænger af:** {{S1.3}}, {{S1.4}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nOplà'en kan spilles trådløst, og USB virker stadig.\n\n## Opgaver\n- [ ] Forbind til WiFi (WiFiNINA), koder i `arduino_secrets.h` (ikke i repoet)\n- [ ] Forbind til Test-ByteBait/Main-ByteBait over HTTPS\n- [ ] Samme beskeder som USB\n- [ ] Automatisk valg: WiFi hvis forbundet, ellers USB\n- [ ] Genforbindelse uden at spillet går tabt\n- [ ] 15 minutters sammenhængende test\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.10",
+      "title": "[S3.10] Navigation i menuer og hub med tastatur og mus",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "frontend",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S3.10 -->\n<!-- due: 2026-12-02 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** ons 2/12\n\n**Afhænger af:** {{S3.5}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nMan kan komme rundt i spillet uden at røre koden.\n\n## Opgaver\n- [ ] Menu: vælg bane, hub, akvarium\n- [ ] Tastaturgenveje og mus\n- [ ] Tydelig markering af valgt punkt\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.11",
+      "title": "[S3.11] Integrationstest: bane → kast → fight → hub → næste niveau (USB og WiFi)",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "test"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke",
+        "Andreas",
+        "Abdi"
+      ],
+      "body": "<!-- key: S3.11 -->\n<!-- due: 2026-12-03 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** tor 3/12\n\n**Afhænger af:** {{S3.1}}, {{S3.2}}, {{S3.5}}, {{S3.6}}, {{S3.9}}, {{S3.10}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nHele loopet virker i Test-ByteBait over både USB og WiFi.\n\n## Opgaver\n- [ ] Spil en hel bane over USB\n- [ ] Spil en hel bane over WiFi\n- [ ] Hub, akvarium og admin virker\n- [ ] Notér fejl som issues\n\n## Færdig når\nHele loopet er spillet over USB og WiFi i Test-ByteBait, og fundne fejl er oprettet som issues.",
+      "managed": "create"
+    },
+    {
+      "key": "S3.12",
+      "title": "[S3.12] Brugertest med 3–5 personer uden for gruppen",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "sprint-task",
+        "test",
+        "user-test"
+      ],
+      "assignees": [
+        "Abdi",
+        "Bjarke",
+        "Andreas",
+        "Frederik"
+      ],
+      "body": "<!-- key: S3.12 -->\n<!-- due: 2026-12-03 -->\n\n**Ansvarlig:** Abdi (med Bjarke, Andreas, Frederik)\n**Deadline:** tor 3/12\n\n**Afhænger af:** {{S3.11}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nSpillet er testet af nogen, der ikke har bygget det.\n\n## Opgaver\n- [ ] Find 3–5 testpersoner\n- [ ] Lad dem spille uden forklaring\n- [ ] Ét issue pr. test med skabelonen Brugertest\n- [ ] Saml og prioritér fundene i dette issue\n\n## Færdig når\nBrugertest-issues er oprettet, og fundene er prioriteret til sprint 4.",
+      "managed": "create"
+    },
+    {
+      "key": "R3",
+      "title": "[R3] Release v0.3.0",
+      "milestone": "Sprint 3 – Feature complete (v0.3.0)",
+      "labels": [
+        "release"
+      ],
+      "assignees": [
+        "Andreas",
+        "Bjarke",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: R3 -->\n<!-- due: 2026-12-04 -->\n\n**Ansvarlig:** Andreas (med Bjarke, Frederik, Abdi)\n**Deadline:** fre 4/12\n\n**Afhænger af:** {{S3.1}}, {{S3.2}}, {{S3.3}}, {{S3.4}}, {{S3.5}}, {{S3.6}}, {{S3.7}}, {{S3.8}}, {{S3.9}}, {{S3.10}}, {{S3.11}}, {{S3.12}}\n\n## Releasemål\nFeature complete: alle skal-krav virker over USB og WiFi, og brugertest er gennemført. Herefter ingen nye features.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v0.3.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
+      "managed": "create"
+    },
+    {
+      "key": "S4.1",
+      "title": "[S4.1] Ret de prioriterede fejl fra brugertesten",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "user-test"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Andreas",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: S4.1 -->\n<!-- due: 2026-12-09 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** ons 9/12\n\n**Afhænger af:** {{S3.12}}\n**Bidrager til:** {{DOD9}}\n\n## Mål\nDe vigtigste fund fra brugertesten er rettet.\n\n## Opgaver\n- [ ] Hver fejl rettes af den, der ejer området\n- [ ] Link PR'er til brugertest-issues\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.2",
+      "title": "[S4.2] Balancér spillet i admin-panelet: chancer, priser, niveaukrav",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "backend",
+        "database"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Frederik"
+      ],
+      "body": "<!-- key: S4.2 -->\n<!-- due: 2026-12-08 -->\n\n**Ansvarlig:** Bjarke (med Frederik)\n**Deadline:** tir 8/12\n\n**Afhænger af:** {{S3.7}}\n**Bidrager til:** {{DOD8}}\n\n## Mål\nSpillet er hverken for let eller for svært.\n\n## Opgaver\n- [ ] Brug statistikken fra S3.8\n- [ ] Justér chancer, priser og niveaukrav i admin\n- [ ] Dokumentér de endelige værdier\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.3",
+      "title": "[S4.3] Polish: grafik, animationer og tydelige advarsler i fighten",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "game"
+      ],
+      "assignees": [
+        "Andreas"
+      ],
+      "body": "<!-- key: S4.3 -->\n<!-- due: 2026-12-09 -->\n\n**Ansvarlig:** Andreas\n**Deadline:** ons 9/12\n\n**Afhænger af:** {{S3.12}}\n**Bidrager til:** {{DOD3}}, {{DOD4}}\n\n## Mål\nSpillet ser færdigt ud.\n\n## Opgaver\n- [ ] Animationer og overgange\n- [ ] Tydeligere advarsler (linens vinkel, plask)\n- [ ] Ret visuelle fejl fra brugertesten\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.4",
+      "title": "[S4.4] Finjustér bevægelser og feedback på Oplà'en",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "arduino"
+      ],
+      "assignees": [
+        "Abdi"
+      ],
+      "body": "<!-- key: S4.4 -->\n<!-- due: 2026-12-09 -->\n\n**Ansvarlig:** Abdi\n**Deadline:** ons 9/12\n\n**Afhænger af:** {{S3.12}}\n**Bidrager til:** {{DOD2}}, {{DOD3}}\n\n## Mål\nStyringen føles naturlig over både USB og WiFi.\n\n## Opgaver\n- [ ] Justér tærskler efter brugertesten\n- [ ] Tjek LED'er og buzzer\n- [ ] Test over USB og WiFi\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.5",
+      "title": "[S4.5] Tests og oprydning: build uden advarsler, død kode fjernet",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "test"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke",
+        "Andreas",
+        "Abdi"
+      ],
+      "body": "<!-- key: S4.5 -->\n<!-- due: 2026-12-10 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** tor 10/12\n\n**Afhænger af:** {{S4.1}}\n**Bidrager til:** {{DOD10}}\n\n## Mål\nKoden er klar til aflevering.\n\n## Opgaver\n- [ ] 0 advarsler i build\n- [ ] Tests til de vigtigste regler\n- [ ] Fjern død kode og TODO'er\n\n## Færdig når\nKoden er merget til `dev` via en PR med `Closes #<dette issue>`, CI er grøn, og det virker i Test-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.6",
+      "title": "[S4.6] README: opsætning af Neon, user-secrets, arduino_secrets.h, Dokploy og arkitektur",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "docs"
+      ],
+      "assignees": [
+        "Frederik",
+        "Bjarke",
+        "Andreas",
+        "Abdi"
+      ],
+      "body": "<!-- key: S4.6 -->\n<!-- due: 2026-12-10 -->\n\n**Ansvarlig:** Frederik (med Bjarke, Andreas, Abdi)\n**Deadline:** tor 10/12\n\n**Bidrager til:** {{DOD10}}\n\n## Mål\nEn ny udvikler kan sætte projektet op ud fra README'en.\n\n## Opgaver\n- [ ] Kom i gang: .NET, Neon, user-secrets\n- [ ] Arduino: biblioteker, `arduino_secrets.h`, USB/WiFi\n- [ ] Deployment: Dokploy, Test-ByteBait og Main-ByteBait\n- [ ] Arkitekturdiagram\n\n## Færdig når\nREADME'en er merget til `dev`, og en i gruppen har fulgt den fra bunden.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.7",
+      "title": "[S4.7] Opdatér produktbeskrivelse, API-kontrakt og protokol til det færdige spil",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "docs"
+      ],
+      "assignees": [
+        "Bjarke",
+        "Andreas",
+        "Frederik",
+        "Abdi"
+      ],
+      "body": "<!-- key: S4.7 -->\n<!-- due: 2026-12-10 -->\n\n**Ansvarlig:** Bjarke (med Andreas, Frederik, Abdi)\n**Deadline:** tor 10/12\n\n**Bidrager til:** {{DOD10}}\n\n## Mål\nDokumentationen passer til det, vi afleverer.\n\n## Opgaver\n- [ ] Word-filer i `docs/`\n- [ ] `docs/api-contract.md`\n- [ ] `docs/protocol.md`\n\n## Færdig når\nAlle dokumenter er opdateret og merget til `dev`.",
+      "managed": "create"
+    },
+    {
+      "key": "S4.8",
+      "title": "[S4.8] Demo og præsentation med plan B",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "sprint-task",
+        "docs"
+      ],
+      "assignees": [
+        "Abdi",
+        "Bjarke",
+        "Andreas",
+        "Frederik"
+      ],
+      "body": "<!-- key: S4.8 -->\n<!-- due: 2026-12-11 -->\n\n**Ansvarlig:** Abdi (med Bjarke, Andreas, Frederik)\n**Deadline:** fre 11/12\n\n**Afhænger af:** {{S4.1}}\n**Bidrager til:** {{DOD10}}\n\n## Mål\nGruppen kan demonstrere spillet og forklare de tekniske valg.\n\n## Opgaver\n- [ ] Demo-plan: hvem viser hvad\n- [ ] Hver person forklarer sit område\n- [ ] Vis Oplà'en over WiFi og USB\n- [ ] Plan B: USB, hvis WiFi i lokalet driller\n- [ ] Prøvekør demoen i Main-ByteBait\n\n## Færdig når\nDemoen er prøvekørt i Main-ByteBait.",
+      "managed": "create"
+    },
+    {
+      "key": "R4",
+      "title": "[R4] Release v1.0.0",
+      "milestone": "Sprint 4 – Finpudsning (v1.0.0)",
+      "labels": [
+        "release"
+      ],
+      "assignees": [
+        "Abdi",
+        "Bjarke",
+        "Andreas",
+        "Frederik"
+      ],
+      "body": "<!-- key: R4 -->\n<!-- due: 2026-12-11 -->\n\n**Ansvarlig:** Abdi (med Bjarke, Andreas, Frederik)\n**Deadline:** fre 11/12\n\n**Afhænger af:** {{S4.1}}, {{S4.2}}, {{S4.3}}, {{S4.4}}, {{S4.5}}, {{S4.6}}, {{S4.7}}, {{S4.8}}\n\n## Releasemål\nProjekt-DoD opfyldt: fejl fra brugertest rettet, spillet balanceret, README og docs færdige, demo klar, v1.0.0 kører i Main-ByteBait.\n\n## Release-DoD\n- [ ] Alle sprint-opgaver i milestonen er lukket eller flyttet med begrundelse\n- [ ] CI er grøn på `dev`, og alle tests består\n- [ ] Releasemålet er demonstreret i Test-ByteBait med den rigtige Oplà (smoke-test)\n- [ ] `dev` er merget til `main` via en release-PR, godkendt af en anden\n- [ ] Main-ByteBait er deployet, og smoke-testen er gentaget der\n- [ ] Ingen hemmeligheder i repoet (WiFi-kode, Neon connection string, nøgler, webhooks)\n- [ ] README og docs er opdateret med det, der er kommet til i sprinten\n- [ ] Tag og GitHub Release er oprettet (workflowet Release gør det ved merge til `main`)\n- [ ] Kendte fejl er oprettet som issues med label `bug`\n- [ ] Sprint-review og retro er skrevet som kommentar i dette issue\n\n## Sådan laves releasen\n1. Gå DoD'en igennem i Test-ByteBait\n2. Åbn en PR fra `dev` til `main` med titlen `Release v1.0.0`\n3. En anden godkender, og PR'en merges\n4. Workflowet **Release** sætter tag, opretter GitHub Release, lukker milestonen og deployer Main-ByteBait\n5. Gentag smoke-testen i Main-ByteBait og skriv retro herunder",
+      "managed": "create"
+    },
+    {
+      "key": "DOD1",
+      "title": "DoD1: Kast med timingmåler og fangstchancer",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD1 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD2",
+      "title": "DoD2: Krogning med nap og bid",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD2 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD3",
+      "title": "DoD3: Fight med afstand, advarsler, yank og LED-feedback",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD3 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD4",
+      "title": "DoD4: Fire baner med 2 niveauer hver",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD4 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD5",
+      "title": "DoD5: Vejr fra Open-Meteo for hver by",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD5 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD6",
+      "title": "DoD6: Hub med salg af fisk og køb af udstyr",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD6 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD7",
+      "title": "DoD7: Akvarium",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD7 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD8",
+      "title": "DoD8: Admin-panel med fiskearter, sjældenhed, priser og statistik",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD8 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD9",
+      "title": "DoD9: Hele loopet virker – Oplà (USB og WiFi) ⇄ spil ⇄ backend ⇄ Neon",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD9 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD10",
+      "title": "DoD10: GitHub, README, deployment, tagget release og præsentation",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD10 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "DOD11",
+      "title": "DoD11: Spillerkonti med cookie-login, admin-rolle og cookie-politik",
+      "milestone": "Projekt-DoD",
+      "labels": [
+        "epic"
+      ],
+      "managed": "epic",
+      "body": "<!-- key: DOD11 -->\n\nSkal-krav fra produktbeskrivelsen. Kravet er opfyldt, når alle sprint-opgaver nedenfor er lukket og virker i den samlede release v1.0.0."
+    },
+    {
+      "key": "NTH1",
+      "title": "Bør: Navigation med Oplà'ens touch-knapper",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH1 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH2",
+      "title": "Bør: Sværhedsgrad på kastet (hurtigere nål / mindre grøn zone)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH2 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH3",
+      "title": "Bør: Fangstskærm med art, vægt, længde, sjældenhed og rekord",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH3 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH4",
+      "title": "Bør: Knækket line efter 3 fejl i træk",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH4 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH5",
+      "title": "Bør: Forskellig adfærd pr. fiskeart (justerbar i admin)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH5 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH6",
+      "title": "Bør: Achievements",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH6 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH7",
+      "title": "Kan: Mere udstyr med forskellige fordele (fx agn og båd)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH7 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH8",
+      "title": "Kan: Flere spillere ved samme sø (WebSockets eller live-feed)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH8 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH9",
+      "title": "Kan: Ekkolod på Oplà'ens display",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH9 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH10",
+      "title": "Kan: Relæ-klik som fiskehjul",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH10 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH11",
+      "title": "Kan: Bossfisk sidst på hver bane",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH11 -->\n\nNice to have fra produktbeskrivelsen. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige."
+    },
+    {
+      "key": "NTH12",
+      "title": "Kan: Sporings-cookies til analyse af spilleradfærd (kræver samtykke)",
+      "milestone": "Backlog (bør/kan)",
+      "labels": [
+        "backlog"
+      ],
+      "managed": "backlog",
+      "body": "<!-- key: NTH12 -->\n\nNice to have. Tages kun, hvis en sprint bliver færdig før tid, og hele gruppen er enige.\n\n## Mål\nSe hvordan spillerne interagerer med spillet (fx hvor mange kast der rammer grønt, hvor ofte fisk slipper, hvor længe man er på hver bane) og brug data til at forbedre og balancere spillet.\n\n## Opgaver\n- [ ] Beslut hvilke hændelser der måles, og hvad data skal bruges til\n- [ ] Sporings-cookies sættes **først efter aktivt samtykke** – cookie-banneret fra S2.15 udvides med \"Accept\" og \"Decline\" (lige synlige), og \"Decline\" er standard\n- [ ] Samtykket kan trækkes tilbage lige så let, som det blev givet (fx på `/cookies`)\n- [ ] Cookie-politikken på `/cookies` opdateres med formål, levetid og evt. tredjepart\n- [ ] Ingen tredjeparts-trackere uden databehandleraftale – foretræk egen løsning, hvor data gemmes i Neon\n- [ ] Data anonymiseres/aggregeres, så de ikke kan føres tilbage til en bestemt spiller\n- [ ] Visning af data i admin-panelets statistik\n- [ ] Al tekst i spillet på engelsk\n\n## Bemærk\nSporings-cookies er **ikke** teknisk nødvendige og kræver derfor samtykke, før de sættes. Se [cookievejledningen](https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/)."
+    }
+  ],
+  "close": []
+}
