@@ -3,6 +3,7 @@
 #include "config.h"
 #include "hardware.h"
 #include "protocol.h"
+#include "motion.h"
 
 enum State { IDLE, MEASURING, LOCKOUT };
 static State state = IDLE;
@@ -16,6 +17,8 @@ static int strengthFromPeak(float peakG) {
 }
 
 void throwUpdate() {
+  // During the fish fight the motions take over: a hook or yank must not be read as a throw.
+  if (motionFightActive() || MOTION_PLOT_MODE) { state = IDLE; return; }
   if (!hwAccelAvailable()) return;
 
   float x, y, z;

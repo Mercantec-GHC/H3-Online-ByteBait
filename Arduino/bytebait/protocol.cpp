@@ -2,6 +2,7 @@
 #include "protocol.h"
 #include "config.h"
 #include "leds.h"
+#include "motion.h"
 
 #if __has_include("arduino_secrets.h")
 #include "arduino_secrets.h"
@@ -36,7 +37,9 @@ static void handleLine(char* line) {
     Serial.println(a1);
   } else if (!strcmp(cmd, "LED") && a1) {
     if (!ledsSetByName(a1)) sendErr("RANGE");
-  // TODO(#19): } else if (!strcmp(cmd, "BUZZ") && a1) { BUZZ:LOST -> buzzerPlayLost()
+    // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
+    else if (!strcmp(a1, "RED") || !strcmp(a1, "YELLOW")) motionStopFight();
+  // TODO(#19): } else if (!strcmp(cmd, "BUZZ") && a1) { BUZZ:LOST -> buzzerPlayLost(); motionStopFight();
   } else {
     sendErr("UNKNOWN");
   }
@@ -73,26 +76,39 @@ void protocolSendThrow(int strength) {
 #else
   Serial.print("THROW:");
   Serial.println(strength);
+  motionStartFight();   // after a cast the motions (hook, tilt, hold, yank) take over
 #endif
 }
 
-// ---------- New messages from the Oplà to the game (#17) ----------
+// ---------- Motion messages from the Oplà to the game (#17) ----------
+// Not sent in the WiFi probe build: there Serial is only a log for the throw test.
 void protocolSendHook() {
-  // TODO(#17): send "HOOK"
+#if !WIFI_THROW_PROBE
+  Serial.println("HOOK");
+#endif
 }
 
 void protocolSendTilt(char dir) {
+#if !WIFI_THROW_PROBE
+  Serial.print("TILT:");
+  Serial.println(dir == 'L' ? "L" : "R");
+#else
   (void)dir;
-  // TODO(#17): send "TILT:L" or "TILT:R"
+#endif
 }
 
 void protocolSendHold(bool still) {
+#if !WIFI_THROW_PROBE
+  Serial.println(still ? "HOLD:1" : "HOLD:0");
+#else
   (void)still;
-  // TODO(#17): send "HOLD:1" (still) or "HOLD:0" (moving)
+#endif
 }
 
 void protocolSendYank() {
-  // TODO(#17): send "YANK"
+#if !WIFI_THROW_PROBE
+  Serial.println("YANK");
+#endif
 }
 
 // TODO(#38): everything that writes to / reads from Serial here must go through link* (link.h),

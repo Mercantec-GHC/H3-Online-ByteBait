@@ -11,12 +11,23 @@ void hwBegin() {
   carrier.leds.setBrightness(LED_BRIGHTNESS);
 }
 
+// The sensor hands out each sample only once: reading it clears the "new data" flag.
+// Several modules (throw and motion) need the same sample, so it is read here once per loop
+// pass and cached.
+static float lastX = 0, lastY = 0, lastZ = 1;
+static bool  fresh = false;
+
+void hwAccelPoll() {
+  fresh = carrier.IMUmodule.accelerationAvailable();
+  if (fresh) carrier.IMUmodule.readAcceleration(lastX, lastY, lastZ);
+}
+
 bool hwAccelAvailable() {
-  return carrier.IMUmodule.accelerationAvailable();
+  return fresh;
 }
 
 void hwReadAccel(float &x, float &y, float &z) {
-  carrier.IMUmodule.readAcceleration(x, y, z);
+  x = lastX; y = lastY; z = lastZ;
 }
 
 void hwSetLeds(uint8_t r, uint8_t g, uint8_t b) {

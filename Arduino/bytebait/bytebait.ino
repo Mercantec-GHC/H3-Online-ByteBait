@@ -32,6 +32,7 @@ void setup() {
 
 void loop() {
   // linkUpdate();                            // TODO(#38)
+  hwAccelPoll();    // read the sensor once; throw and motion share the sample
   protocolPoll();   // read messages from the game
   throwUpdate();    // detect throws and send THROW        (#5)
   motionUpdate();   // hook, tilt, hold still, yank        (#17)
