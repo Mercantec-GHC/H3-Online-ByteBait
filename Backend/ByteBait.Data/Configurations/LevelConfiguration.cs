@@ -1,4 +1,5 @@
 using ByteBait.Data.Entities;
+using ByteBait.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -24,5 +25,7 @@ public class LevelConfiguration : IEntityTypeConfiguration<Level>
             .WithMany(l => l.Levels)
             .HasForeignKey(l => l.LaneId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(LevelSeed.All);
     }
 }

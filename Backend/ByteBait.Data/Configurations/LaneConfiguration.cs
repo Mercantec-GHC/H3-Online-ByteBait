@@ -1,4 +1,5 @@
 using ByteBait.Data.Entities;
+using ByteBait.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,5 +22,7 @@ public class LaneConfiguration : IEntityTypeConfiguration<Lane>
 
         builder.Property(l => l.Name).HasMaxLength(50);
         builder.Property(l => l.City).HasMaxLength(50);
+
+        builder.HasData(LaneSeed.All);
     }
 }

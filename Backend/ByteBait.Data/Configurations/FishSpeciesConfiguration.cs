@@ -1,4 +1,5 @@
 using ByteBait.Data.Entities;
+using ByteBait.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,7 +20,8 @@ public class FishSpeciesConfiguration : IEntityTypeConfiguration<FishSpecies>
 
         builder.HasKey(f => f.Id);
 
-        builder.HasIndex(f => f.Name).IsUnique();
+        // The same species can live on several lanes with its own rarity, size and price
+        builder.HasIndex(f => new { f.LaneId, f.Name }).IsUnique();
         builder.Property(f => f.Name).HasMaxLength(50);
 
         builder.Property(f => f.Rarity).HasLowercaseConversion();
@@ -29,5 +31,7 @@ public class FishSpeciesConfiguration : IEntityTypeConfiguration<FishSpecies>
             .WithMany(l => l.FishSpecies)
             .HasForeignKey(f => f.LaneId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasData(FishSpeciesSeed.All);
     }
 }

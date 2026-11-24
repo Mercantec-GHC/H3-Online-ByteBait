@@ -83,6 +83,8 @@ dotnet ef migrations script --idempotent -p Backend/ByteBait.Data
 
 Glemmer man at lave en migration, fejler testen `Model_has_no_changes_missing_a_migration` i CI.
 
+Startdata (baner, niveauer, fiskearter og udstyr) ligger i `ByteBait.Data/Seed` og er en del af modellen. En ændring der kræver derfor også en migration.
+
 ### På Test-ByteBait og Main-ByteBait
 
 Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=true` sat, så `DatabaseMigrator` kører de manglende migrations, når containeren starter, og før API'et tager imod requests. En merge til `dev` opdaterer derfor også tabellerne på Neon-branchen `test`, og en release opdaterer `production`.
