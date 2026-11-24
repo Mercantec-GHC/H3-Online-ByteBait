@@ -199,6 +199,32 @@ namespace ByteBait.Data.Migrations
 
                             t.HasCheckConstraint("ck_equipment_type", "type IN ('rod', 'bait', 'line')");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Carbon Rod",
+                            Power = 1,
+                            Price = 200,
+                            Type = "rod"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Nightcrawler",
+                            Power = 1,
+                            Price = 50,
+                            Type = "bait"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Braided Line",
+                            Power = 1,
+                            Price = 150,
+                            Type = "line"
+                        });
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.FishSpecies", b =>
@@ -255,12 +281,9 @@ namespace ByteBait.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_fish_species");
 
-                    b.HasIndex("LaneId")
-                        .HasDatabaseName("ix_fish_species_lane_id");
-
-                    b.HasIndex("Name")
+                    b.HasIndex("LaneId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("ix_fish_species_name");
+                        .HasDatabaseName("ix_fish_species_lane_id_name");
 
                     b.ToTable("fish_species", null, t =>
                         {
@@ -273,6 +296,320 @@ namespace ByteBait.Data.Migrations
                             t.HasCheckConstraint("ck_fish_species_rarity", "rarity IN ('common', 'rare', 'legendary')");
 
                             t.HasCheckConstraint("ck_fish_species_weight_range", "min_weight_kg > 0 AND max_weight_kg >= min_weight_kg");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 40.0,
+                            MaxWeightKg = 1.2,
+                            MinLengthCm = 15.0,
+                            MinWeightKg = 0.10000000000000001,
+                            Name = "Perch",
+                            Price = 10,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 60.0,
+                            MaxWeightKg = 3.5,
+                            MinLengthCm = 30.0,
+                            MinWeightKg = 0.80000000000000004,
+                            Name = "Tench",
+                            Price = 30,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 120.0,
+                            MaxWeightKg = 14.0,
+                            MinLengthCm = 60.0,
+                            MinWeightKg = 3.0,
+                            Name = "Pike",
+                            Price = 100,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 60.0,
+                            MaxWeightKg = 3.5,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.5,
+                            Name = "Bream",
+                            Price = 12,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 85.0,
+                            MaxWeightKg = 7.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 1.0,
+                            Name = "Zander",
+                            Price = 35,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 200.0,
+                            MaxWeightKg = 45.0,
+                            MinLengthCm = 100.0,
+                            MinWeightKg = 10.0,
+                            Name = "Wels Catfish",
+                            Price = 120,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 48.0,
+                            MaxWeightKg = 1.5,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Grayling",
+                            Price = 18,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 65.0,
+                            MaxWeightKg = 4.0,
+                            MinLengthCm = 30.0,
+                            MinWeightKg = 0.5,
+                            Name = "Trout",
+                            Price = 50,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 95.0,
+                            MaxWeightKg = 11.0,
+                            MinLengthCm = 60.0,
+                            MinWeightKg = 3.0,
+                            Name = "Sea Trout",
+                            Price = 150,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.6000000000000001,
+                            MinLengthCm = 20.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Perch",
+                            Price = 20,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 110.0,
+                            MaxWeightKg = 10.0,
+                            MinLengthCm = 50.0,
+                            MinWeightKg = 2.0,
+                            Name = "Pike",
+                            Price = 60,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 120.0,
+                            MaxWeightKg = 18.0,
+                            MinLengthCm = 75.0,
+                            MinWeightKg = 5.0,
+                            Name = "Salmon",
+                            Price = 180,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.5,
+                            MinLengthCm = 20.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Flounder",
+                            Price = 25,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 90.0,
+                            MaxWeightKg = 1.3,
+                            MinLengthCm = 50.0,
+                            MinWeightKg = 0.40000000000000002,
+                            Name = "Garfish",
+                            Price = 70,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 80.0,
+                            MaxWeightKg = 12.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 2.0,
+                            Name = "Turbot",
+                            Price = 220,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 32.0,
+                            MaxWeightKg = 0.40000000000000002,
+                            MinLengthCm = 18.0,
+                            MinWeightKg = 0.10000000000000001,
+                            Name = "Herring",
+                            Price = 28,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 80.0,
+                            MaxWeightKg = 6.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 1.0,
+                            Name = "Sea Bass",
+                            Price = 80,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 220.0,
+                            MaxWeightKg = 35.0,
+                            MinLengthCm = 120.0,
+                            MinWeightKg = 8.0,
+                            Name = "Conger Eel",
+                            Price = 250,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.2,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Mackerel",
+                            Price = 35,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 85.0,
+                            MaxWeightKg = 8.0,
+                            MinLengthCm = 45.0,
+                            MinWeightKg = 1.5,
+                            Name = "Sea Trout",
+                            Price = 100,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 280.0,
+                            MaxWeightKg = 120.0,
+                            MinLengthCm = 150.0,
+                            MinWeightKg = 30.0,
+                            Name = "Swordfish",
+                            Price = 320,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 90.0,
+                            MaxWeightKg = 8.0,
+                            MinLengthCm = 35.0,
+                            MinWeightKg = 0.80000000000000004,
+                            Name = "Cod",
+                            Price = 40,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 150.0,
+                            MaxWeightKg = 18.0,
+                            MinLengthCm = 70.0,
+                            MinWeightKg = 3.0,
+                            Name = "Ling",
+                            Price = 120,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 290.0,
+                            MaxWeightKg = 350.0,
+                            MinLengthCm = 160.0,
+                            MinWeightKg = 80.0,
+                            Name = "Bluefin Tuna",
+                            Price = 400,
+                            Rarity = "legendary"
                         });
                 });
 
@@ -324,6 +661,44 @@ namespace ByteBait.Data.Migrations
 
                             t.HasCheckConstraint("ck_lanes_number_positive", "number >= 1");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            City = "Nordborg",
+                            Latitude = 55.060000000000002,
+                            Longitude = 9.7400000000000002,
+                            Name = "Nordborg Sø",
+                            Number = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            City = "Silkeborg",
+                            Latitude = 56.170000000000002,
+                            Longitude = 9.5500000000000007,
+                            Name = "Gudenåen",
+                            Number = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            City = "Ringkøbing",
+                            Latitude = 56.090000000000003,
+                            Longitude = 8.2400000000000002,
+                            Name = "Ringkøbing Havn",
+                            Number = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            City = "Vejle",
+                            Latitude = 55.710000000000001,
+                            Longitude = 9.5399999999999991,
+                            Name = "Open sea off Vejle",
+                            Number = 4
+                        });
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.Level", b =>
@@ -359,6 +734,64 @@ namespace ByteBait.Data.Migrations
                             t.HasCheckConstraint("ck_levels_number_range", "number BETWEEN 1 AND 2");
 
                             t.HasCheckConstraint("ck_levels_required_fish_positive", "required_fish >= 1");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            LaneId = 1,
+                            Number = 1,
+                            RequiredFish = 5
+                        },
+                        new
+                        {
+                            Id = 2,
+                            LaneId = 1,
+                            Number = 2,
+                            RequiredFish = 5
+                        },
+                        new
+                        {
+                            Id = 3,
+                            LaneId = 2,
+                            Number = 1,
+                            RequiredFish = 7
+                        },
+                        new
+                        {
+                            Id = 4,
+                            LaneId = 2,
+                            Number = 2,
+                            RequiredFish = 8
+                        },
+                        new
+                        {
+                            Id = 5,
+                            LaneId = 3,
+                            Number = 1,
+                            RequiredFish = 10
+                        },
+                        new
+                        {
+                            Id = 6,
+                            LaneId = 3,
+                            Number = 2,
+                            RequiredFish = 10
+                        },
+                        new
+                        {
+                            Id = 7,
+                            LaneId = 4,
+                            Number = 1,
+                            RequiredFish = 12
+                        },
+                        new
+                        {
+                            Id = 8,
+                            LaneId = 4,
+                            Number = 2,
+                            RequiredFish = 13
                         });
                 });
 

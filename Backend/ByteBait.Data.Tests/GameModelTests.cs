@@ -130,6 +130,25 @@ public class GameModelTests(PostgresDatabase database)
     }
 
     [PostgresFact]
+    public async Task Same_species_can_live_on_two_lanes_but_only_once_on_each()
+    {
+        await using var first = await TestWorld.CreateAsync(database);
+        await using var second = await TestWorld.CreateAsync(database);
+        await using var db = database.CreateContext();
+
+        var otherLane = TestWorld.NewSpecies(second.Lane.Id, minWeightKg: 1, maxWeightKg: 3);
+        otherLane.Name = first.Species.Name;
+        db.FishSpecies.Add(otherLane);
+        await db.SaveChangesAsync();
+
+        var sameLane = TestWorld.NewSpecies(second.Lane.Id, minWeightKg: 1, maxWeightKg: 3);
+        sameLane.Name = first.Species.Name;
+        db.FishSpecies.Add(sameLane);
+
+        await AssertRejected(db, PostgresErrorCodes.UniqueViolation);
+    }
+
+    [PostgresFact]
     public async Task Database_rejects_negative_money()
     {
         await using var db = database.CreateContext();
