@@ -274,11 +274,11 @@ Indtil spillerkonti findes (S2.13, #76), kræver endpoints ikke login, og kast o
   "createdAt": "2026-11-24T09:15:30.456Z",
   "levelId": 1,
   "fish": {
-    "speciesId": 3,
-    "name": "Pike",
+    "speciesId": 5,
+    "name": "Zander",
     "rarity": "rare",
     "weightKg": 2.41,
-    "lengthCm": 63.5
+    "lengthCm": 50.6
   }
 }
 ```
@@ -340,7 +340,10 @@ Chancer og multiplikatorer læses fra databasen ved hvert kast, så ændringer i
 **Fejl:**
 - `400` ved ugyldigt `result` eller manglende felter
 - `404` hvis kastet ikke findes (eller tilhører en anden spiller, fra #76)
-- `409` hvis fighten for kastet allerede er gemt (én fangst pr. kast), eller kastet ikke blev lavet på et niveau
+- `409` hvis
+  - fighten for kastet allerede er gemt (én fangst pr. kast)
+  - kastet ikke blev lavet på et niveau
+  - `result` er `"caught"`, men kastet har ingen fisk (`fish` var `null`). `"lost"` kan stadig gemmes
 
 <!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->
 > [!NOTE]

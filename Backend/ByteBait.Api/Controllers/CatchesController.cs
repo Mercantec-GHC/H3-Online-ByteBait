@@ -44,10 +44,21 @@ public class CatchesController(ByteBaitDbContext db, CurrentPlayer player) : Con
             return CatchAlreadySaved(castId);
         }
 
+        var result = Enum.Parse<CatchResult>(dto.Result!, ignoreCase: true);
+
+        // No fish bit if the lane had no species, so there is nothing to catch. Losing it is still allowed.
+        if (result == CatchResult.Caught && cast.FishSpeciesId is null)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: "Cast has no fish",
+                detail: $"Cast {castId} didn't hook a fish, so it can't be caught.");
+        }
+
         var saved = new Catch
         {
             CastId = castId,
-            Result = Enum.Parse<CatchResult>(dto.Result!, ignoreCase: true),
+            Result = result,
         };
         db.Catches.Add(saved);
 

@@ -71,6 +71,46 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
     }
 
     [PostgresFact]
+    public async Task Cast_on_a_level_hooks_a_fish_and_saves_it_on_the_cast()
+    {
+        await using var level = await TestLevel.CreateAsync(_factory);
+        var species = level.Species!;
+
+        var response = await _client.PostAsJsonAsync("/api/casts", Cast(level.LevelId));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        var fish = body.GetProperty("fish");
+        Assert.Equal(species.Id, fish.GetProperty("speciesId").GetInt32());
+        Assert.Equal(species.Name, fish.GetProperty("name").GetString());
+        Assert.Equal("common", fish.GetProperty("rarity").GetString());
+        var weight = fish.GetProperty("weightKg").GetDouble();
+        var length = fish.GetProperty("lengthCm").GetDouble();
+        Assert.InRange(weight, TestLevel.MinWeightKg, TestLevel.MaxWeightKg);
+        Assert.InRange(length, TestLevel.MinLengthCm, TestLevel.MaxLengthCm);
+
+        // The same fish is saved on the cast
+        using var scope = _factory.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>();
+        var saved = await db.Casts.SingleAsync(c => c.Id == body.GetProperty("id").GetInt32());
+        Assert.Equal(species.Id, saved.FishSpeciesId);
+        Assert.Equal(weight, saved.WeightKg);
+        Assert.Equal(length, saved.LengthCm);
+    }
+
+    [PostgresFact]
+    public async Task Cast_on_a_lane_without_species_has_no_fish()
+    {
+        await using var level = await TestLevel.CreateAsync(_factory, withSpecies: false);
+
+        var response = await _client.PostAsJsonAsync("/api/casts", Cast(level.LevelId));
+
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(JsonValueKind.Null, body.GetProperty("fish").ValueKind);
+    }
+
+    [PostgresFact]
     public async Task Cast_with_unknown_levelId_returns_400()
     {
         var response = await _client.PostAsJsonAsync("/api/casts", Cast(levelId: int.MaxValue));
@@ -155,6 +195,23 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
             var db = scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>();
             await db.Casts.Where(c => c.Id == castId).ExecuteDeleteAsync();
         }
+    }
+
+    [PostgresFact]
+    public async Task Cast_without_fish_can_be_lost_but_not_caught()
+    {
+        await using var level = await TestLevel.CreateAsync(_factory, withSpecies: false);
+        var castId = await SaveCastAsync(level.LevelId);
+
+        var caught = await _client.PostAsJsonAsync("/api/catches", new { castId, result = "caught" });
+
+        Assert.Equal(HttpStatusCode.Conflict, caught.StatusCode);
+        Assert.Equal("application/problem+json", caught.Content.Headers.ContentType?.MediaType);
+        var problem = await caught.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Cast has no fish", problem.GetProperty("title").GetString());
+
+        var lost = await _client.PostAsJsonAsync("/api/catches", new { castId, result = "lost" });
+        Assert.Equal(HttpStatusCode.Created, lost.StatusCode);
     }
 
     [Fact]
