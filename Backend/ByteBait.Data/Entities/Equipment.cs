@@ -1,6 +1,6 @@
 namespace ByteBait.Data.Entities;
 
-// A rod, bait or line sold in the hub. The starter equipment costs 0.
+// A rod, bait or line sold in the hub. A player who owns none of a type fishes with power 0.
 public class Equipment
 {
     public int Id { get; set; }

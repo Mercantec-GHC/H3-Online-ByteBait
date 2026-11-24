@@ -34,7 +34,7 @@ erDiagram
     fish_species {
         int id PK
         int lane_id FK
-        string name UK
+        string name "unik pr. bane"
         string rarity "common, rare, legendary"
         string depth "shallow, deep"
         double min_weight_kg
@@ -101,7 +101,7 @@ erDiagram
 |-------|---------|
 | `lanes` | De fire baner. Koordinaterne bruges til vejret fra Open-Meteo |
 | `levels` | To niveauer pr. bane med antal fisk, der skal fanges |
-| `fish_species` | Fiskearter pr. bane med sjældenhed, dybde, størrelse og pris |
+| `fish_species` | Fiskearter pr. bane med sjældenhed, dybde, størrelse og pris. Samme art kan findes på flere baner |
 | `rarity_chances` | Basischancen for sjældne og legendariske fisk |
 | `zone_multipliers` | Kastzonens multiplikator: rød ×0, gul ×1, grøn ×1,5 |
 | `equipment` | Stænger, madding og liner til salg i hub'en |
@@ -118,7 +118,7 @@ erDiagram
 
 **Dybde.** Et blødt kast lander på lavt vand og et hårdt kast på dybt vand. Spillogikken vælger kun mellem de arter på banen, der har den dybde.
 
-**Udstyr.** `power` er ét tal pr. udstyr, og spillogikken bestemmer, hvad det gør for hver type. Det bedste udstyr af hver type, som spilleren ejer, er det, der bruges.
+**Udstyr.** `power` er ét tal pr. udstyr, og spillogikken bestemmer, hvad det gør for hver type. Det bedste udstyr af hver type, som spilleren ejer, er det, der bruges. Ejer spilleren intet af en type, er `power` 0.
 
 **Hub og akvarium (S3.5, S3.6).** En fanget fisk bliver liggende, indtil den sælges eller flyttes til akvariet. `sold_for` gemmer prisen ved salget, så gamle salg ikke ændrer sig, når admin retter priserne. Et akvarium deles via `players.aquarium_share_code`.
 
@@ -135,6 +135,10 @@ erDiagram
 | Fisken gemmes på kastet og ikke på fangsten | Serveren vælger fisken, før fighten starter (Bjarkes beslutning i API-kontrakten), så kastet findes, før resultatet gør |
 | Fangsten har ikke sit eget `player_id` | Spilleren står på kastet. Ét sted at slå det op betyder, at de to aldrig kan være uenige |
 | Kravet på 10, 15, 20 og 25 fisk pr. bane fordeles som 5+5, 7+8, 10+10 og 12+13 | Produktbeskrivelsen siger "fordelt på banens 2 niveauer". Kravet ligger pr. niveau, så det kan rettes i admin |
+| Artens navn er unikt pr. bane og ikke i hele tabellen | Samme art kan findes på flere baner med sin egen sjældenhed, størrelse og pris. Gedden er legendarisk på bane 1 og sjælden på bane 2 |
+| Én almindelig, én sjælden og én legendarisk art pr. dybde på hver bane, altså 24 rækker | Et kast når kun én dybde. Manglede en sjældenhed på den dybde, kunne serveren trække en fisk, der ikke findes |
+| Startdata ligger i migrations (`HasData`) med faste id'er | Alle miljøer får de samme data, uden at nogen skal køre et script. Banernes id er 1–4, fordi vejr-endpointet bruger dem. Migrationen flytter også tællerne, så nye rækker ikke får et id, der er brugt |
+| Startdata er kun udgangspunktet. Efter release rettes tal i admin-panelet | Ændrer man et tal i `Seed/`, laver EF en migration, der overskriver det, admin har rettet |
 | Arter, niveauer, baner og udstyr, der er brugt, kan ikke slettes | Statistik og fangster peger på dem. Admin-panelet skal svare `409`, når databasen afviser en sletning |
 | Sletter man en spiller, slettes kast, fangster og udstyr også | Spillerens data hører kun til spilleren |
 | Tidspunkter i UTC, penge og priser som heltal | Samme regler som i API-kontrakten |
@@ -152,8 +156,36 @@ Databasen afviser ugyldige værdier, også hvis API'et glemmer at tjekke dem:
 - `zone_multipliers.multiplier` mindst 0
 - `players.money` mindst 0, så et køb aldrig giver negativ saldo
 - `catches`: kun fanget fisk kan sælges eller komme i akvariet, ikke begge dele, og et salg har både tidspunkt og pris
-- Unikke navne på arter, udstyr og spillere, unikt banenummer og niveau 1–2 kun én gang pr. bane
+- Unikke navne på udstyr og spillere, artens navn unikt pr. bane, unikt banenummer og niveau 1–2 kun én gang pr. bane
 
 ## Startdata
 
-`rarity_chances` og `zone_multipliers` får eksempeltallene fra produktbeskrivelsen i migrationen `GameModel`. Baner, niveauer, fiskearter og udstyr kommer i S2.10 (#26) med mindst én almindelig, én sjælden og én legendarisk art pr. bane.
+`rarity_chances` og `zone_multipliers` får eksempeltallene fra produktbeskrivelsen i migrationen `GameModel`. Resten kommer i `SeedGameData` (S2.10) og ligger i `Backend/ByteBait.Data/Seed`.
+
+| Bane | Sted | By | Fisk på niveau 1 + 2 |
+|------|------|----|----------------------|
+| 1 | Nordborg Sø | Nordborg | 5 + 5 |
+| 2 | Gudenåen | Silkeborg | 7 + 8 |
+| 3 | Ringkøbing Havn | Ringkøbing | 10 + 10 |
+| 4 | Open sea off Vejle | Vejle | 12 + 13 |
+
+Fiskearterne har engelske navne, fordi spillet er på engelsk. Prisen står i parentes.
+
+| Bane | Dybde | Almindelig | Sjælden | Legendarisk |
+|------|-------|------------|---------|-------------|
+| 1 | Lavt | Perch / aborre (10) | Tench / suder (30) | Pike / gedde (100) |
+| 1 | Dybt | Bream / brasen (12) | Zander / sandart (35) | Wels Catfish / malle (120) |
+| 2 | Lavt | Grayling / stalling (18) | Trout / ørred (50) | Sea Trout / havørred (150) |
+| 2 | Dybt | Perch / aborre (20) | Pike / gedde (60) | Salmon / laks (180) |
+| 3 | Lavt | Flounder / skrubbe (25) | Garfish / hornfisk (70) | Turbot / pighvar (220) |
+| 3 | Dybt | Herring / sild (28) | Sea Bass / havbars (80) | Conger Eel / havål (250) |
+| 4 | Lavt | Mackerel / makrel (35) | Sea Trout / havørred (100) | Swordfish / sværdfisk (320) |
+| 4 | Dybt | Cod / torsk (40) | Ling / lange (120) | Bluefin Tuna / tun (400) |
+
+| Udstyr | Type | Pris | Power |
+|--------|------|------|-------|
+| Carbon Rod | rod | 200 | 1 |
+| Nightcrawler | bait | 50 | 1 |
+| Braided Line | line | 150 | 1 |
+
+Fem fisk på bane 1 giver mindst 50, så alle, der sælger deres fangst, har råd til madding efter det første niveau. Ved gule kast er medianen 79. Tallene balanceres i S4.2.

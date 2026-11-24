@@ -1,4 +1,5 @@
 using ByteBait.Data.Entities;
+using ByteBait.Data.Seed;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -21,5 +22,7 @@ public class EquipmentConfiguration : IEntityTypeConfiguration<Equipment>
         builder.Property(e => e.Name).HasMaxLength(50);
 
         builder.Property(e => e.Type).HasLowercaseConversion();
+
+        builder.HasData(EquipmentSeed.All);
     }
 }
