@@ -206,13 +206,104 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 > Berører S3.2 (#31, delt med Andreas @Zikka1987).
 > Fremskridt og oplåsning af baner gemmes i backend og hentes via `GET /api/lanes`.
 
-### Spil: niveau, kast og fangst (S2.7, S2.8)
+### Spil: niveau, kast og fangst (S2.7 – lavet, S2.8)
+
+<!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.7, #23) -->
+> [!NOTE]
+> **BESLUTNING fra Bjarke (@Bmantaz) i S2.7 (#23).** Påvirker S2.4 (#20) og S2.5 (#21, Andreas @Zikka1987).
+> Der er **ingen session** og intet `sessionId`, som skitsen tidligere sagde. Det følger datamodellen (#96, [data-model.md](data-model.md)): spillet sender `levelId` med hvert kast, og fremskridtet tælles fra spillerens fangede fisk på niveauet.
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
-| `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: `sessionId`, krav, antal fangede fisk og vejrets effekter |
-| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `sessionId`. Serveren bestemmer fisken med RNG og returnerer den i svaret (`fish`: art, sjældenhed, vægt, længde) |
-| `POST` | `/api/catches` | Gem resultatet af fighten: `{ "castId": 1, "result": "caught" }` eller `"lost"`. Svar: fangsten og niveauets fremskridt |
+| `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: krav og spillerens fremskridt |
+| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Fra S2.8 bestemmer serveren fisken og returnerer den i svaret |
+| `POST` | `/api/catches` | Gem resultatet af fighten. Svar: fangsten og niveauets nye fremskridt |
+
+Indtil spillerkonti findes (S2.13, #76), kræver endpoints ikke login, og kast og fangster gemmes uden spiller. Fremskridtet tælles så over alt, der er gemt uden spiller. Når #76 er lavet, kræver de login og arbejder på den spiller, der er logget ind.
+
+#### Start et niveau
+
+`POST /api/levels/{levelId}/start` (ingen body)
+
+**Response `200 OK`**
+
+```json
+{
+  "levelId": 1,
+  "laneId": 1,
+  "laneNumber": 1,
+  "levelNumber": 1,
+  "requiredFish": 5,
+  "caughtFish": 2,
+  "completed": false
+}
+```
+
+| Felt | Type | Betydning |
+|------|------|-----------|
+| `requiredFish` | number | Antal fisk, der skal fanges for at klare niveauet |
+| `caughtFish` | number | Antal fisk, spilleren har fanget på niveauet (mistede fisk tæller ikke) |
+| `completed` | boolean | `true`, når `caughtFish` ≥ `requiredFish` |
+
+**Fejl:** `404` hvis niveauet ikke findes.
+
+#### Kast på et niveau
+
+`POST /api/casts` som i sprint 1, med det nye felt `levelId`:
+
+```json
+{
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-24T09:15:30.123Z",
+  "levelId": 1
+}
+```
+
+- `levelId` er valgfrit, så kast uden niveau (som i sprint 1) stadig virker. Kun et kast med `levelId` kan ende i en fangst.
+- Svaret har `levelId` med (`null` for et kast uden niveau). Fisken (`fish`) kommer i svaret fra S2.8.
+- **Fejl:** `400` med `errors.levelId`, hvis niveauet ikke findes.
+
+#### Gem en fangst
+
+`POST /api/catches`
+
+```json
+{
+  "castId": 17,
+  "result": "caught"
+}
+```
+
+| Felt | Type | Krav |
+|------|------|------|
+| `castId` | number | Kastet, fighten hørte til (fra svaret på `POST /api/casts`) |
+| `result` | string | `"caught"` eller `"lost"` |
+
+**Response `201 Created`**
+
+```json
+{
+  "id": 4,
+  "castId": 17,
+  "result": "caught",
+  "resolvedAt": "2026-11-24T09:16:02.512Z",
+  "progress": {
+    "levelId": 1,
+    "laneId": 1,
+    "laneNumber": 1,
+    "levelNumber": 1,
+    "requiredFish": 5,
+    "caughtFish": 3,
+    "completed": false
+  }
+}
+```
+
+**Fejl:**
+- `400` ved ugyldigt `result` eller manglende felter
+- `404` hvis kastet ikke findes (eller tilhører en anden spiller, fra #76)
+- `409` hvis fighten for kastet allerede er gemt (én fangst pr. kast), eller kastet ikke blev lavet på et niveau
 
 <!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->
 > [!NOTE]

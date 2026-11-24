@@ -15,3 +15,31 @@ GET {{ByteBait.Api_HostAddress}}/api/lanes/3/weather
 Accept: application/json
 
 ###
+
+# S2.7: start a level, cast on it and save how the fight ended (levels are seeded in S2.10)
+POST {{ByteBait.Api_HostAddress}}/api/levels/1/start
+
+###
+
+POST {{ByteBait.Api_HostAddress}}/api/casts
+Content-Type: application/json
+
+{
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-24T09:15:30.123Z",
+  "levelId": 1
+}
+
+###
+
+# Use the id from the cast above
+POST {{ByteBait.Api_HostAddress}}/api/catches
+Content-Type: application/json
+
+{
+  "castId": 1,
+  "result": "caught"
+}
+
+###
