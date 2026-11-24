@@ -149,7 +149,56 @@ Endpoints og navne er fastlagt i S2.13 (#76).
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
 | `GET` | `/api/lanes` | De fire baner med niveauer, krav (antal fisk), spillerens fremskridt og om banen er låst op |
-| `GET` | `/api/lanes/{laneId}/weather` | Det aktuelle vejr i banens by (cachet pr. by) og vejrets effekter på spillet |
+| `GET` | `/api/lanes/{laneId}/weather` | Det aktuelle vejr i banens by (cachet pr. by), se nedenfor. Vejrets effekter på spillet kommer i S3.4 |
+
+#### Vejr pr. bane (S2.9 – lavet)
+
+`GET /api/lanes/{laneId}/weather`
+
+Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræver ikke login endnu (kommer med S2.13).
+
+- Kun ét kald pr. by henter fra Open-Meteo ad gangen. Kald, der kommer imens, venter og får samme svar.
+- Fejler Open-Meteo, prøves der først igen efter 1 minut. Indtil da svarer endpointet med det samme (det sidste vejr med `stale: true` eller `503`), så spillet aldrig venter på timeouten (5 sek.) ved hvert kald.
+- Banernes id (1–4) er de samme som i tabellen `lanes`, som seedes i S2.10.
+
+| Bane | By |
+|------|----|
+| `1` | Nordborg |
+| `2` | Silkeborg |
+| `3` | Ringkøbing |
+| `4` | Vejle |
+
+**Response `200 OK`**
+
+```json
+{
+  "laneId": 3,
+  "city": "Ringkøbing",
+  "temperature": 7.4,
+  "windSpeed": 9.2,
+  "windGusts": 15.1,
+  "precipitation": 0.3,
+  "weatherCode": 61,
+  "isDay": true,
+  "observedAt": "2026-11-18T10:15:00Z",
+  "stale": false
+}
+```
+
+| Felt | Type | Betydning |
+|------|------|-----------|
+| `temperature` | number | Temperatur i °C |
+| `windSpeed` | number | Vindhastighed i m/s (10 m over jorden) |
+| `windGusts` | number | Vindstød i m/s |
+| `precipitation` | number | Nedbør i mm (regn, byger og sne) |
+| `weatherCode` | number | WMO-vejrkode fra Open-Meteo, fx `61` = let regn, `95` = tordenvejr |
+| `isDay` | boolean | `false`, når det er mørkt i byen (nat i spillet) |
+| `observedAt` | string | Tidspunktet for målingen (ISO 8601, UTC) |
+| `stale` | boolean | `true`, hvis Open-Meteo ikke svarede, og det er det sidst hentede vejr |
+
+**Fejl:**
+- `404` hvis banen ikke findes
+- `503` hvis Open-Meteo ikke svarer, og der aldrig er hentet vejr for byen. Spillet kan så bruge klart vejr og prøve igen senere
 
 <!-- FORSLAG | af: @Bmantaz | berører: S3.2 (#31) | ejer: @Zikka1987, @Bmantaz | status: ikke besluttet -->
 > [!WARNING]
