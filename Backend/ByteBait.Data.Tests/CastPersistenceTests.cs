@@ -4,7 +4,8 @@ using Npgsql;
 
 namespace ByteBait.Data.Tests;
 
-public class CastPersistenceTests(PostgresDatabase database) : IClassFixture<PostgresDatabase>
+[Collection(PostgresCollection.Name)]
+public class CastPersistenceTests(PostgresDatabase database)
 {
     [PostgresFact]
     public async Task Cast_is_saved_and_read_back()

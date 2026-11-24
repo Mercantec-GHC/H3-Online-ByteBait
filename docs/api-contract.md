@@ -157,6 +157,10 @@ Endpoints og navne er fastlagt i S2.13 (#76).
 
 Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræver ikke login endnu (kommer med S2.13).
 
+- Kun ét kald pr. by henter fra Open-Meteo ad gangen. Kald, der kommer imens, venter og får samme svar.
+- Fejler Open-Meteo, prøves der først igen efter 1 minut. Indtil da svarer endpointet med det samme (det sidste vejr med `stale: true` eller `503`), så spillet aldrig venter på timeouten (5 sek.) ved hvert kald.
+- Banernes id (1–4) er de samme som i tabellen `lanes`, som seedes i S2.10.
+
 | Bane | By |
 |------|----|
 | `1` | Nordborg |
@@ -194,7 +198,7 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 
 **Fejl:**
 - `404` hvis banen ikke findes
-- `503` hvis Open-Meteo ikke svarer, og der aldrig er hentet vejr for byen. Spillet kan så bruge klart vejr
+- `503` hvis Open-Meteo ikke svarer, og der aldrig er hentet vejr for byen. Spillet kan så bruge klart vejr og prøve igen senere
 
 <!-- FORSLAG | af: @Bmantaz | berører: S3.2 (#31) | ejer: @Zikka1987, @Bmantaz | status: ikke besluttet -->
 > [!WARNING]
@@ -252,6 +256,30 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 | `PUT` | `/api/admin/equipment/{id}` | Ret pris på udstyr |
 | `PUT` | `/api/admin/levels/{id}` | Ret antal fisk pr. niveau |
 | `GET` | `/api/admin/stats/catches` | Antal fangster pr. art og bane |
+
+## WiFi-kasteprøve til #4
+
+I Development og Staging åbner `GET /api/test/wifi-throw` en testside med et nyt
+test-ID (GUID). Siden lytter på `GET /api/test/wifi-throw/{id}/events` med
+Server-Sent Events (SSE). Hændelsen `ready` bekræfter, at modtageren er registreret.
+Sessionen lever i API-processens hukommelse, mens forbindelsen er åben.
+
+Oplà'en sender `POST /api/test/wifi-throw/{id}` med `Content-Type: text/plain`.
+Body er én ASCII-linje fra [protokollen](protocol.md), fx `THROW:72\n`, med heltal
+0–100 og LF eller CRLF som linjeafslutning. API'et videresender linjen som
+SSE-hændelsen `throw`. Sidens simulationsknap sender samme format med headeren
+`X-Probe-Source: simulated`, som giver hændelsen `simulated-throw`. Kun `throw`
+øger sidens fysiske tæller. Prøven skriver ingen spil- eller testdata i databasen.
+
+| HTTP-status | Betydning |
+|---|---|
+| `204` | Beskeden er lagt i den åbne modtagers kø. Visning verificeres i browseren. |
+| `400` / `415` | Ugyldig linje eller kilde / forkert medietype. |
+| `409` | POST mangler en aktiv modtager, eller en anden forbindelse lytter allerede på ID'et. |
+| `503` | Modtagerens kø er fuld, eller alle testforbindelser er optaget. |
+| `404` | Prøvens ruter er utilgængelige i Production. |
+
+Se [hardwareprøven](../Arduino/README.md) for opsætning og godkendelseskriterier.
 
 ## Åbne spørgsmål
 

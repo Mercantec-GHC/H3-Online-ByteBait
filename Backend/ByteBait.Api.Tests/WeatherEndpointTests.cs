@@ -142,13 +142,80 @@ public class WeatherEndpointTests(ApiFactory factory) : IClassFixture<ApiFactory
         Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
     }
 
+    [Fact]
+    public async Task Requests_at_the_same_time_call_Open_Meteo_only_once()
+    {
+        _openMeteo.RespondWith(OpenMeteoJson);
+        _openMeteo.HoldResponses();
+        var client = CreateClient();
+
+        var requests = Enumerable.Range(0, 20).Select(_ => client.GetAsync("/api/lanes/2/weather")).ToList();
+
+        // Give all 20 requests time to reach the service while the first one waits for Open-Meteo
+        await _openMeteo.FirstRequest.WaitAsync(TimeSpan.FromSeconds(10));
+        await Task.Delay(300);
+        _openMeteo.ReleaseResponses();
+
+        var responses = await Task.WhenAll(requests);
+        Assert.All(responses, r => Assert.Equal(HttpStatusCode.OK, r.StatusCode));
+        Assert.Single(_openMeteo.Requests);
+    }
+
+    [Fact]
+    public async Task After_an_error_Open_Meteo_is_not_called_again_for_1_minute()
+    {
+        _openMeteo.RespondWith("""{"error":true,"reason":"Server error"}""", HttpStatusCode.InternalServerError);
+        var client = CreateClient();
+
+        var first = await client.GetAsync("/api/lanes/1/weather");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, first.StatusCode);
+
+        // Within the minute the answer comes straight away, without calling Open-Meteo
+        _time.Advance(TimeSpan.FromSeconds(59));
+        var second = await client.GetAsync("/api/lanes/1/weather");
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, second.StatusCode);
+        Assert.Single(_openMeteo.Requests);
+
+        // After the minute Open-Meteo is tried again
+        _openMeteo.RespondWith(OpenMeteoJson);
+        _time.Advance(TimeSpan.FromSeconds(1));
+        var third = await client.GetAsync("/api/lanes/1/weather");
+        Assert.Equal(HttpStatusCode.OK, third.StatusCode);
+        Assert.Equal(2, _openMeteo.Requests.Count);
+    }
+
+    [Fact]
+    public async Task After_an_error_the_stale_weather_is_kept_for_1_minute_without_calling_Open_Meteo()
+    {
+        _openMeteo.RespondWith(OpenMeteoJson);
+        var client = CreateClient();
+        await client.GetAsync("/api/lanes/4/weather");
+
+        _time.Advance(TimeSpan.FromMinutes(15));
+        _openMeteo.RespondWith("""{"error":true,"reason":"Server error"}""", HttpStatusCode.InternalServerError);
+        await client.GetAsync("/api/lanes/4/weather");
+        Assert.Equal(2, _openMeteo.Requests.Count);
+
+        _time.Advance(TimeSpan.FromSeconds(30));
+        var response = await client.GetAsync("/api/lanes/4/weather");
+
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(body.GetProperty("stale").GetBoolean());
+        Assert.Equal(2, _openMeteo.Requests.Count);
+    }
+
     private sealed class FakeOpenMeteo : HttpMessageHandler
     {
         private string _body = "{}";
         private HttpStatusCode _status = HttpStatusCode.OK;
         private Exception? _exception;
+        private TaskCompletionSource? _hold;
+        private readonly TaskCompletionSource _firstRequest = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
         public List<Uri> Requests { get; } = [];
+
+        // Completes when the first request reaches Open-Meteo
+        public Task FirstRequest => _firstRequest.Task;
 
         public void RespondWith(string body, HttpStatusCode status = HttpStatusCode.OK)
         {
@@ -159,15 +226,22 @@ public class WeatherEndpointTests(ApiFactory factory) : IClassFixture<ApiFactory
 
         public void ThrowOnRequest(Exception exception) => _exception = exception;
 
-        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        // Open-Meteo doesn't answer until ReleaseResponses is called, like a slow Open-Meteo
+        public void HoldResponses() => _hold = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public void ReleaseResponses() => _hold?.TrySetResult();
+
+        protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             lock (Requests) Requests.Add(request.RequestUri!);
+            _firstRequest.TrySetResult();
+            if (_hold is not null) await _hold.Task.WaitAsync(cancellationToken);
             if (_exception is not null) throw _exception;
 
-            return Task.FromResult(new HttpResponseMessage(_status)
+            return new HttpResponseMessage(_status)
             {
                 Content = new StringContent(_body, Encoding.UTF8, "application/json"),
-            });
+            };
         }
     }
 

@@ -56,6 +56,13 @@ jobs:
         if: steps.find.outputs.target != ''
         run: dotnet build "${{ steps.find.outputs.target }}" --no-restore --configuration Release
 
+      # Data- og Api-testene kører i hver sin proces. Migreres databasen først, skal de ikke gøre det på samme tid.
+      - name: Migrér testdatabasen
+        if: steps.find.outputs.target != ''
+        run: |
+          dotnet tool restore
+          dotnet ef database update -p Backend/ByteBait.Data --configuration Release --no-build
+
       - name: Test
         if: steps.find.outputs.target != ''
         run: dotnet test "${{ steps.find.outputs.target }}" --no-build --configuration Release --logger "trx;LogFileName=results.trx" --results-directory TestResults
@@ -114,7 +121,7 @@ jobs:
           for f in $FILES; do echo "node --check $f"; node --check "$f"; done
 
       - name: Test game module
-        run: node --test Frontend/ByteBait.Client.Tests/game.test.mjs
+        run: node --test "Frontend/ByteBait.Client.Tests/*.test.mjs"
 
   arduino:
     name: Arduino – kompilér sketch (MKR WiFi 1010)
@@ -135,13 +142,38 @@ jobs:
             cp "$ex" "$(dirname "$ex")/arduino_secrets.h"
           done
 
+          # Compile the default USB sketch and the opt-in WiFi transport with dummy settings.
+          mkdir -p Arduino/ci-wifi
+          cp -R Arduino/bytebait Arduino/ci-wifi/bytebait
+          # Give the compiler a usable dummy configuration so it retains the HTTPS send path.
+          sed -i -e 's/^#define WIFI_THROW_PROBE 0/#define WIFI_THROW_PROBE 1/' \
+                 -e 's/^#define SECRET_SSID ""/#define SECRET_SSID "ci-only"/' \
+                 -e 's/^#define SECRET_PROBE_ID ""/#define SECRET_PROBE_ID "00000000-0000-0000-0000-000000000001"/' \
+                 Arduino/ci-wifi/bytebait/arduino_secrets.h
+
       - uses: arduino/compile-sketches@v1
         if: steps.find.outputs.found == 'true'
         with:
           fqbn: arduino:samd:mkrwifi1010
           sketch-paths: |
             - Arduino
+          cli-compile-flags: |
+            - --export-binaries
           libraries: |
             - name: Arduino_MKRIoTCarrier
             - name: WiFiNINA
             - name: ArduinoHttpClient
+
+      - name: Verify the WiFi throw probe is linked only into the opt-in firmware
+        if: steps.find.outputs.found == 'true'
+        run: |
+          binary=build/arduino.samd.mkrwifi1010/bytebait.ino.bin
+          usb="Arduino/bytebait/$binary"
+          wifi="Arduino/ci-wifi/bytebait/$binary"
+          test -s "$usb"
+          test -s "$wifi"
+          if grep -aFq '/api/test/wifi-throw/' "$usb"; then
+            echo "::error::The USB firmware contains the WiFi probe endpoint."
+            exit 1
+          fi
+          grep -aFq '/api/test/wifi-throw/' "$wifi" || { echo "::error::The WiFi probe endpoint is missing."; exit 1; }

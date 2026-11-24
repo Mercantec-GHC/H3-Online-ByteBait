@@ -46,7 +46,8 @@ Brug af `LED`:
 - Svar højst én gang pr. sekund med `ERR:<kode>`: `UNKNOWN`, `ARGS`, `RANGE`, `TOOLONG`.
 - Over 32 tegn: kassér resten af linjen, send `ERR:TOOLONG`.
 - Dårlig input må aldrig få programmet til at crashe eller hænge.
-- Spillet sender `PING` hvert 5. sek. Intet `PONG` i 15 sek. betyder, at forbindelsen er tabt, og der prøves igen.
+- Spillet sender `PING` hvert femte sekund. Hvis spillet ikke har modtaget et matchende `PONG` i 15 sekunder, er forbindelsen tabt.
+- Ved USB-timeout frigiver spillet porten og viser `USB connection lost. No reply for 15 seconds.` Spilleren vælger **Connect USB** for at oprette en ny forbindelse.
 
 ## 5. Forsinkelse
 
@@ -55,6 +56,10 @@ Brug af `LED`:
 - Oplà'en svarer på `PING` med det samme og må ikke vente på andet.
 
 ## 6. Valg af USB eller WiFi
+
+I sprint 1 bruger spillets sketch USB som standard. Den særskilte [WiFi-prøve](../Arduino/README.md#ét-fysisk-kast-over-wifi-til-browseren-44b) vælges ved at bygge med `WIFI_THROW_PROBE=1`. Den sender ét `THROW` pr. kast over HTTPS til testfanen og bruger Serial til log.
+
+Trinnene nedenfor beskriver det automatiske transportvalg, der er planlagt i #38.
 
 1. Ved opstart venter Oplà'en op til 2 sek. på, at USB-porten åbnes (`Serial`).
 2. Åbnes den, bruges USB. Ellers bruges WiFi.

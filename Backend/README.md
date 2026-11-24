@@ -94,6 +94,8 @@ Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=
 
 ## Konventioner i databasen
 
+Alle tabeller, relationer og beslutninger bag dem står i [docs/data-model.md](../docs/data-model.md) med ER-diagram.
+
 - Tabeller og kolonner er i snake_case (fx `casts.cast_at`), så man ikke skal bruge anførselstegn i SQL
 - Tidspunkter gemmes i UTC (`timestamp with time zone`)
 - Enums gemmes som tekst med små bogstaver, fx `zone = 'green'`

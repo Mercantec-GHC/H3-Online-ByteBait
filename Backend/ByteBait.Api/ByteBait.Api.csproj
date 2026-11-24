@@ -12,6 +12,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Diagnostics/WifiThrow.html" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ByteBait.Data\ByteBait.Data.csproj" />
     <ProjectReference Include="..\..\Frontend\ByteBait.Client\ByteBait.Client.csproj" />
   </ItemGroup>
