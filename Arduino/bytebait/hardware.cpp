@@ -6,7 +6,7 @@
 static MKRIoTCarrier carrier;
 
 void hwBegin() {
-  CARRIER_CASE = false;                       // true if the Oplà sits in its case
+  CARRIER_CASE = true;                       // true if the Oplà sits in its case
   carrier.begin();
   carrier.leds.setBrightness(LED_BRIGHTNESS);
 }
@@ -34,4 +34,26 @@ void hwSetLeds(uint8_t r, uint8_t g, uint8_t b) {
   uint32_t color = carrier.leds.Color(r, g, b);
   for (uint8_t i = 0; i < LED_COUNT; i++) carrier.leds.setPixelColor(i, color);
   carrier.leds.show();
+}
+
+void hwShowLevel(uint8_t n, uint8_t r, uint8_t g, uint8_t b) {
+  uint32_t on  = carrier.leds.Color(r, g, b);
+  uint32_t off = carrier.leds.Color(0, 0, 0);
+  for (uint8_t i = 0; i < LED_COUNT; i++) carrier.leds.setPixelColor(i, i < n ? on : off);
+  carrier.leds.show();
+}
+
+void hwButtonsUpdate() {
+  carrier.Buttons.update();
+}
+
+bool hwTouch(uint8_t n) {
+  switch (n) {
+    case 0: return carrier.Buttons.getTouch(TOUCH0);
+    case 1: return carrier.Buttons.getTouch(TOUCH1);
+    case 2: return carrier.Buttons.getTouch(TOUCH2);
+    case 3: return carrier.Buttons.getTouch(TOUCH3);
+    case 4: return carrier.Buttons.getTouch(TOUCH4);
+  }
+  return false;
 }

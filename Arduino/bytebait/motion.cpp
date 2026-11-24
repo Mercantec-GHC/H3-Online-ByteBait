@@ -3,6 +3,7 @@
 #include "config.h"
 #include "hardware.h"
 #include "protocol.h"
+#include "calibration.h"
 
 // ---------- Fight mode ----------
 // Motions are only looked for during the fight. See FIGHT_TIMEOUT_MS in config.h.
@@ -56,15 +57,15 @@ bool motionFightActive() {
 }
 
 // One decision per motion: sideways pull, yank or hook (in that order of priority).
-static void classify() {
+static void classify(float k) {   // k = 1 / sensitivity: scales every limit
   float dirPeak = (latSign > 0) ? peakLatPos : peakLatNeg;
-  if (latSign != 0 && dirPeak >= TILT_G && dirPeak >= peakUp * TILT_RATIO) {
+  if (latSign != 0 && dirPeak >= TILT_G * k && dirPeak >= peakUp * TILT_RATIO) {
     // The sensor axis is positive = "right" when MOTION_LAT_SIGN = +1.
     bool right = (latSign * MOTION_LAT_SIGN) > 0;
     protocolSendTilt(right ? 'R' : 'L');
-  } else if (peakUp >= YANK_G) {
+  } else if (peakUp >= YANK_G * k) {
     protocolSendYank();
-  } else if (peakUp >= HOOK_G) {
+  } else if (peakUp >= HOOK_G * k) {
     protocolSendHook();
   }
   // Otherwise the movement was too weak: send nothing.
@@ -80,6 +81,17 @@ void motionUpdate() {
 
   float x, y, z;
   hwReadAccel(x, y, z);
+
+  // --- Sensitivity from calibration: every limit is divided by it (higher sensitivity = lower limits).
+  const float k = 1.0f / calibrationSensitivity();
+
+  // --- A new calibration gives a clean starting value for "up".
+  static uint8_t seenVersion = 0;
+  if (calibrationDone() && seenVersion != calibrationVersion()) {
+    calibrationGetRest(gx, gy, gz);
+    gravityKnown = true;
+    seenVersion = calibrationVersion();
+  }
 
   // --- Gravity: follow it slowly, but only while the total acceleration is close to 1 g (at rest).
   float mag = sqrt(x * x + y * y + z * z);
@@ -120,9 +132,9 @@ void motionUpdate() {
     Serial.print("up:");      Serial.print(up);
     Serial.print(",lat:");    Serial.print(lat);
     Serial.print(",delta:");  Serial.print(deltaAvg);
-    Serial.print(",hook:");   Serial.print(HOOK_G);
-    Serial.print(",yank:");   Serial.print(YANK_G);
-    Serial.print(",tilt:");   Serial.print(TILT_G);
+    Serial.print(",hook:");   Serial.print(HOOK_G * k);
+    Serial.print(",yank:");   Serial.print(YANK_G * k);
+    Serial.print(",tilt:");   Serial.print(TILT_G * k);
     Serial.print(",still:");  Serial.print(STILL_DELTA_G);
     Serial.print(",move:");   Serial.println(MOVE_DELTA_G);
     return;
@@ -133,7 +145,7 @@ void motionUpdate() {
   // =====================  Hook / tilt / yank  =====================
   switch (mState) {
     case M_IDLE:
-      if (linMag > MOTION_TRIGGER_G) {
+      if (linMag > MOTION_TRIGGER_G * k) {
         mState = M_MEASURING;
         mStart = now;
         peakUp = 0; peakLatPos = 0; peakLatNeg = 0; latSign = 0;
@@ -148,7 +160,7 @@ void motionUpdate() {
       if (-lat > peakLatNeg) peakLatNeg = -lat;
       if (latSign == 0 && fabs(lat) >= TILT_G) latSign = (lat > 0) ? 1 : -1;
       if (now - mStart >= MOTION_WINDOW_MS) {
-        classify();
+        classify(k);
         mState = M_LOCKOUT;
         mStart = millis();
       }

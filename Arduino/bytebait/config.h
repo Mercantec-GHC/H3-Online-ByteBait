@@ -53,7 +53,23 @@ const unsigned long STILL_MS = 400;    // must be still this long before HOLD:1 
 const unsigned long FIGHT_TIMEOUT_MS = 60000;
 
 // ---------- Calibration (S2.2, #18) ----------
-// TODO(#18): time at rest before calibration is done, default rest position
+const unsigned long CAL_REST_MS      = 1500;   // the Oplà must be still this long before the rest position is saved
+const unsigned long CAL_TIMEOUT_MS   = 6000;   // give up after this long (default rest position is used)
+const float         CAL_STILL_DELTA_G = 0.06f; // sample-to-sample change (g) that still counts as still
+const unsigned long CAL_FEEDBACK_MS  = 600;    // how long the green (done) / red (gave up) LEDs are shown
+
+// Sensitivity: 5 levels. Every motion/throw limit is divided by the value, so a higher value = more sensitive.
+// Level 3 (index 2, value 1.0) gives exactly the limits above.
+const uint8_t SENS_LEVEL_COUNT = 5;
+const float   SENS_LEVELS[SENS_LEVEL_COUNT] = { 0.6f, 0.8f, 1.0f, 1.25f, 1.6f };
+const uint8_t SENS_DEFAULT_LEVEL = 2;
+const unsigned long CAL_LEVEL_SHOW_MS = 800;   // how long the purple level LEDs are shown
+
+// Touch pads on the Carrier (0-4). Pad 0 is kept free (planned: hold at start to force WiFi, #38).
+const bool    CAL_BUTTONS  = true;             // false = ignore the touch pads
+const uint8_t CAL_BTN_LESS  = 1;               // less sensitive
+const uint8_t CAL_BTN_MORE  = 2;               // more sensitive
+const uint8_t CAL_BTN_RECAL = 3;               // calibrate the rest position again
 
 // ---------- Buzzer (S2.3, #19) ----------
 // TODO(#19): tone frequencies and durations for "EEEEEEEUUHH"
