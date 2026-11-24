@@ -1,4 +1,6 @@
 using ByteBait.Api.Diagnostics;
+using ByteBait.Api.Game;
+using ByteBait.Api.Players;
 using ByteBait.Api.Weather;
 using ByteBait.Data;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -25,6 +27,12 @@ builder.Services.AddHttpClient(OpenMeteoClient.HttpClientName, client =>
 });
 builder.Services.AddSingleton<OpenMeteoClient>();
 builder.Services.AddSingleton<WeatherService>();
+
+// The logged-in player for the game endpoints. Always null until player accounts (S2.13, #76).
+builder.Services.AddScoped<CurrentPlayer>();
+
+// Picks the fish for a cast on the server (S2.8). Random.Shared is safe to use from several requests at once.
+builder.Services.AddSingleton(new FishPicker(Random.Shared));
 builder.Services.AddSingleton(TimeProvider.System);
 
 // On Dokploy, Traefik handles HTTPS and passes the request on to the container as plain HTTP.
