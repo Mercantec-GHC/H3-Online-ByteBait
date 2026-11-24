@@ -86,3 +86,29 @@ Spil → Oplà:  LED:GREEN
 
 Kun disse beskeder skal virke i første release: `HELLO`, `THROW`, `LED:<farve>`, `PING`/`PONG`.
 Resten (`HOOK`, `TILT`, `HOLD`, `YANK`, `BUZZ`) kommer i sprint 2.
+
+## 9. Bevægelser og kampfase (S2.1, #17)
+
+`HOOK`, `TILT:L`, `TILT:R`, `HOLD:1`/`HOLD:0` og `YANK` er alle accelerationer, ligesom `THROW`.
+Oplà'en kan ikke se forskel på dem uden at kende fasen, så den har to tilstande:
+
+| Tilstand | Hvad Oplà'en leder efter | Skifter til næste tilstand når |
+|---|---|---|
+| **Kast** (ved start) | kun `THROW` | `THROW` er sendt → kamp |
+| **Kamp** | kun `HOOK`, `TILT`, `HOLD`, `YANK` | spillet sender `LED:RED` eller `LED:YELLOW` (nyt timingmåler-kast), `BUZZ:LOST` eller efter 60 sek. → kast |
+
+Konsekvenser for spillet:
+- Spillet kan ikke få `THROW` og `HOOK` for den samme bevægelse.
+- Næste kast kan først registreres, når spillet har startet timingmåleren (`LED:RED`/`LED:YELLOW`).
+- `HOLD:1` kommer, når Oplà'en har holdt sig helt stille i 400 ms, også før fisken bider. Spillet bruger den kun i kampfasen.
+- Bevægelserne kommer først ca. 150 ms efter, de er startet (Oplà'en måler toppen, før den vælger).
+- `HOOK` = moderat ryk opad, `YANK` = hårdere og hurtigere ryk opad.
+
+## 10. Kalibrering og følsomhed (S2.2, #18)
+
+Kalibreringen ændrer ingen beskeder. Den påvirker kun, hvornår og hvor let Oplà'en sender dem.
+
+- **Ved opstart** venter Oplà'en, til den holdes stille i 1,5 sek. (LED'erne er gule), og gemmer hvilepositionen (grøn). Giver den op efter 6 sek. (rød), bruges standardværdierne.
+- `HELLO:<via>:1` sendes først bagefter. Der kan altså gå op til ca. 7 sek. fra opstart, før spillet hører noget. Spillets 15 sek. timeout på `PONG` er stadig nok.
+- **Følsomhed:** fem niveauer (standard 3). Alle grænser for kast og bevægelser divideres med niveauets værdi, så niveau 3 giver præcis værdierne i `config.h`. Niveauet nulstilles ved genstart.
+- **Berøringsknapper:** pad 1 = mindre følsom, pad 2 = mere følsom, pad 3 = kalibrér igen. Pad 0 er reserveret til at tvinge WiFi (#38). Knapperne ignoreres i kamp-tilstand.
