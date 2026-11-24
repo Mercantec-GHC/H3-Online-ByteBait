@@ -1,0 +1,149 @@
+@* Owns one level or practice session, from the meter to the hooked cast passed to the fight. *@
+@implements IAsyncDisposable
+@using ByteBait.Client.Casts
+@inject IJSRuntime JS
+@inject ILogger<FishingSession> Logger
+
+<p id="meter-description" class="game-description">
+    @(ShowingFloat ? "Watch the float. Pull when it disappears and two rings appear." :
+        "Follow the black needle. Green in the center, yellow on either side, red at the ends.")
+</p>
+<div class="canvas-frame">
+    <canvas @ref="gameCanvas" id="game-canvas" width="320" height="180" role="img"
+            aria-label="Casting meter" aria-describedby="meter-description">
+        Your browser does not support the game canvas.
+    </canvas>
+</div>
+
+<div class="meter-controls" role="group" aria-label="Casting controls">
+    @if (phase == "hooked")
+    {
+        <button type="button" @onclick='() => ControlAsync("castAgain")'>Cast again</button>
+    }
+    else if (!ShowingFloat)
+    {
+        <button type="button" @onclick='() => ControlAsync("start")' disabled='@(phase is not ("ready" or "paused"))'>
+            @(phase == "paused" ? "Resume meter" : "Start meter")
+        </button>
+        <button type="button" @onclick='() => ControlAsync("pause")' disabled='@(phase != "running")'>Pause meter</button>
+    }
+</div>
+<div role="status">
+    @if (OutcomeMessage is { } result)
+    {
+        <p>@result</p>
+    }
+    @if (Status is { } status)
+    {
+        <p>@status</p>
+    }
+</div>
+@if (game is not null)
+{
+    <UsbController GameController="game" LevelId="LevelId" HookReceived="HandleHookAsync" />
+}
+
+@code {
+    [Parameter] public int? LevelId { get; set; }
+    private HookedCast? hookedCast;
+    private ElementReference gameCanvas;
+    private IJSObjectReference? module;
+    private IJSObjectReference? game;
+    private DotNetObjectReference<FishingSession>? receiver;
+    private Task initialization = Task.CompletedTask;
+    private string phase = "loading";
+    private string? outcome;
+    private bool disposed;
+
+    private bool ShowingFloat => phase is "saving" or "fishing" or "hooked";
+    private string? Status => phase switch
+    {
+        "loading" => "Loading casting meter…",
+        "ready" => "Meter ready.",
+        "running" => "Meter running.",
+        "paused" => "Meter paused.",
+        "fishing" => "Cast in progress.",
+        "loadError" => "Unable to load the casting meter.",
+        "controlError" => "Unable to control the casting meter.",
+        _ => null
+    };
+    private string? OutcomeMessage => outcome switch
+    {
+        "scared" => "Fish scared away",
+        "escaped" => "Fish escaped",
+        "hooked" when LevelId is null || hookedCast is not null => "Fish hooked",
+        "expired" => "Controller motion window expired. Cast again.",
+        "disconnected" => "Cast ended when USB disconnected.",
+        _ => null
+    };
+
+    protected override Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return Task.CompletedTask;
+        initialization = InitializeAsync();
+        return initialization;
+    }
+
+    private async Task InitializeAsync()
+    {
+        try
+        {
+            module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fishing-game.js");
+            if (disposed) return;
+            receiver = DotNetObjectReference.Create(this);
+            game = await module.InvokeAsync<IJSObjectReference>("createFishingGame", gameCanvas, receiver);
+            if (disposed) return;
+            phase = "ready";
+        }
+        catch (JSException exception)
+        {
+            if (disposed) return;
+            Logger.LogError(exception, "Unable to initialize the casting meter.");
+            phase = "loadError";
+        }
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public void OnGameState(string nextPhase, string? result, HookedCast? cast)
+    {
+        if (disposed) return;
+        phase = nextPhase;
+        outcome = result;
+        hookedCast = cast; // Available to the fight only on a successful level hook.
+        StateHasChanged();
+    }
+
+    private Task HandleHookAsync(double receivedAtMs) => ControlAsync("hook", receivedAtMs);
+
+    private async Task ControlAsync(string command, params object?[] args)
+    {
+        if (disposed || game is null) return;
+        try
+        {
+            await game.InvokeVoidAsync(command, args);
+        }
+        catch (JSException exception)
+        {
+            if (disposed) return;
+            Logger.LogError(exception, "Unable to run game command {Command}.", command);
+            phase = "controlError";
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        disposed = true;
+        hookedCast = null;
+        await initialization;
+        if (game is not null)
+        {
+            await using (game)
+            {
+                await game.InvokeVoidAsync("dispose");
+            }
+        }
+        receiver?.Dispose();
+        if (module is not null) await module.DisposeAsync();
+    }
+}

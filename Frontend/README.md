@@ -37,9 +37,10 @@ The meter waits for manual start even with reduced motion enabled. Switching tab
 a running needle until the game is visible again. Returning to the game after leaving the
 page opens a fresh meter.
 
-`Pages/Game.razor` owns the keyboard-accessible controls and status. On first render it
-imports `wwwroot/js/timing-meter.js` and calls `initialize(canvas)`. Subsequent `start(canvas)`
-and `stop(canvas)` calls control one animation loop per canvas. JavaScript uses differences
+`Pages/Game.razor` reads the level from the link. Its `FishingSession` component owns
+the keyboard-accessible controls and status for that visit. On first render the component
+creates a game with `wwwroot/js/fishing-game.js`. The game hands the same canvas to
+`timing-meter.js` during casting and to `float-run.js` while waiting for a fish. JavaScript uses differences
 between visible animation-frame timestamps to move and draw the needle. Removing the canvas
 cancels its frame and releases its listener and observer.
 
@@ -68,17 +69,22 @@ history. An invalid target or a time outside the available history returns `null
 Open `/game` in desktop Chrome or Edge on localhost or HTTPS. Close Arduino Serial Monitor
 if it is using the controller. Choose **Connect USB** and select the MKR WiFi 1010 in
 the browser's port picker. Once **USB connected.** appears, one valid `THROW:72` line
-sets **Last throw strength** to 72 and adds one to **Throws received**. A cast can arrive
+adds one to **Throws received**. When the game accepts a new throw, it also shows its strength. A cast can arrive
 while the meter is paused. A new successful connection starts at zero.
 
 `usb-controller.js` reads the port at 115200 baud, 8N1. Each connection has a separate
 32-byte ASCII line buffer. LF completes a message and CR is ignored. The reader accepts
-`HELLO:USB:1`, `PONG:<counter>` and integer throw strengths from 0 to 100. It can receive
+`HELLO:USB:1`, `PONG:<counter>`, `THROW:<strength>` (integer 0–100) and `HOOK`. It can receive
 a cast immediately after opening the port because the controller may already have sent
 its startup greeting. Protocol errors are reported to the board at most once per second.
 JavaScript timestamps the chunk that completes each throw with `performance.now()`.
-Blazor shows the strength and increments the counter once per valid throw, including
-when the meter has no zone for it.
+Blazor counts every valid throw, including those without a score. During an active cast, additional throws only increase the counter.
+
+Each complete `HOOK` line raises the Blazor component's optional `HookReceived` callback
+once, including before the first latency reply. Its argument is the browser's
+`performance.now()` timestamp in milliseconds for the read that delivered the line feed.
+Hooks completed in the same read share that timestamp. The callback passes it through
+without subtracting the throw's 250 ms measurement window or the estimated USB latency.
 
 ### USB latency
 
@@ -103,7 +109,8 @@ discarded. See the [controller protocol](../docs/protocol.md) for the message fo
 All five LEDs follow the zone under the moving needle. Connecting during green sends
 `LED:GREEN` immediately, even before the first latency reply. Across a full outward
 sweep the board receives red, yellow, green, yellow and red. Frames in the same zone
-share one command. A throw can score a previous zone while the LEDs follow the live one.
+share one command. A scored throw stops the meter and queues `LED:OFF` immediately.
+This replaces any color waiting for the writer. A write already handed to the port can finish.
 
 `subscribeZone(canvas, listener)` reports the current zone immediately and each change
 after drawing. It reports `off` while the meter is ready, paused or hidden. Resume or
@@ -119,8 +126,8 @@ message carries no trigger timestamp, the browser estimates it by subtracting 25
 the current connection's latest one-way latency from the receipt time. It looks up the last
 frame drawn on the game canvas at or before that instant. A throw received at 1260 ms
 with a 20 ms round trip targets 1000 ms. If the last frame visible at 1000 ms was green
-and the needle is yellow on receipt, the page shows **Last cast zone: Green** while the needle
-continues moving. The result keeps the estimated trigger time (1000 ms in this example)
+and the needle is yellow on receipt, the page shows **Last cast zone: Green** and replaces
+the meter with a still float. The result keeps the estimated trigger time (1000 ms in this example)
 as `castAt` in ISO 8601 UTC, using the page's `performance.timeOrigin`.
 
 Before the connection's first matching echo, a throw shows **Cast not scored. Waiting
@@ -139,9 +146,55 @@ strength on screen stays at 72. Throws without a score only update the local cou
 means the API returned `201 Created` after writing to PostgreSQL. A `400` displays
 **Cast rejected by the server.** Other responses, a network error, or a ten-second
 timeout display **Cast save could not be confirmed.** A response can be lost after an
-insert, so the client sends each POST once. New throws and USB messages continue while
-a save is pending. Only the latest throw on the current game page can show its receipt.
+insert, so the client sends each POST once. After a failure the meter starts a fresh sweep
+from red. A disconnected session or a previous visit cannot apply a late receipt.
 See the [Sprint 1 API contract](../docs/api-contract.md#gem-et-kast).
+
+### Hooking a fish on /game
+
+While the POST is pending, the float rests on the surface and USB latency probes continue.
+In practice mode a 201 starts the fishing clock when the page is visible. For a level cast,
+the receipt must also contain the fish for that level. Only one cast owns the canvas.
+During each 800 ms nibble only the red tip is visible. A pull then shows **Fish scared away**.
+When the tip disappears and two rings appear, a pull shows **Fish hooked**. Below are the
+times on the visible fishing clock. Each new phase starts at its listed time.
+
+| Time from start | Float | Result of a USB pull |
+| --- | --- | --- |
+| 0 ms | Resting on the surface | Keep waiting |
+| 1,500 ms | First nibble | Fish scared away |
+| 2,300 ms | Resting on the surface | Keep waiting |
+| 3,200 ms | Second nibble | Fish scared away |
+| 4,000 ms | Resting on the surface | Keep waiting |
+| 4,900 ms | Underwater, two rings visible | Fish hooked |
+| 6,400 ms | Bite ends | Fish escaped if still unresolved |
+
+Open `/game` for **Practice mode**. It omits `levelId` from the POST and allows the full
+hook sequence on the original casts API. Open `/game?levelId=<id>` with a positive ID
+from the game database for a level cast. The client includes that `levelId` alongside
+`zone`, `strength` and `castAt`. Changing level or switching to practice ends the current
+attempt and releases USB. Use **Connect USB** on the new screen.
+
+For a level cast the client checks the 201 body for the requested level, a positive cast
+`id` and the server's `fish`. A hook during the bite passes `{ castId, levelId, fish }`
+to `FishingSession.OnGameState` once. The fish carries `speciesId`, `name`, `rarity`,
+`weightKg` and `lengthCm`. Its details stay hidden for the fight. With a missing fish,
+a mismatched level or an unreadable receipt, the page shows **Cast saved, but no fish
+is available for this cast.** and restarts the meter. Practice hooks carry no fish.
+A successful hook uses the existing receipt. Reporting a fight result to `/api/catches` belongs to #21.
+
+The level cast uses the API from [backend PR #101](https://github.com/Mercantec-GHC/H3-Online-ByteBait/pull/101).
+The lane needs an eligible fish species at the cast's depth for that API to return a fish.
+
+After either loss the meter starts from red with an empty previous-cast history. The
+result stays visible until the next scored cast. After a successful hook the water stays
+still until **Cast again**. The LEDs stay off throughout saving, nibbles and the bite.
+
+Switching tabs pauses the float. On return, the remaining cadence must fit within the
+proposed firmware's 60-second motion window, measured from receipt of the original
+throw. Otherwise the game shows **Controller motion window expired. Cast again.**
+and restarts the meter. If the port disconnects or its 15-second heartbeat expires,
+the game discards the active cast. Choose **Connect USB** to reconnect.
 
 ## Build and test
 
@@ -150,8 +203,11 @@ Run from the repository root:
 ```powershell
 dotnet restore ByteBait.slnx
 dotnet build ByteBait.slnx --configuration Release --no-restore
-node --check Frontend/ByteBait.Client/wwwroot/js/timing-meter.js
-node --check Frontend/ByteBait.Client/wwwroot/js/usb-controller.js
+$scripts = Get-ChildItem Frontend/ByteBait.Client/wwwroot/js/*.js, Frontend/ByteBait.Client.Tests/browser/float-preview.js
+foreach ($script in $scripts) {
+    node --check $script.FullName
+    if ($LASTEXITCODE) { throw "Invalid JavaScript in $($script.Name)" }
+}
 node --test "Frontend/ByteBait.Client.Tests/*.test.mjs"
 git diff --check
 ```
@@ -184,23 +240,50 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
 4. Choose **Back to home** while running, return via **Open game**, and reload. Confirm
    a fresh, still meter on each visit. Enable reduced motion in the browser, reload and
    check that manual start and pause still work. Check the browser console for errors.
-5. To check the error state, block the served `timing-meter.<fingerprint>.js` request in
+5. To check the error state, block the served `fishing-game.js` request in
    DevTools and hard-reload. Check the English error message, then remove the blocking
    rule and reload to confirm recovery.
 6. For a physical USB check, connect an Oplà running the standard USB sketch, select it
    with **Connect USB**. After the first reply, check that both latency values are shown,
    including when the meter is paused. Start the meter, let it run for a full sweep, and
    cast near the middle of green. Check for **Last cast zone: Green**, a strength from
-   0 to 100, and one received throw. The needle should keep moving. Pause and cast again.
-   Expect the missing-history message and a count of two. Unplug, reconnect and confirm
-   the counter starts at zero and the previous result has cleared.
+   0 to 100, and one received throw. The needle gives way to the waiting float.
+   Unplug, reconnect and confirm the counter starts at zero and the previous assessment clears.
 7. For the physical LED check, open the API-hosted game at <http://localhost:5250/game>
    with the local API running. Start the meter and connect USB during a sweep. Watch all
    five LEDs together as the needle crosses red, yellow and green in both directions.
    Pause, resume, switch to another tab, then return. The LEDs should go dark while
    paused or hidden and follow the needle again when running and visible. Make one cast
-   and check that the count increases by one while the colors keep changing. Choose
-   **Disconnect USB** while lit and check the LEDs go dark with the cable still attached.
+   and check that the count increases by one and all five LEDs go dark. With hook-enabled
+   firmware, pull during a dip, during the rings, and let one bite pass in separate casts.
+   For the level check, use `/game?levelId=<id>` on the API host with fish available on that
+   level's lane. Check the three outcomes above and look for red when the next sweep begins.
+
+## Local float preview
+
+Run this from the repository root on Windows with Python installed:
+
+```powershell
+py -m http.server 5174 --bind 127.0.0.1 --directory Frontend
+```
+
+Open the [local float preview](http://127.0.0.1:5174/ByteBait.Client.Tests/browser/float-preview.html) in Chrome.
+This test page runs the game's hook rules and canvas renderer with simulated input. It runs independently
+of the Blazor host, API and USB controller. Stop the local server with Ctrl+C.
+
+1. Choose **Simulate cast**. The red tip and pale body float above the water. At each of two nibbles only the tip remains visible, then the body rises again.
+2. Choose **Simulate hook** when the float disappears and two rings appear. Expect **Fish hooked**. A pull during a nibble shows **Fish scared away**. Letting the rings disappear shows **Fish escaped**.
+3. **Simulate cast** starts a fresh attempt at any time. Switching tabs pauses the attempt until you return. Try at a narrow and a wide window size, using Tab and Enter to operate the controls.
+
+With the preview server running and the Playwright dependency installed as described under
+[Cast saving tests in Chrome](#cast-saving-tests-in-chrome), run:
+
+```powershell
+node --test Frontend/ByteBait.Client.Tests/browser/float-preview.test.cjs
+```
+
+The tests read actual canvas pixels in Chrome. A controlled clock places frames and keyboard
+input just before and at the edges of the bite, including a late pull between animation frames.
 
 ## Backend tests
 
@@ -220,11 +303,19 @@ node --test Frontend/ByteBait.Client.Tests/browser/cast-saving.test.cjs
 ```
 
 The tests drive the real game with simulated serial messages and controlled HTTP
-responses. They check the JSON, request counts, failure messages, timeouts and delayed
-receipts across throws, reconnection and navigation. To include a real insert, point
+responses. Three consecutive level casts exercise a pull during the second nibble, a
+missed bite followed by a late pull, and a successful hook. The test compares all LED
+writes and checks which fish reaches Blazor. A separate test splits a `HOOK` line
+across a simulated unplug during the bite and a manual reconnection. The suite also
+covers stalled writes, tab switches, timeouts and late receipts across navigation.
+For simulated responses the standalone client on port 5173 also works with
+`BYTEBAIT_TEST_PORT=5173`. To include a real insert, point
 the API at a dedicated local test database, apply the existing migrations, and set
 `BYTEBAIT_TEST_CAST_DATABASE=1` in the test process. The real-API case prints the
-returned cast ID for comparison with the row in `casts`.
+returned cast ID for comparison with the row in `casts`. For the level test, also set
+`BYTEBAIT_TEST_LEVEL_ID` to a level with at least one species on its lane. Run the client
+and level-capable API on the same origin. Chrome compares the actual 201 with the hooked
+cast received by Blazor and counts the requests. USB input is simulated in both cases.
 
 For a physical check, open the API-hosted game in Chrome and filter the Network tab
 to `/api/casts`. Connect the Oplà, wait for the latency measurement and start the meter.

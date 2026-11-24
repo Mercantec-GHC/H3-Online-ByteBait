@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import * as meter from "../ByteBait.Client/wwwroot/js/timing-meter.js";
+import { createFishingGame } from "../ByteBait.Client/wwwroot/js/fishing-game.js";
 import { simulateUsb } from "./simulated-usb.mjs";
 const { drawTimingMeter, getZone } = meter;
 
@@ -97,6 +98,11 @@ function createBrowser(t, { reducedMotion = false } = {}) {
                 },
             } : null;
             canvases.add(this);
+        }
+
+        setAttribute(name, value) {
+            assert.equal(name, "aria-label");
+            this.label = value;
         }
 
         getContext(type) {
@@ -225,12 +231,12 @@ async function startUsbMeter(t, onWrite) {
     const browser = createBrowser(t);
     const usb = simulateUsb(onWrite);
     t.after(() => usb.controller.dispose());
-    meter.initialize(browser.canvas);
-    meter.start(browser.canvas);
+    const game = createFishingGame(browser.canvas, { async invokeMethodAsync() {} });
+    game.start();
     browser.runFrame(0);
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
-    return { browser, usb };
+    return { browser, usb, game };
 }
 
 function latestPong(usb) {
@@ -258,22 +264,22 @@ test("a ready, paused or hidden meter turns LEDs off until a visible active fram
     const { canvas } = browser;
     const usb = simulateUsb();
     t.after(() => usb.controller.dispose());
-    meter.initialize(canvas);
-    usb.controller.connect(canvas, meter);
+    const game = createFishingGame(canvas, { async invokeMethodAsync() {} });
+    usb.controller.connect(game);
     await settleCallbacks();
-    meter.start(canvas);
+    game.start();
     browser.runFrame(0);
     await settleCallbacks();
     browser.runFrame(1000);
     await settleCallbacks();
-    meter.stop(canvas);
-    meter.stop(canvas);
+    game.pause();
+    game.pause();
     browser.setHidden(true);
     browser.setHidden(false);
     await settleCallbacks();
     assert.deepEqual(ledLines(usb), ["LED:OFF\n", "LED:RED\n", "LED:GREEN\n", "LED:OFF\n"]);
 
-    meter.start(canvas);
+    game.start();
     browser.runFrame(2000);
     await settleCallbacks();
     browser.setHidden(true);
@@ -288,12 +294,12 @@ test("a ready, paused or hidden meter turns LEDs off until a visible active fram
 });
 
 test("disconnect turns the lights off; opening mid-sweep syncs green and unplug drops pending colors", async t => {
-    const { browser, usb } = await startUsbMeter(t);
+    const { browser, usb, game } = await startUsbMeter(t);
     await usb.controller.disconnect();
     browser.runFrame(1000);
     await settleCallbacks();
     assert.deepEqual(ledLines(usb), ["LED:RED\n", "LED:OFF\n"]);
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
     assert.equal(usb.writes.at(-1), "LED:GREEN\n");
     browser.runFrame(1400);
@@ -301,7 +307,7 @@ test("disconnect turns the lights off; opening mid-sweep syncs green and unplug 
     await settleCallbacks();
     browser.runFrame(1500);
     assert.deepEqual(ledLines(usb), ["LED:RED\n", "LED:OFF\n", "LED:GREEN\n"]);
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
     assert.equal(usb.writes.at(-1), "LED:YELLOW\n");
     await usb.controller.dispose();
@@ -327,7 +333,7 @@ test("a slow writer sends only the newest waiting zone and keeps receiving THROW
 
 test("disconnect releases a stalled LED writer and discards colors waiting behind it", async t => {
     t.mock.timers.enable({ apis: ["setTimeout"] });
-    const { browser, usb } = await startUsbMeter(t, (line, stream) => {
+    const { browser, usb, game } = await startUsbMeter(t, (line, stream) => {
         if (line === "LED:RED\n") {
             return new Promise(resolve => stream.signal.addEventListener("abort", resolve, { once: true }));
         }
@@ -338,13 +344,13 @@ test("disconnect releases a stalled LED writer and discards colors waiting behin
     await closed;
     assert.equal(usb.closes, 1);
     assert.deepEqual(ledLines(usb), ["LED:RED\n"]);
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
     assert.equal(usb.writes.at(-1), "LED:GREEN\n");
 });
 
 test("a THROW received at 1260 ms scores the green frame at 990 and timestamps the trigger at 1000", async t => {
-    const { browser, usb } = await startUsbMeter(t);
+    const { browser, usb, game } = await startUsbMeter(t);
     browser.setTime(20);
     usb.feed(latestPong(usb));
     await settleCallbacks();
@@ -355,19 +361,22 @@ test("a THROW received at 1260 ms scores the green frame at 990 and timestamps t
     usb.feed("THROW:72\n");
     await settleCallbacks();
     assert.deepEqual(usb.calls.at(-1), ["OnUsbThrow", {
-        strength: 72, receivedAtMs: 1260, zone: "green", castAt: "2026-01-01T00:00:01.000Z", reason: null,
+        attemptId: 1, strength: 72, receivedAtMs: 1260, zone: "green", castAt: "2026-01-01T00:00:01.000Z", reason: null,
     }]);
-    assert.equal(ledLines(usb).at(-1), "LED:YELLOW\n");
+    assert.equal(ledLines(usb).at(-1), "LED:OFF\n");
     browser.runFrame(1400);
-    assertNeedleAt(browser.canvas, 0.7);
+    assert.equal(browser.frames.size, 0);
+    assert.match(browser.canvas.label, /pale body/);
 
-    meter.stop(browser.canvas);
+    game.finishSave(1, false);
+    assertNeedleAt(browser.canvas, 0);
+    game.pause();
     usb.feed("THROW:11\n");
     await settleCallbacks();
     assert.deepEqual(usb.calls.at(-1), ["OnUsbThrow", {
         strength: 11, receivedAtMs: 1400, zone: null, castAt: null, reason: "missingHistory",
     }]);
-    meter.start(browser.canvas);
+    game.start();
     browser.runFrame(1410);
     browser.runFrame(1710);
     browser.setHidden(true);
@@ -380,7 +389,7 @@ test("a THROW received at 1260 ms scores the green frame at 990 and timestamps t
 
 test("a newer matching echo changes the trigger estimate only for subsequent throws in the session", async t => {
     t.mock.timers.enable({ apis: ["setTimeout"] });
-    const { browser, usb } = await startUsbMeter(t);
+    const { browser, usb, game } = await startUsbMeter(t);
     browser.setTime(20);
     usb.feed(latestPong(usb));
     await settleCallbacks();
@@ -392,14 +401,23 @@ test("a newer matching echo changes the trigger estimate only for subsequent thr
     usb.feed("THROW:75\n" + latestPong(usb) + "THROW:75\n");
     await settleCallbacks();
     assert.deepEqual(usb.calls.slice(-3), [
-        ["OnUsbThrow", { strength: 75, receivedAtMs: 5500, zone: "yellow", castAt: "2026-01-01T00:00:05.240Z", reason: null }],
+        ["OnUsbThrow", { attemptId: 1, strength: 75, receivedAtMs: 5500, zone: "yellow", castAt: "2026-01-01T00:00:05.240Z", reason: null }],
         ["OnUsbLatency", 500, 250],
-        ["OnUsbThrow", { strength: 75, receivedAtMs: 5500, zone: "green", castAt: "2026-01-01T00:00:05.000Z", reason: null }],
+        ["OnAdditionalThrow"],
     ]);
+    game.finishSave(1, false);
+    browser.runFrame(5500);
+    browser.runFrame(6500);
+    browser.runFrame(7000);
+    usb.feed("THROW:60\n");
+    await settleCallbacks();
+    assert.deepEqual(usb.calls.at(-1), ["OnUsbThrow", {
+        attemptId: 2, strength: 60, receivedAtMs: 7000, zone: "green", castAt: "2026-01-01T00:00:06.500Z", reason: null,
+    }]);
 });
 
 test("the 500 ms history limit includes its boundary and uses the unrounded latency sample", async t => {
-    const { browser, usb } = await startUsbMeter(t);
+    const { browser, usb, game } = await startUsbMeter(t);
     browser.setTime(500);
     usb.feed(latestPong(usb));
     await settleCallbacks();
@@ -411,7 +429,7 @@ test("the 500 ms history limit includes its boundary and uses the unrounded late
     assert.equal(usb.calls.at(-1)[1].castAt, "2026-01-01T00:00:01.000Z");
 
     await usb.controller.disconnect();
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
     browser.runFrame(2000.0625); // RTT 500.0625 ms puts the trigger just outside the retained interval.
     usb.feed(latestPong(usb) + "THROW:80\n");
@@ -422,7 +440,7 @@ test("the 500 ms history limit includes its boundary and uses the unrounded late
 });
 
 test("reopening requires a fresh echo and evaluates a batch of casts and a zero-RTT PONG in wire order", async t => {
-    const { browser, usb } = await startUsbMeter(t);
+    const { browser, usb, game } = await startUsbMeter(t);
     const oldPong = latestPong(usb);
     usb.feed(oldPong + "THROW:10\n"); // Even with a sample, the target predates the first frame.
     await settleCallbacks();
@@ -430,14 +448,14 @@ test("reopening requires a fresh echo and evaluates a batch of casts and a zero-
     await usb.controller.disconnect();
     browser.runFrame(990);
     browser.runFrame(1250);
-    usb.controller.connect(browser.canvas, meter);
+    usb.controller.connect(game);
     await settleCallbacks();
     usb.feed(oldPong + "THROW:1\n" + latestPong(usb) + "THROW:2\n");
     await settleCallbacks();
     assert.deepEqual(usb.calls.slice(-3), [
         ["OnUsbThrow", { strength: 1, receivedAtMs: 1250, zone: null, castAt: null, reason: "missingLatency" }],
         ["OnUsbLatency", 0, 0],
-        ["OnUsbThrow", { strength: 2, receivedAtMs: 1250, zone: "green", castAt: "2026-01-01T00:00:01.000Z", reason: null }],
+        ["OnUsbThrow", { attemptId: 1, strength: 2, receivedAtMs: 1250, zone: "green", castAt: "2026-01-01T00:00:01.000Z", reason: null }],
     ]);
 });
 

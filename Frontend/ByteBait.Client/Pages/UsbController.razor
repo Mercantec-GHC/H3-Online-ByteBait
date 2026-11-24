@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @using System.Globalization
 @using System.Net
+@using System.Text.Json
 @using ByteBait.Client.Casts
 @inject HttpClient Http
 @inject IJSRuntime JS
@@ -41,11 +42,13 @@
 </section>
 
 @code {
-    [Parameter, EditorRequired] public ElementReference MeterCanvas { get; set; }
-    [Parameter] public IJSObjectReference? MeterModule { get; set; }
+    [Parameter] public int? LevelId { get; set; }
+    [Parameter, EditorRequired] public IJSObjectReference GameController { get; set; } = default!;
+    /// <summary>Reports a hook in milliseconds on the browser's performance.now() clock.</summary>
+    [Parameter] public EventCallback<double> HookReceived { get; set; }
 
     // The meter has already assessed the zone at this throw's estimated UTC trigger time.
-    public sealed record UsbThrowResult(int Strength, double ReceivedAtMs, string? Zone, DateTimeOffset? CastAt, string? Reason);
+    public sealed record UsbThrowResult(int Strength, double ReceivedAtMs, string? Zone, DateTimeOffset? CastAt, string? Reason, int? AttemptId);
 
     private IJSObjectReference? module;
     private IJSObjectReference? controller;
@@ -113,7 +116,7 @@
         if (!disposed) StateHasChanged();
     }
 
-    private Task ConnectAsync() => CanConnect ? RunCommandAsync("connect", "connecting", MeterCanvas, MeterModule) : Task.CompletedTask;
+    private Task ConnectAsync() => CanConnect ? RunCommandAsync("connect", "connecting", GameController) : Task.CompletedTask;
     private Task DisconnectAsync() => state == "connected" ? RunCommandAsync("disconnect", "disconnecting") : Task.CompletedTask;
 
     private async Task RunCommandAsync(string command, string pendingState, params object?[] args)
@@ -145,6 +148,10 @@
             saveMessage = null;
             throwCount = 0;
         }
+        else if (saveMessage == "Saving cast…")
+        {
+            saveMessage = "Cast save could not be confirmed.";
+        }
         StateHasChanged();
     }
 
@@ -157,7 +164,27 @@
         StateHasChanged();
     }
 
-    /// <summary>Count every valid THROW once and replace the previous assessment, including on a miss.</summary>
+    /// <summary>Forward a hook from the active USB session to the game at its original receipt time.</summary>
+    [JSInvokable]
+    public Task OnUsbHook(double receivedAtMs)
+    {
+        if (disposed || state != "connected" || !double.IsFinite(receivedAtMs) || receivedAtMs < 0)
+        {
+            return Task.CompletedTask;
+        }
+        return HookReceived.InvokeAsync(receivedAtMs);
+    }
+
+    /// <summary>Additional throws count as USB input while the active cast retains its assessment.</summary>
+    [JSInvokable]
+    public void OnAdditionalThrow()
+    {
+        if (disposed || state != "connected") return;
+        throwCount++;
+        StateHasChanged();
+    }
+
+    /// <summary>Display the assessment and save the throw claimed by the game.</summary>
     [JSInvokable]
     public void OnUsbThrow(UsbThrowResult result)
     {
@@ -165,10 +192,10 @@
         lastThrow = result;
         throwCount++;
         saveMessage = null;
-        if (result.Reason is null && result.Zone is "red" or "yellow" or "green" && result.CastAt is { } castAt)
+        if (result.AttemptId.HasValue && result.Reason is null && result.Zone is "red" or "yellow" or "green" && result.CastAt is { } castAt)
         {
             saveMessage = "Saving cast…";
-            var request = new SaveCastRequest(result.Zone, result.Strength / 100.0, castAt.UtcDateTime);
+            var request = new SaveCastRequest(result.Zone, result.Strength / 100.0, castAt.UtcDateTime, LevelId);
             // The serial read loop awaits this callback. Let it accept the next THROW or PONG immediately.
             _ = SaveCastAsync(result, request);
         }
@@ -178,18 +205,37 @@
     /// <summary>Send one POST. Only the throw still on screen may publish its receipt.</summary>
     private async Task SaveCastAsync(UsbThrowResult source, SaveCastRequest request)
     {
+        const string noFish = "Cast saved, but no fish is available for this cast.";
         const string unconfirmed = "Cast save could not be confirmed.";
+        bool startFloat = false;
+        HookedCast? cast = null;
         string message;
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             using var response = await Http.PostAsJsonAsync("api/casts", request, CastJsonContext.Default.SaveCastRequest, timeout.Token);
+
             message = response.StatusCode switch
             {
                 HttpStatusCode.Created => "Cast saved.",
                 HttpStatusCode.BadRequest => "Cast rejected by the server.",
                 _ => unconfirmed
             };
+            if (response.StatusCode == HttpStatusCode.Created)
+            {
+                if (request.LevelId is { } levelId)
+                {
+                    using var body = await response.Content.ReadAsStreamAsync(timeout.Token);
+                    var receipt = await JsonSerializer.DeserializeAsync(body, CastJsonContext.Default.CastReceipt, timeout.Token);
+                    cast = receipt?.ForLevel(levelId);
+                }
+                startFloat = request.LevelId is null || cast is not null;
+                if (!startFloat) message = noFish;
+            }
+        }
+        catch (JsonException)
+        {
+            message = noFish;
         }
         catch (HttpRequestException)
         {
@@ -201,7 +247,10 @@
             message = unconfirmed;
         }
 
-        if (disposed || !ReferenceEquals(lastThrow, source)) return;
+        if (disposed || state != "connected" || !ReferenceEquals(lastThrow, source)) return;
+        // The serial reader may have already closed this attempt while .NET awaited the response.
+        if (!await GameController.InvokeAsync<bool>("finishSave", source.AttemptId, startFloat, cast)) return;
+        if (disposed || state != "connected" || !ReferenceEquals(lastThrow, source)) return;
         saveMessage = message;
         StateHasChanged();
     }

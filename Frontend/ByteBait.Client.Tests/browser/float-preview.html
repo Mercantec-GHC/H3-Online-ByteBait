@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Float preview | ByteBait</title>
+    <style>
+        :root { color-scheme: dark; font-family: ui-monospace, Consolas, monospace; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #0b1722; color: #f3edd0; }
+        main { max-width: 684px; margin: clamp(24px, 8vh, 72px) auto; padding: 0 20px; }
+        h1 { font-size: clamp(1.8rem, 5vw, 2.5rem); margin: 0; }
+        p { line-height: 1.5; }
+        canvas {
+            display: block; width: 100%; height: auto; image-rendering: pixelated;
+            background: #30696f; border: 2px solid #8ec99b;
+        }
+        .controls { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0; }
+        button {
+            min-height: 44px; padding: 8px 16px; font: inherit; font-weight: bold;
+            color: #f3edd0; background: #182e37; border: 2px solid #8ec99b; cursor: pointer;
+        }
+        #cast { background: #a8d9af; color: #102624; }
+        button:enabled:hover { filter: brightness(1.14); }
+        button:disabled { opacity: 0.5; cursor: default; }
+        button:focus-visible { outline: 3px solid #f3edd0; outline-offset: 3px; }
+        #status { color: #c2d6ce; }
+    </style>
+</head>
+<body>
+    <main>
+        <h1>Float preview</h1>
+        <p>Cast and watch the float. Hook when it goes completely underwater.</p>
+        <canvas id="scene" width="320" height="180" role="img" aria-label="Open water">
+            Your browser does not support the float canvas.
+        </canvas>
+        <div class="controls">
+            <button type="button" id="cast" disabled>Simulate cast</button>
+            <button type="button" id="hook" disabled>Simulate hook</button>
+        </div>
+        <p id="status" role="status">Loading preview…</p>
+    </main>
+    <script type="module">
+        import("./float-preview.js").catch(error => {
+            document.getElementById("status").textContent = "Unable to load the float preview. Reload to try again.";
+            console.error("Float preview initialization failed.", error);
+        });
+    </script>
+</body>
+</html>

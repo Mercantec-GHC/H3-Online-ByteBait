@@ -210,8 +210,8 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
-| `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: `sessionId`, krav, antal fangede fisk og vejrets effekter |
-| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `sessionId`. Serveren bestemmer fisken med RNG og returnerer den i svaret (`fish`: art, sjældenhed, vægt, længde) |
+| `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: krav og spillerens fremskridt |
+| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Serveren bestemmer fisken og returnerer den i svaret (`fish`) |
 | `POST` | `/api/catches` | Gem resultatet af fighten: `{ "castId": 1, "result": "caught" }` eller `"lost"`. Svar: fangsten og niveauets fremskridt |
 
 <!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->

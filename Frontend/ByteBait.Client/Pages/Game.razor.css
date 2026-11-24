@@ -44,17 +44,17 @@
     outline-offset: 4px;
 }
 
-.game-description {
+.game-content ::deep .game-description {
     margin: 0 0 0.75rem;
     color: #8ec99b;
 }
 
-.canvas-frame {
+.game-content ::deep .canvas-frame {
     border: 2px solid #8ec99b;
     background: #112b37;
 }
 
-#game-canvas {
+.game-content ::deep #game-canvas {
     display: block;
     width: 100%;
     height: auto;
