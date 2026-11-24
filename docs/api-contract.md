@@ -206,7 +206,7 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 > Berører S3.2 (#31, delt med Andreas @Zikka1987).
 > Fremskridt og oplåsning af baner gemmes i backend og hentes via `GET /api/lanes`.
 
-### Spil: niveau, kast og fangst (S2.7 – lavet, S2.8)
+### Spil: niveau, kast og fangst (S2.7 og S2.8 – lavet)
 
 <!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.7, #23) -->
 > [!NOTE]
@@ -216,7 +216,7 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
 | `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: krav og spillerens fremskridt |
-| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Fra S2.8 bestemmer serveren fisken og returnerer den i svaret |
+| `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Serveren bestemmer fisken og returnerer den i svaret (`fish`) |
 | `POST` | `/api/catches` | Gem resultatet af fighten. Svar: fangsten og niveauets nye fremskridt |
 
 Indtil spillerkonti findes (S2.13, #76), kræver endpoints ikke login, og kast og fangster gemmes uden spiller. Fremskridtet tælles så over alt, der er gemt uden spiller. Når #76 er lavet, kræver de login og arbejder på den spiller, der er logget ind.
@@ -261,8 +261,45 @@ Indtil spillerkonti findes (S2.13, #76), kræver endpoints ikke login, og kast o
 ```
 
 - `levelId` er valgfrit, så kast uden niveau (som i sprint 1) stadig virker. Kun et kast med `levelId` kan ende i en fangst.
-- Svaret har `levelId` med (`null` for et kast uden niveau). Fisken (`fish`) kommer i svaret fra S2.8.
 - **Fejl:** `400` med `errors.levelId`, hvis niveauet ikke findes.
+
+**Response `201 Created`** for et kast på et niveau (S2.8):
+
+```json
+{
+  "id": 17,
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-24T09:15:30.123Z",
+  "createdAt": "2026-11-24T09:15:30.456Z",
+  "levelId": 1,
+  "fish": {
+    "speciesId": 3,
+    "name": "Pike",
+    "rarity": "rare",
+    "weightKg": 2.41,
+    "lengthCm": 63.5
+  }
+}
+```
+
+- `fish` er den fisk, der sidder på krogen. Spillet bruger den til krogning og fight og viser den, når den er fanget.
+- `levelId` og `fish` er `null` for et kast uden niveau. `fish` er også `null`, hvis banen endnu ikke har fiskearter (startdata kommer i S2.10).
+
+**Sådan vælges fisken (S2.8)**
+
+1. **Dybde:** `strength` under `0.5` er et blødt kast (lavt vand), `0.5` og derover et hårdt kast (dybt vand). Kun arter på banen med den dybde kan bide. Har banen ingen arter dér, kan alle banens arter bide.
+2. **Sjældenhed:** sjælden = basischance × zonens multiplikator, legendarisk = basischance × zonens multiplikator, almindelig = resten op til 100 %. Med startdataene (0,20 og 0,05) giver rød 100/0/0 %, gul 75/20/5 % og grøn 62,5/30/7,5 %.
+3. Findes der ingen art med den trukne sjældenhed på dybden, bruges den næste lavere (legendarisk → sjælden → almindelig), og ellers den næste højere. Et kast får altid en fisk, hvis banen har arter.
+4. **Art:** én af de passende arter, alle lige sandsynlige.
+5. **Størrelse:** vægt og længde trækkes mellem artens min og max med samme tilfældige andel, så en tung fisk også er lang.
+
+Chancer og multiplikatorer læses fra databasen ved hvert kast, så ændringer i admin-panelet (S3.7) gælder med det samme.
+
+<!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21), S2.10 (#26) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->
+> [!NOTE]
+> **BESLUTNING fra Bjarke (@Bmantaz) i S2.8 (#24).** Påvirker S2.4 og S2.5 (Andreas @Zikka1987) og S2.10 (Frederik @Juuul999).
+> Grænsen mellem blødt og hårdt kast er `strength = 0.5`. Startdataene i S2.10 bør give hver bane mindst én almindelig art på både lavt og dybt vand, så begge slags kast har fisk at vælge imellem.
 
 #### Gem en fangst
 
