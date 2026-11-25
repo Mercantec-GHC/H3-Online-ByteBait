@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -36,6 +37,10 @@ public static class DataServiceCollectionExtensions
             .UseNpgsql(connectionString, npgsql =>
                 // Neon suspends the database when idle, and the first connection afterwards can fail
                 npgsql.EnableRetryOnFailure(maxRetryCount: 3))
-            .UseSnakeCaseNamingConvention();
+            .UseSnakeCaseNamingConvention()
+            // Identity maps more than an account needs, and we leave those parts out on purpose
+            .ConfigureWarnings(warnings => warnings.Ignore(
+                CoreEventId.MappedEntityTypeIgnoredWarning,
+                CoreEventId.MappedPropertyIgnoredWarning));
     }
 }

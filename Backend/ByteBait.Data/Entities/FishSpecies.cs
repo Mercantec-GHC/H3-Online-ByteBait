@@ -1,6 +1,6 @@
 namespace ByteBait.Data.Entities;
 
-// A kind of fish, e.g. pike. Rarity and price can be changed in the admin panel.
+// A kind of fish on one lane, e.g. pike. Rarity and price can be changed in the admin panel.
 // The weight and length of a caught fish are picked between the min and max values.
 public class FishSpecies
 {

@@ -12,3 +12,15 @@ public sealed class PostgresFactAttribute : FactAttribute
         }
     }
 }
+
+// The same for a test with several cases
+public sealed class PostgresTheoryAttribute : TheoryAttribute
+{
+    public PostgresTheoryAttribute()
+    {
+        if (!ApiFactory.HasDatabase)
+        {
+            Skip = "ConnectionStrings__Default is not set";
+        }
+    }
+}

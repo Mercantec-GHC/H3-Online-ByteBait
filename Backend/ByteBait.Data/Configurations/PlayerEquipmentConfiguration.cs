@@ -19,6 +19,7 @@ public class PlayerEquipmentConfiguration : IEntityTypeConfiguration<PlayerEquip
         builder.HasOne(pe => pe.Player)
             .WithMany(p => p.Equipment)
             .HasForeignKey(pe => pe.PlayerId)
+            .HasConstraintName("fk_player_equipment_players_player_id")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Equipment that someone owns can't be deleted from the shop

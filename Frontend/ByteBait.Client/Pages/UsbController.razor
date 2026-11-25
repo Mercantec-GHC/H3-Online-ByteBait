@@ -202,7 +202,29 @@
         StateHasChanged();
     }
 
-    /// <summary>Send one POST. Only the throw still on screen may publish its receipt.</summary>
+    private bool IsCurrentThrow(UsbThrowResult source) =>
+        !disposed && state == "connected" && ReferenceEquals(lastThrow, source);
+
+    /// <summary>Get the current player's token on the API origin. A null response means no POST was sent.</summary>
+    private async Task<HttpResponseMessage?> PostCastAsync(UsbThrowResult source, SaveCastRequest request, CancellationToken cancellation)
+    {
+        using var post = new HttpRequestMessage(HttpMethod.Post, "api/casts");
+        try
+        {
+            var token = await Http.GetFromJsonAsync("api/account/antiforgery", CastJsonContext.Default.AntiforgeryToken, cancellation);
+            if (string.IsNullOrWhiteSpace(token?.Token) || !IsCurrentThrow(source)) return null;
+            post.Headers.Add("X-XSRF-TOKEN", token.Token);
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode != HttpStatusCode.Unauthorized) { return null; }
+        catch (JsonException) { return null; }
+        catch (FormatException) { return null; }
+        catch (OperationCanceledException) { return null; }
+
+        post.Content = JsonContent.Create(request, CastJsonContext.Default.SaveCastRequest);
+        return await Http.SendAsync(post, cancellation);
+    }
+
+    /// <summary>Share the ten-second deadline across the token and cast requests. Only the active throw may publish its receipt.</summary>
     private async Task SaveCastAsync(UsbThrowResult source, SaveCastRequest request)
     {
         const string noFish = "Cast saved, but no fish is available for this cast.";
@@ -213,15 +235,17 @@
         try
         {
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            using var response = await Http.PostAsJsonAsync("api/casts", request, CastJsonContext.Default.SaveCastRequest, timeout.Token);
+            using var response = await PostCastAsync(source, request, timeout.Token);
 
-            message = response.StatusCode switch
+            message = response?.StatusCode switch
             {
+                null => "Cast was not sent.",
+                HttpStatusCode.Unauthorized => "Sign in to save your cast.",
                 HttpStatusCode.Created => "Cast saved.",
                 HttpStatusCode.BadRequest => "Cast rejected by the server.",
                 _ => unconfirmed
             };
-            if (response.StatusCode == HttpStatusCode.Created)
+            if (response?.StatusCode == HttpStatusCode.Created)
             {
                 if (request.LevelId is { } levelId)
                 {
@@ -237,6 +261,10 @@
         {
             message = noFish;
         }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            message = "Sign in to save your cast.";
+        }
         catch (HttpRequestException)
         {
             // A lost response can follow a committed insert. Replaying the POST could duplicate the cast.
@@ -247,10 +275,10 @@
             message = unconfirmed;
         }
 
-        if (disposed || state != "connected" || !ReferenceEquals(lastThrow, source)) return;
+        if (!IsCurrentThrow(source)) return;
         // The serial reader may have already closed this attempt while .NET awaited the response.
         if (!await GameController.InvokeAsync<bool>("finishSave", source.AttemptId, startFloat, cast)) return;
-        if (disposed || state != "connected" || !ReferenceEquals(lastThrow, source)) return;
+        if (!IsCurrentThrow(source)) return;
         saveMessage = message;
         StateHasChanged();
     }

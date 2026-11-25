@@ -1,17 +1,20 @@
 // Exercises the real Blazor page with a simulated Oplà. HTTP is intercepted unless the database test is enabled.
 const assert = require("node:assert/strict");
-const { EventEmitter, once } = require("node:events");
+const { randomUUID } = require("node:crypto");
 const { test } = require("node:test");
 const { chromium } = require("playwright-core");
 
-const port = Number(process.env.BYTEBAIT_TEST_PORT ?? 5250);
-const gameUrl = `http://localhost:${port}/game`;
+const realDatabase = process.env.BYTEBAIT_TEST_CAST_DATABASE === "1";
+const port = Number(process.env.BYTEBAIT_TEST_PORT ?? (realDatabase ? 7172 : 5173));
+const gameUrl = `${realDatabase ? "https" : "http"}://localhost:${port}/game`;
 const castUrl = new URL("/api/casts", gameUrl).href;
+const tokenUrl = new URL("/api/account/antiforgery", gameUrl).href;
 
 async function openGame(t, query = "", connect = true) {
     const browser = await chromium.launch({ channel: "chrome" });
     t.after(() => browser.close());
-    const page = await browser.newPage();
+    // Only the real, loopback API uses the local ASP.NET development certificate.
+    const page = await browser.newPage({ ignoreHTTPSErrors: realDatabase });
     page.setDefaultTimeout(8000);
     const errors = [];
     page.on("pageerror", error => errors.push(error.message));
@@ -94,16 +97,26 @@ async function openGame(t, query = "", connect = true) {
 
 // Hold each request until the test chooses its outcome, including out-of-order replies.
 async function interceptCasts(game) {
-    const events = new EventEmitter();
     const requests = [];
+    let lastRoute;
+    let tokenCount = 0;
+    await game.page.route(tokenUrl, route => {
+        assert.equal(route.request().method(), "GET");
+        return route.fulfill({ json: { token: "test-token-" + ++tokenCount } });
+    });
     await game.page.route(castUrl, route => {
+        assert.equal(route.request().headers()["x-xsrf-token"], "test-token-" + tokenCount);
         requests.push(route.request());
-        events.emit("post", route);
+        lastRoute = route;
     });
     const send = async strength => {
-        const received = once(events, "post", { signal: AbortSignal.timeout(8000) });
+        const previous = requests.length;
         await game.feed(strength);
-        return (await received)[0];
+        // Let the WASM continuation read the token and dispatch the POST on the paused clock.
+        const deadline = Date.now() + 8000;
+        while (requests.length === previous && Date.now() < deadline) await game.page.clock.runFor(1);
+        assert.equal(requests.length, previous + 1, await game.page.locator("body").innerText());
+        return lastRoute;
     };
     return { send, requests };
 }
@@ -204,7 +217,7 @@ test("three level casts on one port scare, lose and hook exactly one fish each",
     await game.click("Cast again");
     await visible("Meter running.");
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF", "LED:RED"]);
-    assert.deepEqual(apiCalls, [castUrl, castUrl, castUrl]);
+    assert.deepEqual(apiCalls, [tokenUrl, castUrl, tokenUrl, castUrl, tokenUrl, castUrl]);
 });
 
 test("unplugging during a bite discards a partial hook before the next port and fish", async t => {
@@ -433,6 +446,7 @@ test("rejected, unexpected and lost replies each rearm the meter without replayi
     await game.calibrate();
     for (const [raw, status, message] of [
         [0, 400, "Cast rejected by the server."],
+        [55, 401, "Sign in to save your cast."],
         [100, 200, "Cast save could not be confirmed."],
         [30, null, "Cast save could not be confirmed."],
     ]) {
@@ -449,8 +463,8 @@ test("rejected, unexpected and lost replies each rearm the meter without replayi
     await game.click("Pause meter");
     await game.feed(31);
     await visible("Cast not scored. No meter history for this throw.");
-    await visible("Throws received: 4");
-    assert.equal(requests.length, 3);
+    await visible("Throws received: 5");
+    assert.equal(requests.length, 4);
 });
 
 test("late receipts cannot start the float after unplugging, reconnecting or leaving the page", async t => {
@@ -568,18 +582,82 @@ test("a timed-out POST stays unconfirmed and is not sent a second time", async t
     assert.equal(requests.length, 1);
 });
 
+test("a failed token request rearms the meter without posting a cast", async t => {
+    const game = await openGame(t);
+    const { requests } = await interceptCasts(game);
+    await game.page.route(tokenUrl, route => route.fulfill({ status: 503 }));
+    await game.calibrate();
+    await game.feed(72);
+    await game.receipt("Cast was not sent.");
+    await game.visible("Meter running.");
+    assert.equal(requests.length, 0);
+});
+
+test("a token arriving after USB disconnect cannot send the abandoned cast", async t => {
+    const game = await openGame(t);
+    const { requests } = await interceptCasts(game);
+    const pending = Promise.withResolvers();
+    await game.page.route(tokenUrl, route => pending.resolve(route));
+    await game.calibrate();
+    await game.feed(72);
+    const route = await pending.promise;
+    await game.page.evaluate(() => window.unplugUsb());
+    await game.visible("USB disconnected.");
+    const delivered = game.page.waitForResponse(tokenUrl);
+    await route.fulfill({ json: { token: "obsolete" } });
+    await (await delivered).finished();
+    await game.page.clock.runFor(100);
+    assert.equal(requests.length, 0);
+});
+
+// Registration signs a unique local player in. The browser and APIRequestContext share cookies.
+async function registerTestPlayer(page) {
+    const api = page.context().request;
+    const tokenResponse = await api.get(tokenUrl);
+    assert.equal(tokenResponse.status(), 200);
+    const { token } = await tokenResponse.json();
+    const response = await api.post(new URL("/api/account/register", gameUrl).href, {
+        headers: { "X-XSRF-TOKEN": token },
+        data: { userName: "cast" + randomUUID().slice(0, 8), password: randomUUID() },
+    });
+    assert.equal(response.status(), 201);
+    return token;
+}
+
+test("the API rejects an anonymous cast and a signed-in cast carrying the pre-login token", {
+    skip: !realDatabase,
+}, async t => {
+    const game = await openGame(t);
+    await game.calibrate();
+    const unauthorized = game.page.waitForResponse(castUrl);
+    await game.feed(72);
+    await game.receipt("Sign in to save your cast.");
+    assert.equal((await unauthorized).status(), 401);
+
+    const anonymousToken = await registerTestPlayer(game.page);
+    await game.page.route(tokenUrl, route => route.fulfill({ json: { token: anonymousToken } }));
+    await game.page.clock.runFor(320);
+    const rejected = game.page.waitForResponse(castUrl);
+    await game.feed(72);
+    await game.receipt("Cast rejected by the server.");
+    const response = await rejected;
+    assert.equal(response.status(), 400);
+    assert.equal((await response.json()).title, "Invalid antiforgery token");
+});
+
 test("one simulated throw through the real API receives a database receipt", {
     skip: process.env.BYTEBAIT_TEST_CAST_DATABASE !== "1",
 }, async t => {
     const game = await openGame(t);
+    await registerTestPlayer(game.page);
     const requests = [];
     game.page.on("request", r => { if (r.url() === castUrl) requests.push(r); });
     await game.calibrate();
     const reply = game.page.waitForResponse(castUrl);
     await game.feed(72);
+    await game.receipt("Cast saved.");
     const response = await reply;
     assert.equal(response.status(), 201);
-    await game.receipt("Cast saved.");
     await game.visible("Throws received: 1");
     assert.equal(requests.length, 1);
     const sent = requests[0].postDataJSON();
@@ -598,24 +676,25 @@ test("the fish from the real level endpoint reaches the hooked game state unchan
     assert.ok(Number.isInteger(levelId) && levelId > 0);
     const game = await openGame(t, "?levelId=" + levelId);
     const { page } = game;
+    await registerTestPlayer(page);
     const hooks = await watchHooks(page);
     const apiCalls = [];
     page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api/")) apiCalls.push(request.url()); });
     await game.calibrate();
     const reply = page.waitForResponse(castUrl);
     await game.feed(72);
+    await game.receipt("Cast saved.");
     const response = await reply;
     assert.equal(response.status(), 201);
     const saved = await response.json();
     assert.equal(saved.levelId, levelId);
     assert.ok(saved.id > 0 && saved.fish?.speciesId > 0);
-    await game.receipt("Cast saved.");
     await page.clock.runFor(5050);
     await game.hook();
     await game.receipt("Fish hooked");
     await game.hook();
     await page.clock.runFor(100);
     assert.deepEqual(await hooks(), [{ castId: saved.id, levelId, fish: saved.fish }]);
-    assert.deepEqual(apiCalls, [castUrl]);
+    assert.deepEqual(apiCalls, [tokenUrl, castUrl]);
     t.diagnostic("Verified PostgreSQL level cast " + JSON.stringify(saved));
 });

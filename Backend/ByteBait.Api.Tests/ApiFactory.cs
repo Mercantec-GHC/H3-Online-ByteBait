@@ -1,5 +1,8 @@
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ByteBait.Api.Tests;
 
@@ -21,5 +24,12 @@ public sealed class ApiFactory : WebApplicationFactory<Program>
 
         // Validation tests never reach the database, so they can run without one
         builder.UseSetting("ConnectionStrings:Default", HasDatabase ? ConnectionString : "Host=localhost;Database=unused");
+
+        // Otherwise every start waits for a database that is not there, to read the cookie keys
+        if (!HasDatabase)
+        {
+            builder.ConfigureTestServices(services =>
+                services.PostConfigure<KeyManagementOptions>(options => options.XmlRepository = null));
+        }
     }
 }

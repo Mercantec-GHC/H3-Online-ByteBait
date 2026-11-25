@@ -199,6 +199,32 @@ namespace ByteBait.Data.Migrations
 
                             t.HasCheckConstraint("ck_equipment_type", "type IN ('rod', 'bait', 'line')");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Name = "Carbon Rod",
+                            Power = 1,
+                            Price = 200,
+                            Type = "rod"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Name = "Nightcrawler",
+                            Power = 1,
+                            Price = 50,
+                            Type = "bait"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Name = "Braided Line",
+                            Power = 1,
+                            Price = 150,
+                            Type = "line"
+                        });
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.FishSpecies", b =>
@@ -255,12 +281,9 @@ namespace ByteBait.Data.Migrations
                     b.HasKey("Id")
                         .HasName("pk_fish_species");
 
-                    b.HasIndex("LaneId")
-                        .HasDatabaseName("ix_fish_species_lane_id");
-
-                    b.HasIndex("Name")
+                    b.HasIndex("LaneId", "Name")
                         .IsUnique()
-                        .HasDatabaseName("ix_fish_species_name");
+                        .HasDatabaseName("ix_fish_species_lane_id_name");
 
                     b.ToTable("fish_species", null, t =>
                         {
@@ -273,6 +296,320 @@ namespace ByteBait.Data.Migrations
                             t.HasCheckConstraint("ck_fish_species_rarity", "rarity IN ('common', 'rare', 'legendary')");
 
                             t.HasCheckConstraint("ck_fish_species_weight_range", "min_weight_kg > 0 AND max_weight_kg >= min_weight_kg");
+                        });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 40.0,
+                            MaxWeightKg = 1.2,
+                            MinLengthCm = 15.0,
+                            MinWeightKg = 0.10000000000000001,
+                            Name = "Perch",
+                            Price = 10,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 60.0,
+                            MaxWeightKg = 3.5,
+                            MinLengthCm = 30.0,
+                            MinWeightKg = 0.80000000000000004,
+                            Name = "Tench",
+                            Price = 30,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Depth = "shallow",
+                            LaneId = 1,
+                            MaxLengthCm = 120.0,
+                            MaxWeightKg = 14.0,
+                            MinLengthCm = 60.0,
+                            MinWeightKg = 3.0,
+                            Name = "Pike",
+                            Price = 100,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 60.0,
+                            MaxWeightKg = 3.5,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.5,
+                            Name = "Bream",
+                            Price = 12,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 85.0,
+                            MaxWeightKg = 7.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 1.0,
+                            Name = "Zander",
+                            Price = 35,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            Depth = "deep",
+                            LaneId = 1,
+                            MaxLengthCm = 200.0,
+                            MaxWeightKg = 45.0,
+                            MinLengthCm = 100.0,
+                            MinWeightKg = 10.0,
+                            Name = "Wels Catfish",
+                            Price = 120,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 48.0,
+                            MaxWeightKg = 1.5,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Grayling",
+                            Price = 18,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 65.0,
+                            MaxWeightKg = 4.0,
+                            MinLengthCm = 30.0,
+                            MinWeightKg = 0.5,
+                            Name = "Trout",
+                            Price = 50,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Depth = "shallow",
+                            LaneId = 2,
+                            MaxLengthCm = 95.0,
+                            MaxWeightKg = 11.0,
+                            MinLengthCm = 60.0,
+                            MinWeightKg = 3.0,
+                            Name = "Sea Trout",
+                            Price = 150,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.6000000000000001,
+                            MinLengthCm = 20.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Perch",
+                            Price = 20,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 110.0,
+                            MaxWeightKg = 10.0,
+                            MinLengthCm = 50.0,
+                            MinWeightKg = 2.0,
+                            Name = "Pike",
+                            Price = 60,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Depth = "deep",
+                            LaneId = 2,
+                            MaxLengthCm = 120.0,
+                            MaxWeightKg = 18.0,
+                            MinLengthCm = 75.0,
+                            MinWeightKg = 5.0,
+                            Name = "Salmon",
+                            Price = 180,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.5,
+                            MinLengthCm = 20.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Flounder",
+                            Price = 25,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 90.0,
+                            MaxWeightKg = 1.3,
+                            MinLengthCm = 50.0,
+                            MinWeightKg = 0.40000000000000002,
+                            Name = "Garfish",
+                            Price = 70,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Depth = "shallow",
+                            LaneId = 3,
+                            MaxLengthCm = 80.0,
+                            MaxWeightKg = 12.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 2.0,
+                            Name = "Turbot",
+                            Price = 220,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 32.0,
+                            MaxWeightKg = 0.40000000000000002,
+                            MinLengthCm = 18.0,
+                            MinWeightKg = 0.10000000000000001,
+                            Name = "Herring",
+                            Price = 28,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 80.0,
+                            MaxWeightKg = 6.0,
+                            MinLengthCm = 40.0,
+                            MinWeightKg = 1.0,
+                            Name = "Sea Bass",
+                            Price = 80,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Depth = "deep",
+                            LaneId = 3,
+                            MaxLengthCm = 220.0,
+                            MaxWeightKg = 35.0,
+                            MinLengthCm = 120.0,
+                            MinWeightKg = 8.0,
+                            Name = "Conger Eel",
+                            Price = 250,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 45.0,
+                            MaxWeightKg = 1.2,
+                            MinLengthCm = 25.0,
+                            MinWeightKg = 0.29999999999999999,
+                            Name = "Mackerel",
+                            Price = 35,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 85.0,
+                            MaxWeightKg = 8.0,
+                            MinLengthCm = 45.0,
+                            MinWeightKg = 1.5,
+                            Name = "Sea Trout",
+                            Price = 100,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Depth = "shallow",
+                            LaneId = 4,
+                            MaxLengthCm = 280.0,
+                            MaxWeightKg = 120.0,
+                            MinLengthCm = 150.0,
+                            MinWeightKg = 30.0,
+                            Name = "Swordfish",
+                            Price = 320,
+                            Rarity = "legendary"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 90.0,
+                            MaxWeightKg = 8.0,
+                            MinLengthCm = 35.0,
+                            MinWeightKg = 0.80000000000000004,
+                            Name = "Cod",
+                            Price = 40,
+                            Rarity = "common"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 150.0,
+                            MaxWeightKg = 18.0,
+                            MinLengthCm = 70.0,
+                            MinWeightKg = 3.0,
+                            Name = "Ling",
+                            Price = 120,
+                            Rarity = "rare"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Depth = "deep",
+                            LaneId = 4,
+                            MaxLengthCm = 290.0,
+                            MaxWeightKg = 350.0,
+                            MinLengthCm = 160.0,
+                            MinWeightKg = 80.0,
+                            Name = "Bluefin Tuna",
+                            Price = 400,
+                            Rarity = "legendary"
                         });
                 });
 
@@ -324,6 +661,44 @@ namespace ByteBait.Data.Migrations
 
                             t.HasCheckConstraint("ck_lanes_number_positive", "number >= 1");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            City = "Nordborg",
+                            Latitude = 55.060000000000002,
+                            Longitude = 9.7400000000000002,
+                            Name = "Nordborg Sø",
+                            Number = 1
+                        },
+                        new
+                        {
+                            Id = 2,
+                            City = "Silkeborg",
+                            Latitude = 56.170000000000002,
+                            Longitude = 9.5500000000000007,
+                            Name = "Gudenåen",
+                            Number = 2
+                        },
+                        new
+                        {
+                            Id = 3,
+                            City = "Ringkøbing",
+                            Latitude = 56.090000000000003,
+                            Longitude = 8.2400000000000002,
+                            Name = "Ringkøbing Havn",
+                            Number = 3
+                        },
+                        new
+                        {
+                            Id = 4,
+                            City = "Vejle",
+                            Latitude = 55.710000000000001,
+                            Longitude = 9.5399999999999991,
+                            Name = "Open sea off Vejle",
+                            Number = 4
+                        });
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.Level", b =>
@@ -360,6 +735,64 @@ namespace ByteBait.Data.Migrations
 
                             t.HasCheckConstraint("ck_levels_required_fish_positive", "required_fish >= 1");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            LaneId = 1,
+                            Number = 1,
+                            RequiredFish = 5
+                        },
+                        new
+                        {
+                            Id = 2,
+                            LaneId = 1,
+                            Number = 2,
+                            RequiredFish = 5
+                        },
+                        new
+                        {
+                            Id = 3,
+                            LaneId = 2,
+                            Number = 1,
+                            RequiredFish = 7
+                        },
+                        new
+                        {
+                            Id = 4,
+                            LaneId = 2,
+                            Number = 2,
+                            RequiredFish = 8
+                        },
+                        new
+                        {
+                            Id = 5,
+                            LaneId = 3,
+                            Number = 1,
+                            RequiredFish = 10
+                        },
+                        new
+                        {
+                            Id = 6,
+                            LaneId = 3,
+                            Number = 2,
+                            RequiredFish = 10
+                        },
+                        new
+                        {
+                            Id = 7,
+                            LaneId = 4,
+                            Number = 1,
+                            RequiredFish = 12
+                        },
+                        new
+                        {
+                            Id = 8,
+                            LaneId = 4,
+                            Number = 2,
+                            RequiredFish = 13
+                        });
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.Player", b =>
@@ -369,10 +802,19 @@ namespace ByteBait.Data.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("access_failed_count");
+
                     b.Property<string>("AquariumShareCode")
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)")
                         .HasColumnName("aquarium_share_code");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
@@ -380,9 +822,31 @@ namespace ByteBait.Data.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("now()");
 
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("boolean")
+                        .HasColumnName("lockout_enabled");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lockout_end");
+
                     b.Property<int>("Money")
                         .HasColumnType("integer")
                         .HasColumnName("money");
+
+                    b.Property<string>("NormalizedUserName")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("normalized_user_name");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("text")
+                        .HasColumnName("password_hash");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("text")
+                        .HasColumnName("security_stamp");
 
                     b.Property<string>("UserName")
                         .IsRequired()
@@ -397,9 +861,9 @@ namespace ByteBait.Data.Migrations
                         .IsUnique()
                         .HasDatabaseName("ix_players_aquarium_share_code");
 
-                    b.HasIndex("UserName")
+                    b.HasIndex("NormalizedUserName")
                         .IsUnique()
-                        .HasDatabaseName("ix_players_user_name");
+                        .HasDatabaseName("ix_players_normalized_user_name");
 
                     b.ToTable("players", null, t =>
                         {
@@ -505,6 +969,149 @@ namespace ByteBait.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Microsoft.AspNetCore.DataProtection.EntityFrameworkCore.DataProtectionKey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("FriendlyName")
+                        .HasColumnType("text")
+                        .HasColumnName("friendly_name");
+
+                    b.Property<string>("Xml")
+                        .HasColumnType("text")
+                        .HasColumnName("xml");
+
+                    b.HasKey("Id")
+                        .HasName("pk_data_protection_keys");
+
+                    b.ToTable("data_protection_keys", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("text")
+                        .HasColumnName("concurrency_stamp");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("normalized_name");
+
+                    b.HasKey("Id")
+                        .HasName("pk_roles");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("ix_roles_normalized_name");
+
+                    b.ToTable("roles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("6f0f3f5e-52a1-4b0e-9d5c-0c1b7c2a8e41"),
+                            ConcurrencyStamp = "b7d0c1a4-1f6e-4c55-8a37-d1b4e0f29c63",
+                            Name = "admin",
+                            NormalizedName = "ADMIN"
+                        });
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_role_claims");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_role_claims_role_id");
+
+                    b.ToTable("role_claims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ClaimType")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_type");
+
+                    b.Property<string>("ClaimValue")
+                        .HasColumnType("text")
+                        .HasColumnName("claim_value");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_player_claims");
+
+                    b.HasIndex("UserId")
+                        .HasDatabaseName("ix_player_claims_player_id");
+
+                    b.ToTable("player_claims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("player_id");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("role_id");
+
+                    b.HasKey("UserId", "RoleId")
+                        .HasName("pk_player_roles");
+
+                    b.HasIndex("RoleId")
+                        .HasDatabaseName("ix_player_roles_role_id");
+
+                    b.ToTable("player_roles", (string)null);
+                });
+
             modelBuilder.Entity("ByteBait.Data.Entities.Cast", b =>
                 {
                     b.HasOne("ByteBait.Data.Entities.FishSpecies", "FishSpecies")
@@ -587,6 +1194,43 @@ namespace ByteBait.Data.Migrations
                     b.Navigation("Equipment");
 
                     b.Navigation("Player");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_role_claims_roles_role_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
+                {
+                    b.HasOne("ByteBait.Data.Entities.Player", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_claims_players_player_id");
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<System.Guid>", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
+                        .WithMany()
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_roles_roles_role_id");
+
+                    b.HasOne("ByteBait.Data.Entities.Player", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_player_roles_players_player_id");
                 });
 
             modelBuilder.Entity("ByteBait.Data.Entities.Cast", b =>

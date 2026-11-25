@@ -16,4 +16,8 @@ public class SaveCastDto
 
     [Required]
     public DateTimeOffset? CastAt { get; set; }
+
+    // The level the cast is made on (from S2.7). Optional, so sprint 1 casts without a level still work.
+    [Range(1, int.MaxValue, ErrorMessage = "LevelId must be a positive number.")]
+    public int? LevelId { get; set; }
 }

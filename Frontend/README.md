@@ -25,8 +25,10 @@ Stop the server with `Ctrl+C`.
 The foundation page at `/` displays **ByteBait** and **Frontend foundation is ready.**
 Choose **Open game** to navigate to `/game`, or open <http://localhost:5173/game> directly.
 The meter, USB connection and LEDs work on the standalone client. To save a cast, run
-the API with a PostgreSQL connection and open its copy of the game at
-<http://localhost:5250/game>. See the [backend setup](../Backend/README.md).
+the API with a local PostgreSQL database and the `https` profile. Open
+<https://localhost:7172/game> in the signed-in browser. Until the account pages in
+#77 are available, use the [authenticated browser tests](#cast-saving-tests-in-chrome)
+to exercise the same flow with temporary local players. See the [backend setup](../Backend/README.md).
 
 ## Casting meter
 
@@ -137,22 +139,26 @@ Either message replaces the previous zone. A new connection clears the last thro
 
 ### Save a scored cast
 
-Blazor sends one same-origin `POST /api/casts` per scored throw. The JSON carries the
+For each scored throw, Blazor first fetches `GET /api/account/antiforgery` on the
+game's origin. It sends the returned token in `X-XSRF-TOKEN` on one `POST /api/casts`.
+The signed-in player's cookies accompany both calls. The JSON carries the
 historical `zone`, `strength` divided by 100, and the estimated trigger time `castAt`
 in UTC. For example, `THROW:72` in green sends a strength of `0.72`, while the raw
 strength on screen stays at 72. Throws without a score only update the local counter.
 
 **Saving cast…** appears below the zone while the request is pending. **Cast saved.**
-means the API returned `201 Created` after writing to PostgreSQL. A `400` displays
-**Cast rejected by the server.** Other responses, a network error, or a ten-second
-timeout display **Cast save could not be confirmed.** A response can be lost after an
-insert, so the client sends each POST once. After a failure the meter starts a fresh sweep
+means the API returned `201 Created` after writing to PostgreSQL. Both requests
+share one ten-second deadline. A failed token fetch shows **Cast was not sent.**
+A `401` shows **Sign in to save your cast.** A rejected POST (`400`) shows
+**Cast rejected by the server.** An unexpected or lost POST response, including
+a timeout, shows **Cast save could not be confirmed.** The insert may already have
+succeeded, so the client never repeats the POST. After a failure the meter starts a fresh sweep
 from red. A disconnected session or a previous visit cannot apply a late receipt.
 See the [Sprint 1 API contract](../docs/api-contract.md#gem-et-kast).
 
 ### Hooking a fish on /game
 
-While the POST is pending, the float rests on the surface and USB latency probes continue.
+While the token and cast requests are pending, the float rests on the surface and USB latency probes continue.
 In practice mode a 201 starts the fishing clock when the page is visible. For a level cast,
 the receipt must also contain the fish for that level. Only one cast owns the canvas.
 During each 800 ms nibble only the red tip is visible. A pull then shows **Fish scared away**.
@@ -170,7 +176,7 @@ times on the visible fishing clock. Each new phase starts at its listed time.
 | 6,400 ms | Bite ends | Fish escaped if still unresolved |
 
 Open `/game` for **Practice mode**. It omits `levelId` from the POST and allows the full
-hook sequence on the original casts API. Open `/game?levelId=<id>` with a positive ID
+hook sequence for a signed-in player. Open `/game?levelId=<id>` with a positive ID
 from the game database for a level cast. The client includes that `levelId` alongside
 `zone`, `strength` and `castAt`. Changing level or switching to practice ends the current
 attempt and releases USB. Use **Connect USB** on the new screen.
@@ -184,7 +190,8 @@ is available for this cast.** and restarts the meter. Practice hooks carry no fi
 A successful hook uses the existing receipt. Reporting a fight result to `/api/catches` belongs to #21.
 
 The level cast uses the API from [backend PR #101](https://github.com/Mercantec-GHC/H3-Online-ByteBait/pull/101).
-The lane needs an eligible fish species at the cast's depth for that API to return a fish.
+The server uses the cast's depth when selecting a species and falls back to the lane's
+other species if necessary. A lane with no species returns a null fish.
 
 After either loss the meter starts from red with an empty previous-cast history. The
 result stays visible until the next scored cast. After a successful hook the water stays
@@ -249,8 +256,8 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
    cast near the middle of green. Check for **Last cast zone: Green**, a strength from
    0 to 100, and one received throw. The needle gives way to the waiting float.
    Unplug, reconnect and confirm the counter starts at zero and the previous assessment clears.
-7. For the physical LED check, open the API-hosted game at <http://localhost:5250/game>
-   with the local API running. Start the meter and connect USB during a sweep. Watch all
+7. For the physical LED check, open the API-hosted game at <https://localhost:7172/game>
+   in the signed-in browser. Start the meter and connect USB during a sweep. Watch all
    five LEDs together as the needle crosses red, yellow and green in both directions.
    Pause, resume, switch to another tab, then return. The LEDs should go dark while
    paused or hidden and follow the needle again when running and visible. Make one cast
@@ -293,7 +300,8 @@ Leave it unset to skip those tests locally. Never point automated tests at a sha
 
 ## Cast saving tests in Chrome
 
-Start the local API host on port 5250 (or set `BYTEBAIT_TEST_PORT` to its local port).
+For mocked HTTP responses, start the standalone client on port 5173 (or set
+`BYTEBAIT_TEST_PORT` to its local HTTP port).
 From the repository root, run the optional browser
 suite with Chrome installed. Its Playwright dependency is local to the browser tests.
 
@@ -308,14 +316,15 @@ missed bite followed by a late pull, and a successful hook. The test compares al
 writes and checks which fish reaches Blazor. A separate test splits a `HOOK` line
 across a simulated unplug during the bite and a manual reconnection. The suite also
 covers stalled writes, tab switches, timeouts and late receipts across navigation.
-For simulated responses the standalone client on port 5173 also works with
-`BYTEBAIT_TEST_PORT=5173`. To include a real insert, point
-the API at a dedicated local test database, apply the existing migrations, and set
-`BYTEBAIT_TEST_CAST_DATABASE=1` in the test process. The real-API case prints the
-returned cast ID for comparison with the row in `casts`. For the level test, also set
-`BYTEBAIT_TEST_LEVEL_ID` to a level with at least one species on its lane. Run the client
-and level-capable API on the same origin. Chrome compares the actual 201 with the hooked
-cast received by Blazor and counts the requests. USB input is simulated in both cases.
+To run the real API cases, point the API at a dedicated local PostgreSQL test database
+with the current migrations and seed data. Start its HTTPS profile and set
+`BYTEBAIT_TEST_CAST_DATABASE=1` and `BYTEBAIT_TEST_LEVEL_ID=1` in the test process.
+Run the browser suite above. It opens the API-hosted game at `https://localhost:7172`
+(override the port with `BYTEBAIT_TEST_PORT`). The tests create temporary players via
+`/api/account/register`. Registration signs the player in using the same cookie jar as
+the game. Chrome checks anonymous and stale-token rejections, one POST per scored
+throw, and the cast ID and fish that reach Blazor after a real 201. The tests print
+the cast IDs for comparison with PostgreSQL. USB input is simulated.
 
 For a physical check, open the API-hosted game in Chrome and filter the Network tab
 to `/api/casts`. Connect the Oplà, wait for the latency measurement and start the meter.

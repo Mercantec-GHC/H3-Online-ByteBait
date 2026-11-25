@@ -11,6 +11,9 @@
     <!-- Same version as the Design package, otherwise the build warns about two EF versions -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.15" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+    <!-- Player accounts, and the keys that protect the login cookie -->
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.15" />
+    <PackageReference Include="Microsoft.AspNetCore.DataProtection.EntityFrameworkCore" Version="10.0.15" />
     <!-- Only needed for dotnet ef -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.15">
       <PrivateAssets>all</PrivateAssets>

@@ -33,7 +33,7 @@ Beslutninger, som Bjarke har truffet i sine egne opgaver, men som påvirker andr
 | Tidspunkter | ISO 8601 i UTC, fx `"2026-11-17T09:15:30.123Z"` |
 | ID'er | Spillere har et `Guid`. Øvrige ID'er er heltal |
 | Login | Fra S2.13: ASP.NET Core Identity med cookie (`HttpOnly`, `Secure`, `SameSite=Strict`). Spil-endpoints arbejder altid på den spiller, der er logget ind – der sendes aldrig et spiller-ID i forespørgslen |
-| CSRF | Fra S2.13: endpoints, der ændrer data (`POST`, `PUT`, `DELETE`), kræver et antiforgery-token |
+| CSRF | Fra S2.13: endpoints, der ændrer data (`POST`, `PUT`, `PATCH`, `DELETE`), kræver et antiforgery-token i headeren `X-XSRF-TOKEN`, også `register` og `login`. Se [Antiforgery](#antiforgery-s213--lavet) |
 | Fejl | ProblemDetails (RFC 9457), se [Fejlsvar](#fejlsvar) |
 
 ## Fejlsvar
@@ -69,6 +69,7 @@ Valideringsfejl (`400`) har desuden feltet `errors` med en liste pr. felt:
 | `403` | Logget ind, men mangler rettighed (fx rollen `admin`) |
 | `404` | Ressourcen findes ikke |
 | `409` | Konflikt, fx brugernavn taget eller for få penge |
+| `429` | For mange forsøg, fx for mange forkerte passwords |
 | `500` | Uventet fejl på serveren |
 
 ## Sprint 1
@@ -78,7 +79,7 @@ Valideringsfejl (`400`) har desuden feltet `errors` med en liste pr. felt:
 `POST /api/casts`
 
 Spillet kalder endpointet, når Oplà'en har registreret et kast, og browseren har aflæst zonen på timingmåleren.
-I sprint 1 kræver endpointet ikke login.
+I sprint 1 krævede endpointet ikke login. Fra S2.13 kræver det login og et antiforgery-token, ligesom resten af spillets endpoints.
 
 **Request**
 
@@ -127,22 +128,80 @@ The API receives a number from `0.0` (softest throw) to `1.0` (hardest throw).
 Endpoints, felter og svar er en skitse. Hver opgave opdaterer sin del af kontrakten, når den laves.
 Alle endpoints nedenfor kræver login, medmindre andet er angivet. Admin-endpoints kræver rollen `admin`.
 
-### Konto (S2.13)
-
-Endpoints og navne er fastlagt i S2.13 (#76).
+### Konto (S2.13 – lavet)
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
-| `POST` | `/api/account/register` | Opret konto: `{ "userName": "...", "password": "..." }`. Kræver ikke login. `409` hvis navnet er taget |
-| `POST` | `/api/account/login` | Log ind: `{ "userName": "...", "password": "..." }`. Kræver ikke login. Sætter login-cookien |
-| `POST` | `/api/account/logout` | Log ud. Sletter login-cookien |
-| `GET` | `/api/account/me` | Aktuel spiller (se forslaget nedenfor). `401` uden login |
+| `POST` | `/api/account/register` | Opret konto og log ind. Kræver ikke login |
+| `POST` | `/api/account/login` | Log ind. Sætter login-cookien. Kræver ikke login |
+| `POST` | `/api/account/logout` | Log ud. Sletter login-cookien. Svar: `204`, også hvis man ikke var logget ind |
+| `GET` | `/api/account/me` | Den spiller, der er logget ind |
 
-<!-- FORSLAG | af: @Bmantaz | berører: S2.13 (#76) | ejer: @Juuul999 | status: ikke besluttet -->
-> [!WARNING]
-> **FORSLAG fra Bjarke (@Bmantaz) – ikke besluttet.**
-> Berører S2.13 (#76, Frederik @Juuul999).
-> Svaret fra `GET /api/account/me`: `{ "id": "<guid>", "userName": "...", "roles": ["admin"], "money": 120 }`.
+`register` og `login` tager samme body:
+
+```json
+{
+  "userName": "fisker42",
+  "password": "et langt password"
+}
+```
+
+| Felt | Krav |
+|------|------|
+| `userName` | 3–32 tegn: bogstaver (også æ, ø og å), tal, `-` og `_`. Store og små bogstaver er samme navn |
+| `password` | 8–128 tegn. Ingen krav om tal eller specialtegn |
+
+`register` (`201 Created`), `login` (`200 OK`) og `me` (`200 OK`) svarer med spilleren:
+
+```json
+{
+  "id": "5f0c1c1e-7a52-4a5e-9a0f-2f6b8f3f1a11",
+  "userName": "fisker42",
+  "roles": ["admin"],
+  "money": 120
+}
+```
+
+`roles` er tom for almindelige spillere.
+
+**Fejl:**
+- `400` ved ugyldigt navn eller password (`errors.userName` eller `errors.password`)
+- `401` fra `login` ved forkert navn eller password. Svaret er det samme, uanset hvad der er forkert. `401` fra `me` uden login
+- `409` fra `register`, hvis navnet er taget
+- `429` fra `login`, når kontoen er låst. Det sker i 5 minutter efter 5 forkerte passwords
+- `400` med titlen `Invalid antiforgery token`, hvis tokenet mangler eller er forkert (se nedenfor)
+
+**Login-cookien** hedder `bytebait_login` og er `HttpOnly`, `Secure` og `SameSite=Strict`. Den udløber 7 dage efter, at spilleren sidst var aktiv. Den sendes kun over HTTPS.
+
+#### Antiforgery (S2.13 – lavet)
+
+`GET /api/account/antiforgery` kræver ikke login og svarer `200 OK`:
+
+```json
+{
+  "token": "CfDJ8..."
+}
+```
+
+Svaret sætter også cookien `bytebait_antiforgery` (`HttpOnly`, `Secure`, `SameSite=Strict`), som tokenet tjekkes mod.
+
+- Alle `POST`, `PUT`, `PATCH` og `DELETE` til API'et skal sende tokenet i headeren `X-XSRF-TOKEN`. Det gælder også `register`, `login` og `logout`, så en anden side ikke kan logge spilleren ind på sin egen konto.
+- Uden gyldigt token: `400` med titlen `Invalid antiforgery token`. Et endpoint, der kræver login, svarer `401` før tokenet tjekkes.
+- **Tokenet hører til spilleren.** Hent et nyt efter `register`, `login` og `logout`. Det gamle virker ikke længere.
+- Det hele kræver HTTPS. Lokalt skal API'et køre med https-profilen (`https://localhost:7172`), ellers sendes cookierne ikke.
+
+Sådan bruger spillet og Blazor det:
+
+1. `GET /api/account/antiforgery` og gem `token`
+2. `POST /api/account/login` med headeren `X-XSRF-TOKEN: <token>`
+3. `GET /api/account/antiforgery` igen og brug det nye token til resten af spillets kald
+
+<!-- BESLUTNING | af: @Bmantaz og @Juuul999 | berører: S2.4 (#20), S2.5 (#21), S2.14 (#77) | ejer af beslutningen: @Juuul999 og @Bmantaz (S2.13, #76) -->
+> [!NOTE]
+> **BESLUTNING fra Frederik (@Juuul999) og Bjarke (@Bmantaz) i S2.13 (#76).** Påvirker S2.4 (#20) og S2.5 (#21, Andreas @Zikka1987) og S2.14 (#77, Frederik @Juuul999).
+> Niveau, kast og fangst kræver login og antiforgery-token fra S2.13. Spillet skal logge ind og sende `X-XSRF-TOKEN` ved hvert `POST`. Uden login svarer API'et `401`. Login-siderne i Blazor leveres i #77.
+
+For hvert bedømt kast henter `/game` et frisk token og sender det med kastets POST. Det gælder både øvekast og niveaukast. Den [lokale browsertest](../Frontend/README.md#cast-saving-tests-in-chrome) bruger HTTPS og en spiller oprettet via API'et i samme browserkontekst.
 
 ### Baner, niveauer og vejr (S2.9, S3.2, S3.4)
 
@@ -206,13 +265,144 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 > Berører S3.2 (#31, delt med Andreas @Zikka1987).
 > Fremskridt og oplåsning af baner gemmes i backend og hentes via `GET /api/lanes`.
 
-### Spil: niveau, kast og fangst (S2.7, S2.8)
+### Spil: niveau, kast og fangst (S2.7 og S2.8 – lavet)
+
+<!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.7, #23) -->
+> [!NOTE]
+> **BESLUTNING fra Bjarke (@Bmantaz) i S2.7 (#23).** Påvirker S2.4 (#20) og S2.5 (#21, Andreas @Zikka1987).
+> Der er **ingen session** og intet `sessionId`, som skitsen tidligere sagde. Det følger datamodellen (#96, [data-model.md](data-model.md)): spillet sender `levelId` med hvert kast, og fremskridtet tælles fra spillerens fangede fisk på niveauet.
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
 | `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: krav og spillerens fremskridt |
 | `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Serveren bestemmer fisken og returnerer den i svaret (`fish`) |
 | `POST` | `/api/catches` | Gem resultatet af fighten: `{ "castId": 1, "result": "caught" }` eller `"lost"`. Svar: fangsten og niveauets fremskridt |
+
+Endpoints kræver login og antiforgery-token (S2.13). De arbejder altid på den spiller, der er logget ind: kast gemmes på spilleren, og fremskridtet tælles kun fra spillerens egne fangster. `401` uden login.
+
+#### Start et niveau
+
+`POST /api/levels/{levelId}/start` (ingen body)
+
+**Response `200 OK`**
+
+```json
+{
+  "levelId": 1,
+  "laneId": 1,
+  "laneNumber": 1,
+  "levelNumber": 1,
+  "requiredFish": 5,
+  "caughtFish": 2,
+  "completed": false
+}
+```
+
+| Felt | Type | Betydning |
+|------|------|-----------|
+| `requiredFish` | number | Antal fisk, der skal fanges for at klare niveauet |
+| `caughtFish` | number | Antal fisk, spilleren har fanget på niveauet (mistede fisk tæller ikke) |
+| `completed` | boolean | `true`, når `caughtFish` ≥ `requiredFish` |
+
+**Fejl:** `404` hvis niveauet ikke findes.
+
+#### Kast på et niveau
+
+`POST /api/casts` som i sprint 1, med det nye felt `levelId`:
+
+```json
+{
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-24T09:15:30.123Z",
+  "levelId": 1
+}
+```
+
+- `levelId` er valgfrit, så kast uden niveau (som i sprint 1) stadig virker. Kun et kast med `levelId` kan ende i en fangst.
+- **Fejl:** `400` med `errors.levelId`, hvis niveauet ikke findes.
+
+**Response `201 Created`** for et kast på et niveau (S2.8):
+
+```json
+{
+  "id": 17,
+  "zone": "green",
+  "strength": 0.8,
+  "castAt": "2026-11-24T09:15:30.123Z",
+  "createdAt": "2026-11-24T09:15:30.456Z",
+  "levelId": 1,
+  "fish": {
+    "speciesId": 5,
+    "name": "Zander",
+    "rarity": "rare",
+    "weightKg": 2.41,
+    "lengthCm": 50.6
+  }
+}
+```
+
+- `fish` er den fisk, der sidder på krogen. Spillet bruger den til krogning og fight og viser den, når den er fanget.
+- `levelId` og `fish` er `null` for et kast uden niveau. `fish` er også `null`, hvis banen ingen fiskearter har.
+
+**Sådan vælges fisken (S2.8)**
+
+1. **Dybde:** `strength` under `0.5` er et blødt kast (lavt vand), `0.5` og derover et hårdt kast (dybt vand). Kun arter på banen med den dybde kan bide. Har banen ingen arter dér, kan alle banens arter bide.
+2. **Sjældenhed:** sjælden = basischance × zonens multiplikator, legendarisk = basischance × zonens multiplikator, almindelig = resten op til 100 %. Med startdataene (0,20 og 0,05) giver rød 100/0/0 %, gul 75/20/5 % og grøn 62,5/30/7,5 %.
+3. Findes der ingen art med den trukne sjældenhed på dybden, bruges den næste lavere (legendarisk → sjælden → almindelig), og ellers den næste højere. Et kast får altid en fisk, hvis banen har arter.
+4. **Art:** én af de passende arter, alle lige sandsynlige.
+5. **Størrelse:** vægt og længde trækkes mellem artens min og max med samme tilfældige andel, så en tung fisk også er lang.
+
+Chancer og multiplikatorer læses fra databasen ved hvert kast, så ændringer i admin-panelet (S3.7) gælder med det samme.
+
+<!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21), S2.10 (#26) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->
+> [!NOTE]
+> **BESLUTNING fra Bjarke (@Bmantaz) i S2.8 (#24).** Påvirker S2.4 og S2.5 (Andreas @Zikka1987) og S2.10 (Frederik @Juuul999).
+> Grænsen mellem blødt og hårdt kast er `strength = 0.5`. Startdataene i S2.10 bør give hver bane mindst én almindelig art på både lavt og dybt vand, så begge slags kast har fisk at vælge imellem.
+
+#### Gem en fangst
+
+`POST /api/catches`
+
+```json
+{
+  "castId": 17,
+  "result": "caught"
+}
+```
+
+| Felt | Type | Krav |
+|------|------|------|
+| `castId` | number | Kastet, fighten hørte til (fra svaret på `POST /api/casts`) |
+| `result` | string | `"caught"` eller `"lost"` |
+
+**Response `201 Created`**
+
+```json
+{
+  "id": 4,
+  "castId": 17,
+  "result": "caught",
+  "resolvedAt": "2026-11-24T09:16:02.512Z",
+  "progress": {
+    "levelId": 1,
+    "laneId": 1,
+    "laneNumber": 1,
+    "levelNumber": 1,
+    "requiredFish": 5,
+    "caughtFish": 3,
+    "completed": false
+  }
+}
+```
+
+**Fejl:**
+- `400` ved ugyldigt `result` eller manglende felter
+- `404` hvis kastet ikke findes eller tilhører en anden spiller
+- `409` hvis
+  - fighten for kastet allerede er gemt (én fangst pr. kast)
+  - kastet ikke blev lavet på et niveau
+  - `result` er `"caught"`, men kastet har ingen fisk (`fish` var `null`). `"lost"` kan stadig gemmes
 
 <!-- BESLUTNING | af: @Bmantaz | berører: S2.4 (#20), S2.5 (#21) | ejer af beslutningen: @Bmantaz (S2.8, #24) -->
 > [!NOTE]
@@ -283,5 +473,4 @@ Se [hardwareprøven](../Arduino/README.md) for opsætning og godkendelseskriteri
 
 ## Åbne spørgsmål
 
-1. **Antiforgery (Frederik @Juuul999, S2.13):** Hvordan henter Blazor og spillet tokenet, og hvilken header sendes det i?
-2. **WiFi direkte til Dokploy (Abdi @AssisDk og Bjarke @Bmantaz, S3.9):** Skal Oplà'en selv kalde API'et over WiFi, eller går alt gennem spillet i browseren? Hvis Oplà'en kalder API'et direkte, kan den ikke bruge login-cookien.
+1. **WiFi direkte til Dokploy (Abdi @AssisDk og Bjarke @Bmantaz, S3.9):** Skal Oplà'en selv kalde API'et over WiFi, eller går alt gennem spillet i browseren? Hvis Oplà'en kalder API'et direkte, kan den ikke bruge login-cookien.
