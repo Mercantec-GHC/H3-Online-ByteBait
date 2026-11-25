@@ -5,27 +5,27 @@ using ByteBait.Api.Players;
 using ByteBait.Data;
 using ByteBait.Data.Entities;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ByteBait.Api.Tests;
 
-// POST /api/account/register, login and logout and GET /api/account/me (S2.13)
+// POST /api/account/register, login and logout, GET /api/account/me and the antiforgery token (S2.13)
 public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLifetime
 {
-    private const string Password = "a long password";
+    private const string Password = TestPlayer.Password;
 
     private readonly ApiFactory _factory;
-    private readonly HttpClient _client;
+
+    // Has an antiforgery token, set in InitializeAsync
+    private HttpClient _client = null!;
 
     // Unique, so tests running at the same time don't collide
-    private readonly string _userName = $"player-{Guid.NewGuid():N}"[..30];
+    private readonly string _userName = TestPlayer.NewUserName();
 
     public AccountEndpointTests(ApiFactory factory)
     {
         _factory = factory;
-        _client = CreateClient();
 
         if (ApiFactory.HasDatabase)
         {
@@ -68,7 +68,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     {
         await RegisterAsync(_client);
 
-        var response = await RegisterAsync(CreateClient(), _userName.ToUpperInvariant());
+        var response = await RegisterAsync(await CreateClientAsync(), _userName.ToUpperInvariant());
 
         await AssertProblem(response, HttpStatusCode.Conflict);
     }
@@ -76,7 +76,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     [PostgresFact]
     public async Task Only_one_of_two_players_gets_the_name_at_the_same_time()
     {
-        var responses = await Task.WhenAll(RegisterAsync(CreateClient()), RegisterAsync(CreateClient()));
+        var responses = await Task.WhenAll(RegisterAsync(await CreateClientAsync()), RegisterAsync(await CreateClientAsync()));
 
         Assert.Equal(
             [HttpStatusCode.Created, HttpStatusCode.Conflict],
@@ -123,7 +123,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     public async Task Login_works_with_other_letter_case_in_the_name()
     {
         await RegisterAsync(_client);
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var response = await LoginAsync(client, _userName.ToUpperInvariant(), Password);
 
@@ -136,7 +136,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     public async Task Wrong_password_and_unknown_name_get_the_same_answer()
     {
         await RegisterAsync(_client);
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         var wrongPassword = await AssertProblem(
             await LoginAsync(client, _userName, "wrong password"), HttpStatusCode.Unauthorized);
@@ -151,7 +151,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     public async Task Account_is_locked_after_five_wrong_passwords()
     {
         await RegisterAsync(_client);
-        var client = CreateClient();
+        var client = await CreateClientAsync();
 
         for (var i = 0; i < 5; i++)
         {
@@ -166,6 +166,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
     public async Task Logout_ends_the_login()
     {
         await RegisterAsync(_client);
+        await TestPlayer.RefreshAntiforgeryTokenAsync(_client);
 
         var response = await _client.PostAsync("/api/account/logout", null);
 
@@ -199,14 +200,66 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         Assert.Equal(RoleNames.Admin, Assert.Single(me.GetProperty("roles").EnumerateArray()).GetString());
     }
 
+    // ---------- Antiforgery ----------
+
+    [Fact]
+    public async Task Antiforgery_cookie_can_only_be_used_by_our_own_site_over_https()
+    {
+        var response = await TestPlayer.CreateClient(_factory).GetAsync("/api/account/antiforgery");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.False(string.IsNullOrEmpty(body.GetProperty("token").GetString()));
+
+        var cookie = Assert.Single(response.Headers.GetValues("Set-Cookie"),
+            c => c.StartsWith($"{PlayerAccountExtensions.AntiforgeryCookieName}=", StringComparison.Ordinal));
+        Assert.Contains("httponly", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // Register and login are protected too, so another site can't log a player into its own account
+    [Theory]
+    [InlineData("/api/account/register")]
+    [InlineData("/api/account/login")]
+    [InlineData("/api/account/logout")]
+    public async Task Post_without_antiforgery_token_returns_400(string url)
+    {
+        var response = await TestPlayer.CreateClient(_factory)
+            .PostAsJsonAsync(url, new { userName = _userName, password = Password });
+
+        var problem = await AssertProblem(response, HttpStatusCode.BadRequest);
+        Assert.Equal("Invalid antiforgery token", problem.GetProperty("title").GetString());
+    }
+
+    [Fact]
+    public async Task Post_with_a_made_up_antiforgery_token_returns_400()
+    {
+        var client = await CreateClientAsync();
+        client.DefaultRequestHeaders.Remove(PlayerAccountExtensions.AntiforgeryHeaderName);
+        client.DefaultRequestHeaders.Add(PlayerAccountExtensions.AntiforgeryHeaderName, "made-up");
+
+        var response = await LoginAsync(client, _userName, Password);
+
+        await AssertProblem(response, HttpStatusCode.BadRequest);
+    }
+
+    // The token belongs to the player, so the one from before login no longer works
+    [PostgresFact]
+    public async Task Token_from_before_login_must_be_replaced_after_login()
+    {
+        await RegisterAsync(_client);
+
+        await AssertProblem(await _client.PostAsync("/api/account/logout", null), HttpStatusCode.BadRequest);
+
+        await TestPlayer.RefreshAntiforgeryTokenAsync(_client);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PostAsync("/api/account/logout", null)).StatusCode);
+    }
+
     // ---------- Helpers ----------
 
-    // https, because the login cookie is never sent over http
-    private HttpClient CreateClient() => _factory.CreateClient(new WebApplicationFactoryClientOptions
-    {
-        BaseAddress = new Uri("https://localhost"),
-        AllowAutoRedirect = false,
-    });
+    // https and with an antiforgery token, because every POST needs one
+    private Task<HttpClient> CreateClientAsync() => TestPlayer.CreateClientWithTokenAsync(_factory);
 
     private Task<HttpResponseMessage> RegisterAsync(HttpClient client, string? userName = null) =>
         client.PostAsJsonAsync("/api/account/register", new { userName = userName ?? _userName, password = Password });
@@ -228,7 +281,7 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         return problem;
     }
 
-    public Task InitializeAsync() => Task.CompletedTask;
+    public async Task InitializeAsync() => _client = await CreateClientAsync();
 
     public async Task DisposeAsync()
     {

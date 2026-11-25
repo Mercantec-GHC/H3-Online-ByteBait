@@ -7,15 +7,19 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace ByteBait.Api.Tests;
 
-public class CastsEndpointTests : IClassFixture<ApiFactory>
+// POST /api/casts without a level (sprint 1). Every test runs as its own logged-in player (S2.13),
+// so they need the database.
+public sealed class CastsEndpointTests : IClassFixture<ApiFactory>, IAsyncLifetime
 {
     private readonly ApiFactory _factory;
-    private readonly HttpClient _client;
+
+    // Set in InitializeAsync. The client is the player's: logged in and with an antiforgery token.
+    private TestPlayer _player = null!;
+    private HttpClient _client = null!;
 
     public CastsEndpointTests(ApiFactory factory)
     {
         _factory = factory;
-        _client = factory.CreateClient();
 
         if (ApiFactory.HasDatabase)
         {
@@ -24,8 +28,26 @@ public class CastsEndpointTests : IClassFixture<ApiFactory>
         }
     }
 
+    public async Task InitializeAsync()
+    {
+        if (ApiFactory.HasDatabase)
+        {
+            _player = await TestPlayer.RegisterAsync(_factory);
+            _client = _player.Client;
+        }
+    }
+
+    // Deletes the player's casts too
+    public async Task DisposeAsync()
+    {
+        if (_player is not null)
+        {
+            await _player.DisposeAsync();
+        }
+    }
+
     [PostgresFact]
-    public async Task Valid_cast_returns_201_and_is_saved()
+    public async Task Valid_cast_returns_201_and_is_saved_on_the_player()
     {
         var response = await _client.PostAsJsonAsync("/api/casts", new
         {
@@ -48,12 +70,10 @@ public class CastsEndpointTests : IClassFixture<ApiFactory>
         var db = scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>();
         var saved = await db.Casts.SingleAsync(c => c.Id == id);
         Assert.Equal(new DateTime(2026, 11, 17, 9, 15, 30, 123, DateTimeKind.Utc), saved.CastAt);
-
-        db.Casts.Remove(saved);
-        await db.SaveChangesAsync();
+        Assert.Equal(_player.Id, saved.PlayerId);
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Invalid_zone_returns_400()
     {
         var response = await _client.PostAsJsonAsync("/api/casts", new
@@ -66,7 +86,7 @@ public class CastsEndpointTests : IClassFixture<ApiFactory>
         await AssertValidationProblem(response, "zone");
     }
 
-    [Theory]
+    [PostgresTheory]
     [InlineData(-0.1)]
     [InlineData(1.5)]
     public async Task Strength_outside_0_to_1_returns_400(double strength)
@@ -81,7 +101,7 @@ public class CastsEndpointTests : IClassFixture<ApiFactory>
         await AssertValidationProblem(response, "strength");
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Missing_fields_return_400()
     {
         var response = await _client.PostAsJsonAsync("/api/casts", new { });

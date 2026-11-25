@@ -22,10 +22,12 @@ builder.Services.AddByteBaitData(builder.Configuration);
 Start API'et lokalt (bruger connection string fra user-secrets, se "Kom i gang lokalt"):
 
 ```bash
-dotnet run --project Backend/ByteBait.Api
+dotnet run --project Backend/ByteBait.Api --launch-profile https
 ```
 
-API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på http://localhost:5250/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
+Brug https-profilen. Login- og antiforgery-cookien sendes kun over HTTPS (S2.13), så over http kan man hverken logge ind eller sende `POST`. Første gang skal udviklercertifikatet måske godkendes med `dotnet dev-certs https --trust`.
+
+API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på https://localhost:7172/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
 
 Det samme image, som Dokploy bygger, kan bygges lokalt fra roden af repoet (kræver Docker):
 

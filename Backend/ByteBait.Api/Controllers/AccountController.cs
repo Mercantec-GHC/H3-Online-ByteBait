@@ -1,5 +1,6 @@
 using ByteBait.Api.Dtos;
 using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Antiforgery;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -84,6 +85,15 @@ public class AccountController(UserManager<Player> players, SignInManager<Player
     {
         await signIn.SignOutAsync();
         return NoContent();
+    }
+
+    // The token every POST must send in the X-XSRF-TOKEN header. Also sets the antiforgery cookie it is checked against.
+    // The token belongs to the player, so the game gets a new one after register, login and logout.
+    [HttpGet("antiforgery")]
+    public ActionResult<AntiforgeryTokenDto> AntiforgeryToken([FromServices] IAntiforgery antiforgery)
+    {
+        var tokens = antiforgery.GetAndStoreTokens(HttpContext);
+        return new AntiforgeryTokenDto(tokens.RequestToken!);
     }
 
     [Authorize]

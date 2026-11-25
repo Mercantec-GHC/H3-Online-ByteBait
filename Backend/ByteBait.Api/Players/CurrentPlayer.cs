@@ -1,13 +1,15 @@
+using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Identity;
+
 namespace ByteBait.Api.Players;
 
 // The player who is logged in, used by the game endpoints (levels, casts, catches).
-// Spil-endpoints never take a player id from the request (see docs/api-contract.md, "Login").
-//
-// TODO(#76): Until player accounts exist, Id is null: casts and catches are saved without a player,
-// and progress is counted over everything saved without a player. When S2.13 adds Identity and the
-// login cookie, read the user's id from HttpContext.User here and require login on the game endpoints.
-// Nothing else in the game endpoints has to change.
-public class CurrentPlayer
+// Game endpoints never take a player id from the request (see docs/api-contract.md, "Login").
+// Only use it in endpoints with [Authorize], so a player is always logged in.
+public class CurrentPlayer(IHttpContextAccessor httpContextAccessor, UserManager<Player> players)
 {
-    public Guid? Id => null;
+    public Guid Id =>
+        httpContextAccessor.HttpContext?.User is { } user && players.GetUserId(user) is { } id
+            ? Guid.Parse(id)
+            : throw new InvalidOperationException("No player is logged in. The endpoint needs [Authorize].");
 }

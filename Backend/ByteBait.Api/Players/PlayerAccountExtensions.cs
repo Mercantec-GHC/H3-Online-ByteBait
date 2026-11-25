@@ -11,6 +11,11 @@ public static class PlayerAccountExtensions
 {
     public const string LoginCookieName = "bytebait_login";
 
+    public const string AntiforgeryCookieName = "bytebait_antiforgery";
+
+    // The game sends the token from GET /api/account/antiforgery in this header on every POST
+    public const string AntiforgeryHeaderName = "X-XSRF-TOKEN";
+
     // Player accounts with ASP.NET Core Identity and a login cookie (S2.13)
     public static IServiceCollection AddPlayerAccounts(this IServiceCollection services)
     {
@@ -59,6 +64,21 @@ public static class PlayerAccountExtensions
             options.Events.OnRedirectToLogin = context => SetStatus(context, StatusCodes.Status401Unauthorized);
             options.Events.OnRedirectToAccessDenied = context => SetStatus(context, StatusCodes.Status403Forbidden);
         });
+
+        // Protection against CSRF on every POST, PUT, PATCH and DELETE to the controllers (see Program.cs).
+        // Only https, like the login cookie, so locally the API must run with the https profile.
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = AntiforgeryHeaderName;
+            options.Cookie.Name = AntiforgeryCookieName;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+        });
+
+        // CurrentPlayer reads the logged-in player from the request
+        services.AddHttpContextAccessor();
+        services.AddScoped<CurrentPlayer>();
 
         return services;
     }

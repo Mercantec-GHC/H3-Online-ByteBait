@@ -2,6 +2,7 @@ using ByteBait.Api.Dtos;
 using ByteBait.Api.Players;
 using ByteBait.Data;
 using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
@@ -9,6 +10,7 @@ using Npgsql;
 namespace ByteBait.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/catches")]
 public class CatchesController(ByteBaitDbContext db, CurrentPlayer player) : ControllerBase
 {
@@ -18,7 +20,7 @@ public class CatchesController(ByteBaitDbContext db, CurrentPlayer player) : Con
     {
         var castId = dto.CastId!.Value;
 
-        // Only the player's own casts. Until #76 that is the casts saved without a player.
+        // Only the player's own casts. Another player's cast gets the same 404 as an unknown one.
         var cast = await db.Casts
             .Include(c => c.Catch)
             .SingleOrDefaultAsync(c => c.Id == castId && c.PlayerId == player.Id, cancellationToken);

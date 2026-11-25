@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ByteBait.Api.Players;
 using ByteBait.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -8,20 +9,40 @@ using Microsoft.Extensions.DependencyInjection;
 namespace ByteBait.Api.Tests;
 
 // POST /api/levels/{levelId}/start, POST /api/casts with levelId and POST /api/catches (S2.7).
-public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
+// Every test runs as its own logged-in player (S2.13), so they need the database.
+public sealed class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>, IAsyncLifetime
 {
     private readonly ApiFactory _factory;
-    private readonly HttpClient _client;
+
+    // Set in InitializeAsync. The client is the player's: logged in and with an antiforgery token.
+    private TestPlayer _player = null!;
+    private HttpClient _client = null!;
 
     public LevelAndCatchEndpointTests(ApiFactory factory)
     {
         _factory = factory;
-        _client = factory.CreateClient();
 
         if (ApiFactory.HasDatabase)
         {
             using var scope = factory.Services.CreateScope();
             scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>().Database.Migrate();
+        }
+    }
+
+    public async Task InitializeAsync()
+    {
+        if (ApiFactory.HasDatabase)
+        {
+            _player = await TestPlayer.RegisterAsync(_factory);
+            _client = _player.Client;
+        }
+    }
+
+    public async Task DisposeAsync()
+    {
+        if (_player is not null)
+        {
+            await _player.DisposeAsync();
         }
     }
 
@@ -67,7 +88,7 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
         var db = scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>();
         var saved = await db.Casts.SingleAsync(c => c.Id == castId);
         Assert.Equal(level.LevelId, saved.LevelId);
-        Assert.Null(saved.PlayerId); // until player accounts (#76)
+        Assert.Equal(_player.Id, saved.PlayerId);
     }
 
     [PostgresFact]
@@ -118,7 +139,7 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
         await AssertValidationProblem(response, "levelId");
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Cast_with_levelId_0_returns_400()
     {
         var response = await _client.PostAsJsonAsync("/api/casts", Cast(levelId: 0));
@@ -182,19 +203,64 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
     [PostgresFact]
     public async Task Catch_for_cast_without_level_returns_409()
     {
+        // The cast is deleted with the test player
         var castId = await SaveCastAsync(levelId: null);
-        try
-        {
-            var response = await _client.PostAsJsonAsync("/api/catches", new { castId, result = "caught" });
 
-            Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-        }
-        finally
+        var response = await _client.PostAsJsonAsync("/api/catches", new { castId, result = "caught" });
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+    }
+
+    // ---------- Login (S2.13) ----------
+
+    [Fact]
+    public async Task Game_endpoints_require_login()
+    {
+        // Has a token, so it is the missing login that stops the requests
+        var client = await TestPlayer.CreateClientWithTokenAsync(_factory);
+
+        var responses = new[]
         {
-            using var scope = _factory.Services.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>();
-            await db.Casts.Where(c => c.Id == castId).ExecuteDeleteAsync();
-        }
+            await client.PostAsync("/api/levels/1/start", null),
+            await client.PostAsJsonAsync("/api/casts", Cast(levelId: 1)),
+            await client.PostAsJsonAsync("/api/catches", new { castId = 1, result = "caught" }),
+        };
+
+        Assert.All(responses, r =>
+        {
+            Assert.Equal(HttpStatusCode.Unauthorized, r.StatusCode);
+            Assert.Null(r.Headers.Location);
+        });
+    }
+
+    [PostgresFact]
+    public async Task Cast_without_antiforgery_token_returns_400()
+    {
+        _client.DefaultRequestHeaders.Remove(PlayerAccountExtensions.AntiforgeryHeaderName);
+
+        var response = await _client.PostAsJsonAsync("/api/casts", Cast(levelId: null));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        var problem = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Invalid antiforgery token", problem.GetProperty("title").GetString());
+    }
+
+    [PostgresFact]
+    public async Task Players_only_see_their_own_casts_and_progress()
+    {
+        await using var level = await TestLevel.CreateAsync(_factory);
+        await using var other = await TestPlayer.RegisterAsync(_factory);
+        var castId = await SaveCastAsync(level.LevelId);
+        await _client.PostAsJsonAsync("/api/catches", new { castId, result = "caught" });
+
+        // Another player's cast is just as unknown as one that doesn't exist
+        var response = await other.Client.PostAsJsonAsync("/api/catches", new { castId, result = "lost" });
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+        // And the other player's progress on the level doesn't include the fish
+        var start = await other.Client.PostAsync($"/api/levels/{level.LevelId}/start", null);
+        var body = await start.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal(0, body.GetProperty("caughtFish").GetInt32());
     }
 
     [PostgresFact]
@@ -214,7 +280,7 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
         Assert.Equal(HttpStatusCode.Created, lost.StatusCode);
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Catch_with_invalid_result_returns_400()
     {
         var response = await _client.PostAsJsonAsync("/api/catches", new { castId = 1, result = "won" });
@@ -222,7 +288,7 @@ public class LevelAndCatchEndpointTests : IClassFixture<ApiFactory>
         await AssertValidationProblem(response, "result");
     }
 
-    [Fact]
+    [PostgresFact]
     public async Task Catch_without_fields_returns_400()
     {
         var response = await _client.PostAsJsonAsync("/api/catches", new { });
