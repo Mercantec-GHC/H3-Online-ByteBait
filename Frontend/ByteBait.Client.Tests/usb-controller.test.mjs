@@ -25,11 +25,12 @@ test("invalid messages produce protocol errors without generating a throw or ech
     for (const [line, code] of [
         ["THROW:-1", "RANGE"], ["THROW:101", "RANGE"], ["THROW:72x", "ARGS"],
         ["THROW:2:3", "ARGS"], ["THROW:1.2", "ARGS"], ["PONG:", "ARGS"],
-        ["HELLO:WIFI:1", "ARGS"], ["UNRECOGNIZED", "UNKNOWN"],
+        ["HELLO:WIFI:1", "ARGS"], ["HOOK:", "ARGS"], ["HOOK:72", "ARGS"],
+        ["hook", "UNKNOWN"], ["UNRECOGNIZED", "UNKNOWN"],
     ]) {
         assert.deepEqual(read(bytes(line + "\n")), [{ type: "error", code }]);
     }
-    assert.deepEqual(read(bytes("ERR:UNKNOWN\nHOLD:1\nHOOK\n\n")), []);
+    assert.deepEqual(read(bytes("ERR:UNKNOWN\nHOLD:1\nTILT:L\nYANK\n\n")), []);
 });
 
 test("the 32-byte limit discards the entire oversized line and recovers at the newline", () => {
@@ -107,6 +108,49 @@ test("a matched 20 ms echo gives 10 ms one-way; duplicates and other traffic can
     await advance(1);
     assert.deepEqual(usb.calls.at(-1), ["OnUsbStatus", "timedOut"]);
     assert.equal(usb.closes, 1);
+});
+
+test("hooks use the time of the completing read before and after a latency measurement", async t => {
+    const advance = useUsbClock(t);
+    const usb = simulateUsb();
+    t.after(() => usb.controller.dispose());
+    usb.controller.connect();
+    await settle();
+    await advance(100);
+    usb.feed("HO");
+    await settle();
+    assert.deepEqual(usb.calls, [["OnUsbStatus", "connected"]]);
+
+    await advance(40);
+    usb.feed("OK\r\n");
+    await settle();
+    assert.deepEqual(usb.calls, [["OnUsbStatus", "connected"], ["OnUsbHook", 140]]);
+
+    await advance(20);
+    usb.feed(pongFor(usb.writes[0]) + "HOOK\nHOOK\n");
+    await settle();
+    assert.deepEqual(usb.calls.slice(2), [
+        ["OnUsbLatency", 160, 80], ["OnUsbHook", 160], ["OnUsbHook", 160],
+    ]);
+});
+
+test("a partial hook and invalid arguments cannot trigger a hook after reconnect", async t => {
+    const usb = simulateUsb();
+    t.after(() => usb.controller.dispose());
+    usb.controller.connect();
+    await settle();
+    usb.feed("HO");
+    await settle();
+    usb.unplug();
+    await settle();
+    usb.controller.connect();
+    await settle();
+    usb.feed("OK\nHOOK:72\n");
+    await settle();
+    assert.equal(usb.calls.filter(([method]) => method === "OnUsbHook").length, 0);
+    usb.feed("HOOK\n");
+    await settle();
+    assert.equal(usb.calls.filter(([method]) => method === "OnUsbHook").length, 1);
 });
 
 test("out-of-order replies and a previous connection's tokens cannot overwrite a fresh sample", async t => {

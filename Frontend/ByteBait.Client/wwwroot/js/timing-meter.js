@@ -114,7 +114,7 @@ export function initialize(canvas) {
 
     drawTimingMeter(canvas);
     const history = [];
-    const meter = { setRunning, history, zone: "off", listeners: new Set() };
+    const meter = { setRunning, restart, dispose, history, zone: "off", listeners: new Set() };
     let running = false;
     let elapsedMs = 0;
     let previousTimestamp = null;
@@ -174,6 +174,17 @@ export function initialize(canvas) {
         syncClock();
     }
 
+    function restart() {
+        elapsedMs = 0;
+        running = true;
+        syncClock();
+        drawTimingMeter(canvas, 0);
+        if (!document.hidden) {
+            history.push({ position: 0, frameTimestampMs: performance.now() });
+            reportZone("red");
+        }
+    }
+
     // Blazor may remove the canvas before its asynchronous disposal runs.
     function dispose() {
         if (!meters.delete(canvas)) return;
@@ -204,4 +215,13 @@ export function start(canvas) {
 /** Freezes the displayed needle and excludes paused time from future sweeps. */
 export function stop(canvas) {
     setMeterRunning(canvas, false);
+}
+
+/** Start a new sweep and history at the red endpoint after a cast. */
+export function restart(canvas) {
+    meters.get(canvas)?.restart();
+}
+
+export function dispose(canvas) {
+    meters.get(canvas)?.dispose();
 }

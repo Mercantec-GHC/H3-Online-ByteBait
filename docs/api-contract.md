@@ -199,7 +199,9 @@ Sådan bruger spillet og Blazor det:
 <!-- BESLUTNING | af: @Bmantaz og @Juuul999 | berører: S2.4 (#20), S2.5 (#21), S2.14 (#77) | ejer af beslutningen: @Juuul999 og @Bmantaz (S2.13, #76) -->
 > [!NOTE]
 > **BESLUTNING fra Frederik (@Juuul999) og Bjarke (@Bmantaz) i S2.13 (#76).** Påvirker S2.4 (#20) og S2.5 (#21, Andreas @Zikka1987) og S2.14 (#77, Frederik @Juuul999).
-> Niveau, kast og fangst kræver login og antiforgery-token fra S2.13. Spillet skal logge ind og sende `X-XSRF-TOKEN` ved hvert `POST`. Indtil login-siderne i Blazor (#77) er lavet, kan USB-controlleren på `/game` ikke gemme kast på Test-ByteBait (svaret er `401`).
+> Niveau, kast og fangst kræver login og antiforgery-token fra S2.13. Spillet skal logge ind og sende `X-XSRF-TOKEN` ved hvert `POST`. Uden login svarer API'et `401`. Login-siderne i Blazor leveres i #77.
+
+For hvert bedømt kast henter `/game` et frisk token og sender det med kastets POST. Det gælder både øvekast og niveaukast. Den [lokale browsertest](../Frontend/README.md#cast-saving-tests-in-chrome) bruger HTTPS og en spiller oprettet via API'et i samme browserkontekst.
 
 ### Baner, niveauer og vejr (S2.9, S3.2, S3.4)
 
@@ -274,7 +276,7 @@ Vejret hentes fra Open-Meteo for banens by og caches i 10 minutter pr. by. Kræv
 |--------|-----|-------------|
 | `POST` | `/api/levels/{levelId}/start` | Start et niveau. Svar: krav og spillerens fremskridt |
 | `POST` | `/api/casts` | Samme endpoint som i sprint 1, udvidet med `levelId`. Serveren bestemmer fisken og returnerer den i svaret (`fish`) |
-| `POST` | `/api/catches` | Gem resultatet af fighten. Svar: fangsten og niveauets nye fremskridt |
+| `POST` | `/api/catches` | Gem resultatet af fighten: `{ "castId": 1, "result": "caught" }` eller `"lost"`. Svar: fangsten og niveauets fremskridt |
 
 Endpoints kræver login og antiforgery-token (S2.13). De arbejder altid på den spiller, der er logget ind: kast gemmes på spilleren, og fremskridtet tælles kun fra spillerens egne fangster. `401` uden login.
 
@@ -341,7 +343,7 @@ Endpoints kræver login og antiforgery-token (S2.13). De arbejder altid på den 
 ```
 
 - `fish` er den fisk, der sidder på krogen. Spillet bruger den til krogning og fight og viser den, når den er fanget.
-- `levelId` og `fish` er `null` for et kast uden niveau. `fish` er også `null`, hvis banen endnu ikke har fiskearter (startdata kommer i S2.10).
+- `levelId` og `fish` er `null` for et kast uden niveau. `fish` er også `null`, hvis banen ingen fiskearter har.
 
 **Sådan vælges fisken (S2.8)**
 

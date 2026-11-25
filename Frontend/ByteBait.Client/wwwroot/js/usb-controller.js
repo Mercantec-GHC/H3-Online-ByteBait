@@ -17,6 +17,9 @@ function parseLine(line) {
     if (command === "ERR" || !line) return null;
     if (line === "HELLO:USB:1") return { type: "hello" };
     if (command === "HELLO") return { type: "error", code: "ARGS" };
+    if (command === "HOOK") {
+        return value === undefined ? { type: "hook" } : { type: "error", code: "ARGS" };
+    }
 
     if (command === "PONG" || command === "THROW") {
         if (thirdField !== undefined || !/^-?\d+$/.test(value)) {
@@ -30,7 +33,7 @@ function parseLine(line) {
     }
 
     // These valid v1 messages belong to later fishing actions.
-    if (/^(HOOK|YANK|TILT:[LR]|HOLD:[01])$/.test(line)) return null;
+    if (/^(YANK|TILT:[LR]|HOLD:[01])$/.test(line)) return null;
     return { type: "error", code: "UNKNOWN" };
 }
 
@@ -63,7 +66,7 @@ function assessThrow(session, strength, receivedAtMs) {
     if (session.oneWayMs === null) return { ...result, reason: "missingLatency" };
 
     const castTimeMs = receivedAtMs - throwWindowMs - session.oneWayMs;
-    const frame = session.meter?.readMeterAt(session.canvas, castTimeMs);
+    const frame = session.game?.readMeterAt(castTimeMs);
     if (!frame) return { ...result, reason: "missingHistory" };
 
     // A single painted frame may cover several trigger times. Keep the trigger time for the cast.
@@ -87,6 +90,8 @@ export function createUsbController(receiver, serial = navigator.serial) {
         if (session.endState) return;
         session.endState = reason;
         session.unsubscribeZone?.();
+        globalThis.document?.removeEventListener("visibilitychange", checkVisibleConnection);
+        session.game?.disconnectCast();
         clearTimeout(session.timer);
         session.pendingPings.clear();
         const stopWriter = turnOff && session.desiredZone !== null
@@ -112,6 +117,11 @@ export function createUsbController(receiver, serial = navigator.serial) {
     function isLiveAt(session, now) {
         if (now >= session.deadline) stopSession(session, "timedOut");
         return !session.endState;
+    }
+
+    // On returning from a suspended tab the heartbeat timer may still be queued.
+    function checkVisibleConnection() {
+        if (!document.hidden && active) isLiveAt(active, performance.now());
     }
 
     /** Serialize PING, ERR and LED on the port's single writer. Ignore queued work after teardown. */
@@ -195,7 +205,18 @@ export function createUsbController(receiver, serial = navigator.serial) {
             const notifications = [];
             for (const event of read(value)) {
                 if (event.type === "throw") {
-                    notifications.push(notify("OnUsbThrow", assessThrow(session, event.strength, receivedAtMs)));
+                    if (session.game?.hasCast()) {
+                        notifications.push(notify("OnAdditionalThrow"));
+                        continue;
+                    }
+                    const result = assessThrow(session, event.strength, receivedAtMs);
+                    if (result.zone) {
+                        result.attemptId = session.game.beginCast(receivedAtMs);
+                    }
+                    notifications.push(notify("OnUsbThrow", result));
+                } else if (event.type === "hook") {
+                    // HOOK carries no device timestamp. Pass the browser's receipt time directly.
+                    notifications.push(notify("OnUsbHook", receivedAtMs));
                 } else if (event.type === "pong") {
                     notifications.push(acceptPong(session, event.counter, receivedAtMs));
                 } else if (event.type === "error" && !errorQueued && receivedAtMs >= nextErrorAt) {
@@ -226,7 +247,8 @@ export function createUsbController(receiver, serial = navigator.serial) {
             session.reader = session.port.readable.getReader();
             session.writer = session.port.writable.getWriter();
             startProbes(session);
-            session.unsubscribeZone = session.meter?.subscribeZone(session.canvas, zone => queueLed(session, zone));
+            globalThis.document?.addEventListener("visibilitychange", checkVisibleConnection);
+            session.unsubscribeZone = session.game?.subscribeZone(zone => queueLed(session, zone));
             await Promise.all([notify("OnUsbStatus", "connected"), receive(session)]);
         } catch {
             endState = session.opened ? "readFailed" : "openFailed";
@@ -248,10 +270,10 @@ export function createUsbController(receiver, serial = navigator.serial) {
         }
     }
 
-    function connect(canvas, meter) {
+    function connect(game) {
         if (disposed || active || !serial) return;
         const session = {
-            canvas, meter, oneWayMs: null,
+            game, oneWayMs: null,
             desiredZone: null, lastLedZone: null, ledQueued: false, unsubscribeZone: null,
             port: null, opened: false, reader: null, writer: null, endState: null,
             writes: Promise.resolve(), pendingPings: new Map(), timer: null,

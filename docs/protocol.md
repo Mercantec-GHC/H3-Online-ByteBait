@@ -17,7 +17,7 @@ Hardware: Arduino MKR WiFi 1010 + MKR IoT Carrier Rev2.
 |---|---|---|
 | `HELLO:<via>:<v>` | Sendes ved opstart/forbindelse | via = `USB`/`WIFI`, v = protokolversion (`1`) |
 | `THROW:<styrke>` | Kastebevægelse registreret | 0–100 (blødt = lavt vand, hårdt = dybt vand) |
-| `HOOK` | Ryk opad, når fisken bider | – |
+| `HOOK` | Ryk opad. Spillet afgør udfaldet ud fra flådets tilstand | – |
 | `TILT:L` / `TILT:R` | Træk til venstre/højre og løft (hale ind) | – |
 | `HOLD:1` / `HOLD:0` | Holdt helt stille / bevæger sig igen (give line) | – |
 | `YANK` | Hurtigt træk opad, når LED'erne er blå | – |
@@ -35,7 +35,7 @@ Gentagne beskeder af samme type må ikke sendes oftere end hvert 100. ms.
 | `PING:<n>` | Tjek forbindelse og mål forsinkelse | n = tæller |
 
 Brug af `LED`:
-- Timingmåler: spillet sender zonens farve (`RED`/`YELLOW`/`GREEN`) løbende.
+- Timingmåleren sender zonens farve (`RED`/`YELLOW`/`GREEN`) ved zoneskift. Ved et bedømt kast erstatter `LED:OFF` ventende zonefarver. Lysene forbliver slukket under gemning, nap og bid, og næste kastemåling begynder med rød.
 - Yank-signal: `LED:BLUE`.
 - Fisk fanget: `LED:GREEN`.
 - Slut: `LED:OFF`.
@@ -53,6 +53,7 @@ Brug af `LED`:
 
 - Spillet måler tur/retur-tid med `PING:<n>` / `PONG:<n>` (forsinkelse ≈ halvdelen).
 - Spillet bruger tallet til at aflæse nålen, hvor den var, da kastet skete.
+- Ved USB-krogning bruger spillet tidspunktet, hvor browseren modtog linjeskiftet i `HOOK`. De 250 ms til kastets styrkemåling og den målte USB-forsinkelse gælder kun `THROW`. Et ryk ved nap skræmmer fisken. Under biddet kroger det fisken. [Flådets timing og de tre udfald](../Frontend/README.md#hooking-a-fish-on-game)
 - Oplà'en svarer på `PING` med det samme og må ikke vente på andet.
 
 ## 6. Valg af USB eller WiFi
@@ -76,6 +77,7 @@ Oplà → spil:  PONG:1
 Spil → Oplà:  LED:YELLOW
 Spil → Oplà:  LED:GREEN
 Oplà → spil:  THROW:72
+Spil → Oplà:  LED:OFF
 Oplà → spil:  HOOK
 Spil → Oplà:  LED:BLUE
 Oplà → spil:  YANK

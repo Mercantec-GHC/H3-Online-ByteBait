@@ -44,6 +44,10 @@ HTTP request=6 connection=reused status=200 response_ms=85
 Round ended. Reset to repeat.
 ```
 
+## Krogning over USB
+
+Brug spillets `bytebait.ino` med bevægelsesgenkendelsen fra [#17 / PR #100](https://github.com/Mercantec-GHC/H3-Online-ByteBait/pull/100) og `WIFI_THROW_PROBE=0`. Åbn Serial Monitor ved 115200 baud, lav et kast og giv derefter et kort ryk opad. Se efter `THROW:<styrke>` efterfulgt af `HOOK`. Luk Serial Monitor, så Chrome kan åbne samme port med **Connect USB**. [Afprøv nap og bid på spilsiden](../Frontend/README.md#hooking-a-fish-on-game)
+
 ## Ét fysisk kast over WiFi til browseren (4.4b)
 
 Spillets modulære sketch bruger USB som standard, også uden `arduino_secrets.h`.
