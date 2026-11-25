@@ -4,12 +4,26 @@
  */
 import * as meter from "./timing-meter.js";
 import { createFloatRun } from "./float-run.js";
+import { drawNordborgScene } from "./nordborg-scene.js";
 
 // The proposed Oplà motion firmware accepts hooks for 60 seconds after a throw.
 const motionWindowMs = 60000;
 
-export function createFishingGame(canvas, receiver) {
-    meter.initialize(canvas);
+// The meter and the float both restore this artwork before drawing their own signal.
+function createNordborgBackdrop(canvas) {
+    const backdrop = document.createElement("canvas");
+    backdrop.width = canvas.width;
+    backdrop.height = canvas.height;
+    const context = backdrop.getContext("2d");
+    if (!context) throw new Error("Unable to draw the Nordborg scene.");
+    drawNordborgScene(context);
+    return backdrop;
+}
+
+export function createFishingGame(canvas, receiver, scene = "plain") {
+    const backdrop = scene === "nordborg" ? createNordborgBackdrop(canvas) : null;
+    const drawFloatBackground = backdrop ? context => context.drawImage(backdrop, 0, 0) : undefined;
+    meter.initialize(canvas, backdrop);
     let phase = "ready";
     let outcome = null;
     let attempt = null;
@@ -44,7 +58,8 @@ export function createFishingGame(canvas, receiver) {
         beginCast(receivedAtMs) {
             meter.stop(canvas); // Replaces queued zone colors with OFF before starting the POST.
             const id = ++nextId;
-            attempt = { id, cast: null, run: createFloatRun(canvas, resolve, receivedAtMs + motionWindowMs) };
+            const run = createFloatRun(canvas, resolve, receivedAtMs + motionWindowMs, drawFloatBackground);
+            attempt = { id, cast: null, run };
             report("saving", null);
             return id;
         },

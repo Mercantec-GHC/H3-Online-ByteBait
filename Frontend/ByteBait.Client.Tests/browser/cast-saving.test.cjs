@@ -3,6 +3,7 @@ const assert = require("node:assert/strict");
 const { randomUUID } = require("node:crypto");
 const { test } = require("node:test");
 const { chromium } = require("playwright-core");
+const { readSignal, openWater, waiting, nibble, bite } = require("./float-pixels.cjs");
 
 const realDatabase = process.env.BYTEBAIT_TEST_CAST_DATABASE === "1";
 const port = Number(process.env.BYTEBAIT_TEST_PORT ?? (realDatabase ? 7172 : 5173));
@@ -70,10 +71,7 @@ async function openGame(t, query = "", connect = true) {
         await page.keyboard.press("Enter");
     };
     const feed = strength => page.evaluate(n => window.feedUsb("THROW:" + n + "\n"), strength);
-    if (!connect) {
-        await visible("Invalid level link. Open a level with a positive numeric ID.");
-        return { page, visible };
-    }
+    if (!connect) return { page, visible, click, receipt };
     await visible("USB disconnected.");
     await page.clock.pauseAt(new Date(epoch + 15000));
     await click("Start meter");
@@ -160,10 +158,10 @@ async function saveLevelCast(game, send, receipt) {
     await game.receipt("Cast saved.");
 }
 
-test("three level casts on one port scare, lose and hook exactly one fish each", async t => {
-    const game = await openGame(t, "?levelId=7");
+test("three Nordborg level casts on one port scare, lose and hook exactly one fish each", async t => {
+    const game = await openGame(t, "?levelId=1");
     const { page, visible, leds } = game;
-    await visible("Level 7");
+    await visible("Level 1");
     const outcomes = await watchFishingOutcomes(page);
     const apiCalls = [];
     page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api/")) apiCalls.push(request.url()); });
@@ -173,18 +171,20 @@ test("three level casts on one port scare, lose and hook exactly one fish each",
 
     // Compare all writes from the throw onward so a briefly queued color also fails the test.
     let fromThrow = (await leds()).length;
-    await saveLevelCast(game, send, { id: 41, levelId: 7, fish: firstFish });
+    await saveLevelCast(game, send, { id: 41, levelId: 1, fish: firstFish });
     await page.clock.runFor(3400);
     assert.match(await game.signal(), /Only the red tip/);
+    await assertFloatView(page, nordborgWater, nibble);
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF"]);
     await game.hook();
     await game.receipt("Fish scared away");
     await visible("Meter running.");
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF", "LED:RED"]);
     await page.clock.runFor(320);
 
     fromThrow = (await leds()).length;
-    await saveLevelCast(game, send, { id: 58, levelId: 7, fish: secondFish });
+    await saveLevelCast(game, send, { id: 58, levelId: 1, fish: secondFish });
     await page.clock.runFor(5100);
     assert.match(await game.signal(), /Two rings/);
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF"]);
@@ -194,11 +194,12 @@ test("three level casts on one port scare, lose and hook exactly one fish each",
     await page.clock.runFor(32);
     await visible("Fish escaped");
     await visible("Meter running.");
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF", "LED:RED"]);
     await page.clock.runFor(320);
 
     fromThrow = (await leds()).length;
-    await saveLevelCast(game, send, { id: 87, levelId: 7, fish: thirdFish });
+    await saveLevelCast(game, send, { id: 87, levelId: 1, fish: thirdFish });
     await page.clock.runFor(5100);
     assert.match(await game.signal(), /Two rings/);
     await game.hook();
@@ -206,42 +207,46 @@ test("three level casts on one port scare, lose and hook exactly one fish each",
     await game.hook();
     await page.clock.runFor(100);
     await visible("Fish hooked");
+    await assertFloatView(page, nordborgWater, openWater);
     await visible("Throws received: 3");
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF"]);
     assert.deepEqual(await outcomes(), [
         { outcome: "scared", cast: null },
         { outcome: "escaped", cast: null },
-        { outcome: "hooked", cast: { castId: 87, levelId: 7, fish: thirdFish } },
+        { outcome: "hooked", cast: { castId: 87, levelId: 1, fish: thirdFish } },
     ]);
     assert.doesNotMatch(await page.locator("body").innerText(), /Test perch|Test pike|Test trout|63\.5/);
     await game.click("Cast again");
     await visible("Meter running.");
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
     assert.deepEqual((await leds()).slice(fromThrow), ["LED:OFF", "LED:RED"]);
     assert.deepEqual(apiCalls, [tokenUrl, castUrl, tokenUrl, castUrl, tokenUrl, castUrl]);
 });
 
 test("unplugging during a bite discards a partial hook before the next port and fish", async t => {
-    const game = await openGame(t, "?levelId=7");
+    const game = await openGame(t, "?levelId=3");
     const { page, visible } = game;
     const outcomes = await watchFishingOutcomes(page);
     const { send, requests } = await interceptCasts(game);
     await game.calibrate();
-    await saveLevelCast(game, send, { id: 41, levelId: 7, fish: firstFish });
+    await saveLevelCast(game, send, { id: 41, levelId: 3, fish: firstFish });
     await page.clock.runFor(5100);
     assert.match(await game.signal(), /Two rings/);
+    await assertFloatView(page, genericWater, bite);
     // The throw count confirms the reader processed this chunk, including its unfinished HO suffix.
     await page.evaluate(() => window.feedUsb("THROW:20\nHO"));
     await game.receipt("Throws received: 2");
     await page.evaluate(() => window.unplugUsb());
     await visible("USB disconnected.");
     await visible("Cast ended when USB disconnected.");
+    assert.deepEqual(await readSceneLayers(page), plainMeter);
 
     await game.click("Connect USB");
     await visible("USB connected.");
     await visible("Measuring USB latency…");
     await visible("Throws received: 0");
     await game.calibrate();
-    await saveLevelCast(game, send, { id: 87, levelId: 7, fish: secondFish });
+    await saveLevelCast(game, send, { id: 87, levelId: 3, fish: secondFish });
     await page.clock.runFor(5100);
     assert.match(await game.signal(), /Two rings/);
     const priorWrites = await page.evaluate(() => window.usbWrites.length);
@@ -254,7 +259,7 @@ test("unplugging during a bite discards a partial hook before the next port and 
 
     await game.hook();
     await game.receipt("Fish hooked");
-    assert.deepEqual(await outcomes(), [{ outcome: "hooked", cast: { castId: 87, levelId: 7, fish: secondFish } }]);
+    assert.deepEqual(await outcomes(), [{ outcome: "hooked", cast: { castId: 87, levelId: 3, fish: secondFish } }]);
     assert.equal(requests.length, 2);
 });
 
@@ -284,8 +289,86 @@ test("missing, malformed or mismatched level receipts rearm the meter and discar
     assert.deepEqual(await hooks(), []);
 });
 
+// Sample the scene outside the float area. Two points in the green zone ensure
+// the black needle cannot hide the arc from both samples at once.
+async function readSceneLayers(page) {
+    return page.locator("#game-canvas").evaluate(canvas => {
+        const context = canvas.getContext("2d");
+        function colorAt(x, y) {
+            const [r, g, b] = context.getImageData(x, y, 1, 1).data;
+            return (r << 16) | (g << 8) | b;
+        }
+        return {
+            water: colorAt(180, 123),
+            grip: colorAt(270, 161),
+            meter: colorAt(149, 43) === 0x60bd82 || colorAt(171, 43) === 0x60bd82,
+        };
+    });
+}
+
+const nordborgMeter = { water: 0x497a80, grip: 0xdd9e77, meter: true };
+const nordborgWater = { ...nordborgMeter, meter: false };
+const plainMeter = { water: 0x112b37, grip: 0x112b37, meter: true };
+const genericWater = { water: 0x30696f, grip: 0x30696f, meter: false };
+
+async function assertFloatView(page, scene, signal) {
+    assert.deepEqual(await readSceneLayers(page), scene);
+    assert.deepEqual(await readSignal(page), signal);
+}
+
+test("practice and both Nordborg levels open with the lake; a level change replaces the scene", async t => {
+    const { page, visible, receipt } = await openGame(t, "", false);
+    await visible("Meter ready.");
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
+    for (const level of [1, 3, 2]) {
+        // Use the client router so a stale canvas cannot be hidden by a full reload.
+        await page.evaluate(id => Blazor.navigateTo("/game?levelId=" + id), level);
+        await receipt("Level " + level);
+        await receipt("Meter ready.");
+        assert.deepEqual(await readSceneLayers(page), level === 3 ? plainMeter : nordborgMeter);
+    }
+});
+
+test("the black needle sweeps across the lake and resumes at the paused position", async t => {
+    const { page, click, visible } = await openGame(t, "", false);
+    await visible("Meter ready.");
+    await page.clock.pauseAt(new Date(Date.UTC(2026, 0, 1) + 15000));
+    const canvas = page.locator("#game-canvas");
+    // Small regions around the ends and apex allow for a frame either side of the exact angle.
+    const needleLocations = () => canvas.evaluate(element => {
+        const context = element.getContext("2d");
+        return [[64, 138], [160, 42], [256, 138]].map(([x, y]) => {
+            const { data } = context.getImageData(x - 5, y - 5, 11, 11);
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i] === 0 && data[i + 1] === 0 && data[i + 2] === 0 && data[i + 3] === 255) return true;
+            }
+            return false;
+        });
+    });
+    const snapshot = () => canvas.evaluate(element => element.toDataURL());
+    assert.deepEqual(await needleLocations(), [true, false, false]);
+    await click("Start meter");
+    await visible("Meter running.");
+    await page.clock.runFor(1016);
+    assert.deepEqual(await needleLocations(), [false, true, false]);
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
+    await click("Pause meter");
+    await visible("Meter paused.");
+    const paused = await snapshot();
+    await page.clock.runFor(1500);
+    assert.ok(await snapshot() === paused, "The paused meter must stay still.");
+    await click("Resume meter");
+    await visible("Meter running.");
+    await page.clock.runFor(16);
+    assert.ok(await snapshot() === paused, "The first resumed frame must start from the paused position.");
+    await page.clock.runFor(1000);
+    assert.deepEqual(await needleLocations(), [false, false, true]);
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
+});
+
 test("invalid level links block casting including empty or repeated IDs", async t => {
     const game = await openGame(t, "?levelId=", false);
+    await game.visible("Invalid level link. Open a level with a positive numeric ID.");
     for (const ending of ["0", "-1", "abc", "2147483648", "7&levelId=8"]) {
         await game.page.goto(gameUrl + "?levelId=" + ending);
         await game.visible("Invalid level link. Open a level with a positive numeric ID.");
@@ -352,6 +435,7 @@ test("one scored throw waits for 201, then a USB pull in the bite hooks that cas
     const route = await send(72);
     await visible("Last cast zone: Green");
     await visible("Saving cast…");
+    await assertFloatView(page, nordborgWater, waiting);
     assert.equal(route.request().method(), "POST");
     assert.match(route.request().headers()["content-type"], /application\/json/);
     const body = route.request().postDataJSON();
@@ -366,15 +450,21 @@ test("one scored throw waits for 201, then a USB pull in the bite hooks that cas
     await visible("Throws received: 3");
     await visible("Last throw strength: 72");
     assert.match(await game.signal(), /pale body/);
+    await assertFloatView(page, nordborgWater, waiting);
     await route.fulfill({ status: 201, json: { id: 1 } });
     await game.receipt("Cast saved.");
     await visible("Cast in progress.");
     await page.clock.runFor(1600);
     assert.match(await game.signal(), /Only the red tip/);
-    await page.clock.runFor(1750);
+    await assertFloatView(page, nordborgWater, nibble);
+    await page.clock.runFor(900);
+    await assertFloatView(page, nordborgWater, waiting);
+    await page.clock.runFor(850);
     assert.match(await game.signal(), /Only the red tip/);
+    await assertFloatView(page, nordborgWater, nibble);
     await page.clock.runFor(1700);
     assert.match(await game.signal(), /Two rings/);
+    await assertFloatView(page, nordborgWater, bite);
     await hook();
     await visible("Fish hooked");
     await feed(0);
@@ -383,12 +473,14 @@ test("one scored throw waits for 201, then a USB pull in the bite hooks that cas
     await visible("Throws received: 4");
     await visible("Fish hooked");
     assert.equal(await game.signal(), "Open water");
+    await assertFloatView(page, nordborgWater, openWater);
     assert.deepEqual(await hooks(), [null]);
     assert.deepEqual(await leds(), before);
     assert.equal(requests.length, 1);
     await game.click("Cast again");
     await visible("Meter running.");
     assert.equal((await leds()).at(-1), "LED:RED");
+    assert.deepEqual(await readSceneLayers(page), nordborgMeter);
 });
 
 test("a stalled writer drops waiting zone colors and the meter restarts after either loss", async t => {
@@ -457,6 +549,7 @@ test("rejected, unexpected and lost replies each rearm the meter without replayi
         else await route.abort("failed");
         await game.receipt(message);
         await visible("Meter running.");
+        assert.deepEqual(await readSceneLayers(page), nordborgMeter);
         assert.equal((await game.leds()).at(-1), "LED:RED");
         await page.clock.runFor(320);
     }

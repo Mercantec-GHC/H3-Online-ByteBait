@@ -11,8 +11,8 @@ const descriptions = {
     bite: "The float is underwater. Two rings mark the spot.",
 };
 
-/** Draw the waiting float immediately. start() begins the cadence after confirmation. */
-export function createFloatRun(canvas, onOutcome, deadlineMs = Infinity) {
+/** Draw immediately on the chosen background. start() begins the cadence after confirmation. */
+export function createFloatRun(canvas, onOutcome, deadlineMs = Infinity, drawBackground) {
     const attempt = createHookAttempt();
     let started = false;
     let disposed = false;
@@ -23,7 +23,7 @@ export function createFloatRun(canvas, onOutcome, deadlineMs = Infinity) {
 
     function paint(state) {
         if (drawn === state) return;
-        drawFloatScene(canvas, state);
+        drawFloatScene(canvas, state, drawBackground);
         canvas.setAttribute("aria-label", descriptions[state] ?? "Open water");
         drawn = state;
     }
