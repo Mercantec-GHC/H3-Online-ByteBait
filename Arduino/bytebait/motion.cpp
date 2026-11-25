@@ -158,7 +158,7 @@ void motionUpdate() {
       if (up > peakUp) peakUp = up;
       if (lat > peakLatPos) peakLatPos = lat;
       if (-lat > peakLatNeg) peakLatNeg = -lat;
-      if (latSign == 0 && fabs(lat) >= TILT_G) latSign = (lat > 0) ? 1 : -1;
+      if (latSign == 0 && fabs(lat) >= TILT_G * k) latSign = (lat > 0) ? 1 : -1;   // same limit as in classify()
       if (now - mStart >= MOTION_WINDOW_MS) {
         classify(k);
         mState = M_LOCKOUT;

@@ -2,29 +2,60 @@
 #include "calibration.h"
 #include "config.h"
 #include "hardware.h"
+#include "leds.h"
 #include "motion.h"
 
-static float restX = 0.0f, restY = 0.0f, restZ = 1.0f;   // default: lying flat, face up
+static const float DEFAULT_X = 0.0f, DEFAULT_Y = 0.0f, DEFAULT_Z = 1.0f;   // lying flat, face up
+
+static float restX = DEFAULT_X, restY = DEFAULT_Y, restZ = DEFAULT_Z;
 static bool  done = false;
 static uint8_t version = 0;
 static uint8_t level = SENS_DEFAULT_LEVEL;
 
-// ---------- Rest-position calibration ----------
-void calibrationRun() {
-  hwSetLeds(255, 180, 0);                       // yellow = hold still, calibrating
+// ---------- Rest-position calibration (a small state machine, so it never blocks the loop) ----------
+enum CalState { CAL_IDLE, CAL_RUNNING, CAL_FEEDBACK };
+static CalState calState = CAL_IDLE;
+static unsigned long calStart = 0;      // when the calibration began (for the timeout)
+static unsigned long calEnd = 0;        // when the result LEDs were shown
+static unsigned long stillSince = 0;    // 0 = not collecting
+static float sx = 0, sy = 0, sz = 0;    // sum of the samples in the current still period
+static uint16_t n = 0;
+static float px = 0, py = 0, pz = 0;
+static bool havePrev = false;
 
-  unsigned long start = millis();
-  unsigned long stillSince = 0;
-  float sx = 0, sy = 0, sz = 0;
-  uint16_t n = 0;
-  float px = 0, py = 0, pz = 0;
-  bool havePrev = false;
-  bool ok = false;
+static void calBegin() {
+  calState = CAL_RUNNING;
+  calStart = millis();
+  stillSince = 0; sx = sy = sz = 0; n = 0; havePrev = false;
+  hwSetLeds(255, 180, 0);               // yellow = hold still, calibrating
+}
 
-  while (millis() - start < CAL_TIMEOUT_MS) {
-    hwAccelPoll();
-    if (!hwAccelAvailable()) continue;
+static void calFinish(bool ok) {
+  if (ok) {
+    restX = sx / n; restY = sy / n; restZ = sz / n;
+    version++;
+  } else {                              // timed out: the default rest position is used, as the guide says
+    restX = DEFAULT_X; restY = DEFAULT_Y; restZ = DEFAULT_Z;
+  }
+  done = ok;
+  hwSetLeds(ok ? 0 : 255, ok ? 255 : 0, 0);   // green = done, red = gave up
+  calState = CAL_FEEDBACK;
+  calEnd = millis();
+}
 
+static void calStep() {
+  unsigned long now = millis();
+
+  if (calState == CAL_FEEDBACK) {
+    if (now - calEnd >= CAL_FEEDBACK_MS) {
+      ledsRestoreLast();                // the game's last color (OFF if the game has not sent any)
+      calState = CAL_IDLE;
+    }
+    return;
+  }
+  if (calState != CAL_RUNNING) return;
+
+  if (hwAccelAvailable()) {
     float x, y, z;
     hwReadAccel(x, y, z);
     float mag = sqrt(x * x + y * y + z * z);
@@ -32,24 +63,38 @@ void calibrationRun() {
     px = x; py = y; pz = z; havePrev = true;
 
     bool still = fabs(mag - 1.0f) < QUIET_G && delta < CAL_STILL_DELTA_G;
-    if (!still) {                                // moved: start counting again
-      stillSince = 0; sx = sy = sz = 0; n = 0;
-      continue;
+
+    // A slow turn changes the sample very little from one sample to the next, so also check that the
+    // orientation stays close to the average of this period. If not, start the period again.
+    if (still && n > 0) {
+      float ax = sx / n, ay = sy / n, az = sz / n;
+      float drift = sqrt((x - ax) * (x - ax) + (y - ay) * (y - ay) + (z - az) * (z - az));
+      if (drift > CAL_DRIFT_G) still = false;
     }
-    if (stillSince == 0) stillSince = millis();
-    sx += x; sy += y; sz += z; n++;
-    if (millis() - stillSince >= CAL_REST_MS && n > 0) {
-      restX = sx / n; restY = sy / n; restZ = sz / n;
-      ok = true;
-      break;
+
+    if (!still) {
+      stillSince = 0; sx = sy = sz = 0; n = 0;
+    } else {
+      if (stillSince == 0) stillSince = now;
+      sx += x; sy += y; sz += z; n++;
+      if (now - stillSince >= CAL_REST_MS) { calFinish(true); return; }
     }
   }
 
-  done = ok;
-  if (ok) version++;
-  hwSetLeds(ok ? 0 : 255, ok ? 255 : 0, 0);     // green = done, red = gave up (default rest position is used)
-  delay(CAL_FEEDBACK_MS);
-  hwSetLeds(0, 0, 0);
+  if (now - calStart >= CAL_TIMEOUT_MS) calFinish(false);
+}
+
+// At start: wait here until the calibration is completely finished (including the result LEDs).
+void calibrationRun() {
+  calBegin();
+  while (calState != CAL_IDLE) {
+    hwAccelPoll();
+    calStep();
+  }
+}
+
+bool calibrationBusy() {
+  return calState == CAL_RUNNING;
 }
 
 bool calibrationDone() {
@@ -72,6 +117,7 @@ float calibrationSensitivity() {
 }
 
 void calibrationUpdate() {
+  calStep();                                    // a background calibration (pad 3) moves on a little each loop
   if (!CAL_BUTTONS) return;
 
   static unsigned long lastCheck = 0;
@@ -79,9 +125,9 @@ void calibrationUpdate() {
   static bool prevLess = false, prevMore = false, prevRecal = false;
   unsigned long now = millis();
 
-  // Hide the level display again after a short time.
+  // Hide the level display again after a short time. The game's last color comes back.
   if (shownAt != 0 && now - shownAt >= CAL_LEVEL_SHOW_MS) {
-    hwSetLeds(0, 0, 0);
+    ledsRestoreLast();
     shownAt = 0;
   }
 
@@ -96,6 +142,7 @@ void calibrationUpdate() {
   prevLess = less; prevMore = more; prevRecal = recal;
 
   if (motionFightActive()) return;              // never change settings during a fight (a hand can touch a pad)
+  if (calState != CAL_IDLE) return;             // wait until a running calibration has finished
 
   if (downLess && level > 0) {
     level--;
@@ -106,7 +153,7 @@ void calibrationUpdate() {
     hwShowLevel(level + 1, 150, 0, 255);
     shownAt = now;
   } else if (downRecal) {
-    calibrationRun();
+    calBegin();                                 // runs in the background: the loop keeps handling the game
     shownAt = 0;
   }
 }

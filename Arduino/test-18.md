@@ -1,37 +1,54 @@
-# Test af #18: kalibrering
+# Test af #18: kalibrering og følsomhed
 
-## 1. Opstartskalibrering
-1. Upload. Oplà'en lyser **gul**: hold den stille i ca. 1,5 sek.
-2. Lyser den **grøn** et øjeblik og slukker, er hvilepositionen gemt.
-3. Lyser den **rød**, lykkedes det ikke (du bevægede dig for meget i 6 sek.). Så bruges standardværdierne. Prøv igen med den berøringsknap, du bruger til "kalibrér igen" (pad 3).
-4. Tjek: Serial Monitor viser `HELLO:USB:1` efter kalibreringen (op til ca. 7 sek. efter upload).
+Alle fire tester med **samme firmware i normal spiltilstand**. Du skal ikke bruge `MOTION_TEST_MODE`.
 
-## 2. Følsomhed (berøringsknapper)
-| Pad | Funktion |
-|---|---|
-| 1 | mindre følsom |
-| 2 | mere følsom |
-| 3 | kalibrér hvilepositionen igen |
+## Før du starter (alle)
+1. Branchen for #104 (kalibrering) er hentet, og `Arduino/bytebait/` kompilerer.
+2. `config.h`: `MOTION_TEST_MODE = false`, `MOTION_PLOT_MODE = false`, `PLOT_MODE = false`. `arduino_secrets.h`: `WIFI_THROW_PROBE 0` (eller filen mangler).
+3. Upload, åbn **Serial Monitor** (115200 baud, **New Line**). Luk spillet, så porten er fri.
 
-- Hver berøring ændrer niveauet. De lilla LED'er viser niveauet (1-5 LED'er) i under 1 sek. Standard er 3.
-- Niveauet nulstilles ved genstart.
-- Knapperne virker ikke under kamp-tilstand (efter et kast), så en hånd, der rører en pad, ikke ændrer noget midt i spillet. I `MOTION_TEST_MODE = true` er kampen altid slået til, så sæt den til `false` for at teste knapperne (eller sæt den til `true` først, når du tester bevægelserne).
+## Sådan skifter Oplà'en mellem kast og kamp
+- Efter et **kast** (`THROW:<n>`) er Oplà'en i **kamp**: bevægelserne virker, og berøringsknapperne gør ingenting.
+- Skriv `LED:RED` i Serial Monitor (som spillet gør, når en ny timingmåler starter) for at komme tilbage til **kast**: nu virker knapperne, og et nyt kast giver `THROW`. Efter 60 sek. uden `LED:RED` sker det af sig selv.
 
-## 3. Test med hver person
-Hver person får Oplà'en, holder den, som personen vil holde en fiskestang, og laver 10 forsøg pr. bevægelse (`MOTION_TEST_MODE = true`, ingen ændring af knapper først).
-Hvis noget ikke virker, justerer personen følsomheden med pad 1/2 og prøver igen. Skriv det niveau ned, der virker bedst.
+## Rækkefølgen
 
-| Person | Hook /10 | Venstre /10 | Højre /10 | Hold stille (1 og 0) /10 | Yank /10 | Kast (10 stk.) /10 | Bedste niveau (1-5) |
+### A. Opstartskalibrering
+1. Tryk reset. LED'erne er **gule**: hold Oplà'en stille, som du vil holde en fiskestang.
+2. Efter ca. 1,5 sek. blinker de **grønt**, og `HELLO:USB:1` kommer.
+3. Prøv også at ryste Oplà'en hele tiden efter reset: efter 6 sek. blinker den **rødt** og starter alligevel.
+4. Prøv en **langsom drejning** (ca. 90° over et par sekunder) lige efter reset: LED'erne skal blive gule, til du holder stille.
+
+### B. Følsomhed (i kast-tilstand)
+Skriv `LED:RED` først, hvis du lige har kastet.
+1. Pad 2: mere følsom. De lilla LED'er viser niveauet (1-5) i under 1 sek. Pad 1: mindre følsom. Standard er niveau 3.
+2. Skriv `LED:GREEN`, tryk pad 2, og vent. De grønne LED'er skal komme **tilbage** efter den lilla visning.
+3. Pad 3: kalibrér igen (gul). Skriv `PING:1` mens den er gul: `PONG:1` skal komme med det samme. Hold stille: grøn. Ryst i 6 sek.: rød, og standardpositionen bruges.
+
+### C. Kast (10 stk.) på dit niveau
+1. Kast, og se `THROW:<n>`. Skriv `LED:RED` før næste kast.
+2. Tæl, hvor mange af 10 kast der giver **præcis ét** `THROW`. Blødt kast skal give lav styrke og hårdt kast høj.
+
+### D. Bevægelser (10 pr. bevægelse)
+1. Kast én gang (`THROW:<n>`). Nu har du 60 sek. til bevægelserne.
+2. Lav bevægelserne, og tæl rigtige beskeder: `HOOK` (moderat ryk opad), `TILT:L` (træk til venstre og løft), `TILT:R` (træk til højre og løft), `HOLD:1` og `HOLD:0` (hold stille, bevæg igen) og `YANK` (hårdt, hurtigt træk opad).
+3. Ved 60 sek.: skriv `LED:RED`, kast igen, og fortsæt.
+4. **Sideværts følsomhed:** prøv `TILT:L` og `TILT:R` både på niveau 3 og på niveau 5 (skift niveau efter `LED:RED`, kast så igen).
+
+### E. Dit niveau
+Skriv det niveau (1-5), hvor bevægelserne virker bedst, i skemaet.
+
+## Skema
+
+| Person | Kast /10 | Hook /10 | Venstre /10 | Højre /10 | Hold (1 og 0) /10 | Yank /10 | Bedste niveau (1-5) |
 |---|---|---|---|---|---|---|---|
 | Assis | | | | | | | |
 | Andreas | | | | | | | |
 | Bjarke | | | | | | | |
 | Frederik | | | | | | | |
 
-Tjek især:
-- `TILT:L` og `TILT:R` er ikke byttet om for nogen. Er de det for én, holder personen Oplà'en anderledes. Skriv det ned, så vi kan se, om der skal gøres noget (fx at `MOTION_LAT_SIGN` ikke passer til alle).
-- Kast giver 10 `THROW` pr. person, og styrken ligger i et rimeligt område (blødt kast lavt, hårdt kast højt).
+Skriv i #18 (og i PR #104) hvad der ikke virkede og hvorfor, fx om `TILT:L`/`TILT:R` er byttet om for dig.
 
-## 4. Når du er færdig
-- `MOTION_TEST_MODE = false`, `MOTION_PLOT_MODE = false`, `WIFI_THROW_PROBE = 0`.
-- Skriv skemaet i PR'en. `Closes #18`, hvis alle fire har testet. Ellers `Refs #18`.
+## Tjek til sidst
+- `config.h` er uændret (dine egne tal kan stå i din lokale fil, men ikke i en commit).
+- `arduino_secrets.h` er ikke committet.

@@ -20,6 +20,7 @@ static int strengthFromPeak(float peakG, float k) {
 void throwUpdate() {
   // During the fish fight the motions take over: a hook or yank must not be read as a throw.
   if (motionFightActive() || MOTION_PLOT_MODE) { state = IDLE; return; }
+  if (calibrationBusy()) return;               // the Oplà is being calibrated: not a throw
   if (!hwAccelAvailable()) return;
 
   float x, y, z;
