@@ -1,0 +1,71 @@
+using ByteBait.Data;
+using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Identity;
+
+namespace ByteBait.Api.Players;
+
+public static class PlayerAccountExtensions
+{
+    public const string LoginCookieName = "bytebait_login";
+
+    // Player accounts with ASP.NET Core Identity and a login cookie (S2.13)
+    public static IServiceCollection AddPlayerAccounts(this IServiceCollection services)
+    {
+        // The keys that protect the cookie are kept in the database, so a deploy doesn't log everyone out
+        services.AddDataProtection()
+            .SetApplicationName("ByteBait")
+            .PersistKeysToDbContext<ByteBaitDbContext>();
+
+        services.AddIdentityCore<Player>(options =>
+            {
+                options.User.AllowedUserNameCharacters =
+                    "abcdefghijklmnopqrstuvwxyzæøåABCDEFGHIJKLMNOPQRSTUVWXYZÆØÅ0123456789-_";
+
+                // A long password is better than a short one with odd characters, so only the length counts
+                options.Password.RequiredLength = 8;
+                options.Password.RequireDigit = false;
+                options.Password.RequireLowercase = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireNonAlphanumeric = false;
+
+                // Stops someone from guessing a password by trying again and again
+                options.Lockout.MaxFailedAccessAttempts = 5;
+                options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+            })
+            .AddRoles<IdentityRole<Guid>>()
+            .AddEntityFrameworkStores<ByteBaitDbContext>()
+            .AddSignInManager();
+
+        services.AddAuthentication(IdentityConstants.ApplicationScheme).AddApplicationCookie();
+
+        services.ConfigureApplicationCookie(options =>
+        {
+            options.Cookie.Name = LoginCookieName;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            // The game and the API are on the same domain, so other sites never need to send the cookie
+            options.Cookie.SameSite = SameSiteMode.Strict;
+            // Needed to log in, so it doesn't wait for the cookie banner (S2.15)
+            options.Cookie.IsEssential = true;
+
+            // Seven days since the player was last active
+            options.ExpireTimeSpan = TimeSpan.FromDays(7);
+            options.SlidingExpiration = true;
+
+            // The cookie handler points to a login page by default. An API just answers with the status.
+            options.Events.OnRedirectToLogin = context => SetStatus(context, StatusCodes.Status401Unauthorized);
+            options.Events.OnRedirectToAccessDenied = context => SetStatus(context, StatusCodes.Status403Forbidden);
+        });
+
+        return services;
+    }
+
+    private static Task SetStatus(RedirectContext<CookieAuthenticationOptions> context, int statusCode)
+    {
+        context.Response.StatusCode = statusCode;
+        return Task.CompletedTask;
+    }
+}

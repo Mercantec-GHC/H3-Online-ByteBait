@@ -94,6 +94,18 @@ Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=
 - Indstillingen er slået fra som standard, så tests og `dotnet run` aldrig ændrer en database af sig selv.
 - Migrations skal kunne køre på en database, der allerede har data. Er man i tvivl, så prøv dem først på Neon-branchen `dev`, og læs SQL'en med `dotnet ef migrations script --idempotent`.
 
+## Giv en spiller rollen admin
+
+Ingen konto er admin fra start. Opret en konto i spillet, og kør så denne linje på miljøets Neon-branch (SQL Editor i Neon):
+
+```sql
+INSERT INTO player_roles (player_id, role_id)
+SELECT p.id, r.id FROM players p, roles r
+WHERE p.normalized_user_name = upper('<brugernavn>') AND r.name = 'admin';
+```
+
+Spilleren skal logge ud og ind igen, før rollen virker.
+
 ## Konventioner i databasen
 
 Alle tabeller, relationer og beslutninger bag dem står i [docs/data-model.md](../docs/data-model.md) med ER-diagram.

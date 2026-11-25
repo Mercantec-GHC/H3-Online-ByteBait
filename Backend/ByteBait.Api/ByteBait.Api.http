@@ -43,3 +43,33 @@ Content-Type: application/json
 }
 
 ###
+
+# S2.13: create an account, then log in, see the player and log out. The cookie needs https, so use the https profile.
+POST {{ByteBait.Api_HostAddress}}/api/account/register
+Content-Type: application/json
+
+{
+  "userName": "fisker42",
+  "password": "a long password"
+}
+
+###
+
+POST {{ByteBait.Api_HostAddress}}/api/account/login
+Content-Type: application/json
+
+{
+  "userName": "fisker42",
+  "password": "a long password"
+}
+
+###
+
+GET {{ByteBait.Api_HostAddress}}/api/account/me
+Accept: application/json
+
+###
+
+POST {{ByteBait.Api_HostAddress}}/api/account/logout
+
+###

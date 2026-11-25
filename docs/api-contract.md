@@ -69,6 +69,7 @@ Valideringsfejl (`400`) har desuden feltet `errors` med en liste pr. felt:
 | `403` | Logget ind, men mangler rettighed (fx rollen `admin`) |
 | `404` | Ressourcen findes ikke |
 | `409` | Konflikt, fx brugernavn taget eller for få penge |
+| `429` | For mange forsøg, fx for mange forkerte passwords |
 | `500` | Uventet fejl på serveren |
 
 ## Sprint 1
@@ -127,22 +128,49 @@ The API receives a number from `0.0` (softest throw) to `1.0` (hardest throw).
 Endpoints, felter og svar er en skitse. Hver opgave opdaterer sin del af kontrakten, når den laves.
 Alle endpoints nedenfor kræver login, medmindre andet er angivet. Admin-endpoints kræver rollen `admin`.
 
-### Konto (S2.13)
-
-Endpoints og navne er fastlagt i S2.13 (#76).
+### Konto (S2.13 – lavet)
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
-| `POST` | `/api/account/register` | Opret konto: `{ "userName": "...", "password": "..." }`. Kræver ikke login. `409` hvis navnet er taget |
-| `POST` | `/api/account/login` | Log ind: `{ "userName": "...", "password": "..." }`. Kræver ikke login. Sætter login-cookien |
-| `POST` | `/api/account/logout` | Log ud. Sletter login-cookien |
-| `GET` | `/api/account/me` | Aktuel spiller (se forslaget nedenfor). `401` uden login |
+| `POST` | `/api/account/register` | Opret konto og log ind. Kræver ikke login |
+| `POST` | `/api/account/login` | Log ind. Sætter login-cookien. Kræver ikke login |
+| `POST` | `/api/account/logout` | Log ud. Sletter login-cookien. Svar: `204`, også hvis man ikke var logget ind |
+| `GET` | `/api/account/me` | Den spiller, der er logget ind |
 
-<!-- FORSLAG | af: @Bmantaz | berører: S2.13 (#76) | ejer: @Juuul999 | status: ikke besluttet -->
-> [!WARNING]
-> **FORSLAG fra Bjarke (@Bmantaz) – ikke besluttet.**
-> Berører S2.13 (#76, Frederik @Juuul999).
-> Svaret fra `GET /api/account/me`: `{ "id": "<guid>", "userName": "...", "roles": ["admin"], "money": 120 }`.
+`register` og `login` tager samme body:
+
+```json
+{
+  "userName": "fisker42",
+  "password": "et langt password"
+}
+```
+
+| Felt | Krav |
+|------|------|
+| `userName` | 3–32 tegn: bogstaver (også æ, ø og å), tal, `-` og `_`. Store og små bogstaver er samme navn |
+| `password` | 8–128 tegn. Ingen krav om tal eller specialtegn |
+
+`register` (`201 Created`), `login` (`200 OK`) og `me` (`200 OK`) svarer med spilleren:
+
+```json
+{
+  "id": "5f0c1c1e-7a52-4a5e-9a0f-2f6b8f3f1a11",
+  "userName": "fisker42",
+  "roles": ["admin"],
+  "money": 120
+}
+```
+
+`roles` er tom for almindelige spillere.
+
+**Fejl:**
+- `400` ved ugyldigt navn eller password (`errors.userName` eller `errors.password`)
+- `401` fra `login` ved forkert navn eller password. Svaret er det samme, uanset hvad der er forkert. `401` fra `me` uden login
+- `409` fra `register`, hvis navnet er taget
+- `429` fra `login`, når kontoen er låst. Det sker i 5 minutter efter 5 forkerte passwords
+
+**Login-cookien** hedder `bytebait_login` og er `HttpOnly`, `Secure` og `SameSite=Strict`. Den udløber 7 dage efter, at spilleren sidst var aktiv. Den sendes kun over HTTPS.
 
 ### Baner, niveauer og vejr (S2.9, S3.2, S3.4)
 
