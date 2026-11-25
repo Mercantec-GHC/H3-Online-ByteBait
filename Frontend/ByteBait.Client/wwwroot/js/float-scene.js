@@ -47,13 +47,14 @@ function drawRipple(context, radius, height) {
 /**
  * Waiting shows both the red tip and the pale body. A nibble leaves only the
  * tip above water. A bite replaces the float with rings. A resolved or idle
- * attempt (null) shows open water. Coordinates use the canvas's native pixels.
+ * attempt (null) shows open water. The optional background painter receives
+ * the 2D context before the signal is drawn. Coordinates are native pixels.
  */
-export function drawFloatScene(canvas, state) {
+export function drawFloatScene(canvas, state, drawBackground = drawWater) {
     const context = canvas.getContext("2d");
     if (!context) throw new Error("The float scene requires a 2D canvas.");
 
-    drawWater(context);
+    drawBackground(context);
     if (state === "bite") {
         context.fillStyle = "#99ccc0";
         drawRipple(context, 16, 4);

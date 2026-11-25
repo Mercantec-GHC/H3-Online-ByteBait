@@ -2,6 +2,7 @@
 const assert = require("node:assert/strict");
 const { after, before, test } = require("node:test");
 const { chromium } = require("playwright-core");
+const { readSignal, openWater, bite } = require("./float-pixels.cjs");
 
 const previewUrl = "http://127.0.0.1:5174/ByteBait.Client.Tests/browser/float-preview.html";
 let browser;
@@ -44,26 +45,42 @@ async function openPreview(t) {
     };
 }
 
-// Classify the pixels at water level: the red tip moves down, the cream body disappears,
-// and the two ripple colours appear only during a bite.
-function readSignal(page) {
-    return page.locator("canvas").evaluate(canvas => {
-        const { data, width } = canvas.getContext("2d").getImageData(130, 80, 61, 40);
-        let tipTop = null;
-        let body = false, innerRing = false, outerRing = false;
-        for (let i = 0; i < data.length; i += 4) {
-            const rgb = (data[i] << 16) | (data[i + 1] << 8) | data[i + 2];
-            if (rgb === 0xff6956 && tipTop === null) tipTop = Math.floor(i / 4 / width);
-            if (rgb === 0xfff1cb) body = true;
-            if (rgb === 0xd6ecce) innerRing = true;
-            if (rgb === 0x99ccc0) outerRing = true;
-        }
-        return { tipTop, body, innerRing, outerRing };
-    });
-}
-
-const openWater = { tipTop: null, body: false, innerRing: false, outerRing: false };
-const bite = { tipTop: null, body: false, innerRing: true, outerRing: true };
+test("the castle, hands and rod remain visible before, during and after a cast", async t => {
+    const preview = await openPreview(t);
+    async function checkView(state) {
+        // Broad windows allow the artwork to change while detecting missing layers.
+        const details = await preview.page.locator("canvas").evaluate(canvas => {
+            const context = canvas.getContext("2d");
+            function hasColor(x, y, width, height, color) {
+                const { data } = context.getImageData(x, y, width, height);
+                for (let i = 0; i < data.length; i += 4) {
+                    if (((data[i] << 16) | (data[i + 1] << 8) | data[i + 2]) === color) return true;
+                }
+                return false;
+            }
+            return {
+                roof: hasColor(0, 0, 128, 74, 0xad694f),
+                facade: hasColor(0, 0, 128, 74, 0xe4d9b6),
+                rod: hasColor(195, 65, 45, 48, 0x293b46),
+                reel: hasColor(222, 132, 28, 22, 0xb6c5ba),
+                rightHand: hasColor(239, 116, 33, 22, 0xdd9e77),
+                corkBetweenHands: hasColor(250, 141, 25, 10, 0xc8a164),
+                leftHand: hasColor(251, 155, 32, 16, 0xdd9e77),
+            };
+        });
+        for (const [part, visible] of Object.entries(details)) assert.ok(visible, `${state}: ${part}`);
+    }
+    await checkView("idle");
+    await preview.cast();
+    await checkView("waiting");
+    await preview.advance(1500);
+    await checkView("nibble");
+    await preview.advance(3400);
+    await checkView("bite");
+    await preview.hook();
+    assert.equal(await preview.status(), "Fish hooked");
+    await checkView("resolved");
+});
 
 test("both nibbles leave a lower red tip, and rings replace it for the entire bite", async t => {
     const preview = await openPreview(t);

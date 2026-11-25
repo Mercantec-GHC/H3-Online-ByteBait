@@ -32,6 +32,15 @@ to exercise the same flow with temporary local players. See the [backend setup](
 
 ## Casting meter
 
+Practice (`/game`) and both Nordborg levels (`/game?levelId=1` and `/game?levelId=2`) show
+the casting meter over Nordborg Sø, with the castle on the far bank and the rod in the player's hands.
+Other levels use the plain meter background. The scene is visible before sign-in or USB connection.
+The client draws the lake and rod once per visit and reuses that image behind both the needle and the float.
+
+| Before the cast | Waiting for a bite |
+| --- | --- |
+| ![Black needle in the green zone above Nordborg Sø](../docs/screenshots/nordborg-meter.png) | ![Red and white float on the lake, with both hands on the rod](../docs/screenshots/nordborg-float.png) |
+
 The black needle starts at rest on the left. Choose **Start meter** to sweep across the arc
 in two seconds and back in two more. Each pass through the green zone lasts 400 ms.
 **Pause meter** freezes the needle. **Resume meter** continues in the same direction.
@@ -158,7 +167,10 @@ See the [Sprint 1 API contract](../docs/api-contract.md#gem-et-kast).
 
 ### Hooking a fish on /game
 
-While the token and cast requests are pending, the float rests on the surface and USB latency probes continue.
+On a scored throw the arc disappears and the float rests on the surface while the token and cast requests are pending.
+In practice and on levels 1 and 2, the castle, hands and rod stay in place through both nibbles,
+the bite and the return to the meter. Other levels show the float on the standard water background.
+USB latency probes continue during the requests.
 In practice mode a 201 starts the fishing clock when the page is visible. For a level cast,
 the receipt must also contain the fish for that level. Only one cast owns the canvas.
 During each 800 ms nibble only the red tip is visible. A pull then shows **Fish scared away**.
@@ -275,6 +287,9 @@ py -m http.server 5174 --bind 127.0.0.1 --directory Frontend
 ```
 
 Open the [local float preview](http://127.0.0.1:5174/ByteBait.Client.Tests/browser/float-preview.html) in Chrome.
+Its pixel-art background looks across Nordborg Sø towards the castle, using the
+[view from Nordborg Søpark](https://www.visitsonderjylland.dk/turist/planlaeg-din-ferie/nordborg-soepark-gdk1148124) as a reference.
+Two hands hold a cork-handled spinning rod to the right of the float throughout the cast.
 This test page runs the game's hook rules and canvas renderer with simulated input. It runs independently
 of the Blazor host, API and USB controller. Stop the local server with Ctrl+C.
 
@@ -310,7 +325,11 @@ npm install --prefix Frontend/ByteBait.Client.Tests/browser --no-save --package-
 node --test Frontend/ByteBait.Client.Tests/browser/cast-saving.test.cjs
 ```
 
-The tests drive the real game with simulated serial messages and controlled HTTP
+The tests check the meter backdrop in practice and on levels 1, 2 and 3, including
+navigation between levels. Canvas pixels show where the needle stops and resumes.
+During a cast the tests also read the float, rings and scenery from the canvas, including
+while the HTTP response is pending and when the meter returns after a loss or **Cast again**.
+Cast tests drive the real game with simulated serial messages and controlled HTTP
 responses. Three consecutive level casts exercise a pull during the second nibble, a
 missed bite followed by a late pull, and a successful hook. The test compares all LED
 writes and checks which fish reaches Blazor. A separate test splits a `HOOK` line

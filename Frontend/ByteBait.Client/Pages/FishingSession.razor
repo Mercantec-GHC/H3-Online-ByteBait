@@ -91,7 +91,9 @@
             module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fishing-game.js");
             if (disposed) return;
             receiver = DotNetObjectReference.Create(this);
-            game = await module.InvokeAsync<IJSObjectReference>("createFishingGame", gameCanvas, receiver);
+            // LevelSeed assigns levels 1 and 2 to Nordborg; practice uses the same view.
+            var scene = LevelId is null or 1 or 2 ? "nordborg" : "plain";
+            game = await module.InvokeAsync<IJSObjectReference>("createFishingGame", gameCanvas, receiver, scene);
             if (disposed) return;
             phase = "ready";
         }
