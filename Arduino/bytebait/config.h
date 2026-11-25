@@ -56,6 +56,7 @@ const unsigned long FIGHT_TIMEOUT_MS = 60000;
 const unsigned long CAL_REST_MS      = 1500;   // the Oplà must be still this long before the rest position is saved
 const unsigned long CAL_TIMEOUT_MS   = 6000;   // give up after this long (default rest position is used)
 const float         CAL_STILL_DELTA_G = 0.06f; // sample-to-sample change (g) that still counts as still
+const float         CAL_DRIFT_G      = 0.10f;  // the orientation must stay this close to its average (g, ~6 degrees), or the still period starts again
 const unsigned long CAL_FEEDBACK_MS  = 600;    // how long the green (done) / red (gave up) LEDs are shown
 
 // Sensitivity: 5 levels. Every motion/throw limit is divided by the value, so a higher value = more sensitive.
