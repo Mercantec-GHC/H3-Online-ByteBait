@@ -152,7 +152,9 @@ public class GameModelTests(PostgresDatabase database)
     public async Task Database_rejects_negative_money()
     {
         await using var db = database.CreateContext();
-        db.Players.Add(new Player { UserName = TestWorld.UniqueName("player"), Money = -1 });
+        var player = TestWorld.NewPlayer();
+        player.Money = -1;
+        db.Players.Add(player);
 
         await AssertRejected(db, PostgresErrorCodes.CheckViolation);
     }

@@ -1,13 +1,11 @@
+using Microsoft.AspNetCore.Identity;
+
 namespace ByteBait.Data.Entities;
 
-// A player account. In S2.13 this becomes the ASP.NET Core Identity user on the same table,
-// so casts, money and the aquarium keep pointing at the same Id.
-public class Player
+// A player account. Identity takes care of the username, the hashed password and lockout,
+// the properties here are what the game adds.
+public class Player : IdentityUser<Guid>
 {
-    public Guid Id { get; set; }
-
-    public required string UserName { get; set; }
-
     public int Money { get; set; }
 
     // Set when the player shares the aquarium, used in the link others can open

@@ -32,6 +32,7 @@ public class CastConfiguration : IEntityTypeConfiguration<Cast>
         builder.HasOne(c => c.Player)
             .WithMany(p => p.Casts)
             .HasForeignKey(c => c.PlayerId)
+            .HasConstraintName("fk_casts_players_player_id")
             .OnDelete(DeleteBehavior.Cascade);
 
         // A level or species that has been fished on can't be deleted, the statistics depend on it

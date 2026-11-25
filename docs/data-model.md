@@ -12,6 +12,8 @@ erDiagram
     lanes ||--|{ fish_species : "har"
     players ||--o{ casts : "kaster"
     players ||--o{ player_equipment : "ejer"
+    players ||--o{ player_roles : "har"
+    roles ||--o{ player_roles : "gives til"
     equipment ||--o{ player_equipment : "ejes af"
     levels ||--o{ casts : "kastet på"
     fish_species ||--o{ casts : "på krogen"
@@ -60,10 +62,23 @@ erDiagram
     }
     players {
         uuid id PK
-        string user_name UK
+        string user_name
+        string normalized_user_name UK
+        string password_hash
+        int access_failed_count
+        timestamptz lockout_end
         int money
         string aquarium_share_code UK
         timestamptz created_at
+    }
+    roles {
+        uuid id PK
+        string name "admin"
+        string normalized_name UK
+    }
+    player_roles {
+        uuid player_id PK, FK
+        uuid role_id PK, FK
     }
     player_equipment {
         uuid player_id PK, FK
@@ -105,7 +120,9 @@ erDiagram
 | `rarity_chances` | Basischancen for sjældne og legendariske fisk |
 | `zone_multipliers` | Kastzonens multiplikator: rød ×0, gul ×1, grøn ×1,5 |
 | `equipment` | Stænger, madding og liner til salg i hub'en |
-| `players` | Spillerkonti med penge og kode til det delte akvarium |
+| `players` | Spillerkonti med navn, hashet password, penge og kode til det delte akvarium |
+| `roles` | Roller. Kun `admin`, almindelige spillere har ingen rolle |
+| `player_roles` | Hvilke spillere der har en rolle |
 | `player_equipment` | Hvilket udstyr hver spiller ejer |
 | `casts` | Hvert kast. Fra sprint 2 også spilleren, niveauet og den fisk, serveren har valgt |
 | `catches` | Hvordan fighten endte, og om fisken er solgt eller i akvariet |
@@ -122,7 +139,7 @@ erDiagram
 
 **Hub og akvarium (S3.5, S3.6).** En fanget fisk bliver liggende, indtil den sælges eller flyttes til akvariet. `sold_for` gemmer prisen ved salget, så gamle salg ikke ændrer sig, når admin retter priserne. Et akvarium deles via `players.aquarium_share_code`.
 
-**Spillerkonti (S2.13).** `players` bliver til brugertabellen for ASP.NET Core Identity. Id'et er et `Guid` og ændrer sig ikke, så kast og penge bliver ved med at høre til samme spiller.
+**Spillerkonti (S2.13).** `players` er brugertabellen for ASP.NET Core Identity. Id'et er et `Guid`, og kast, penge og akvarium hører til det. Passwords gemmes kun som hash. `normalized_user_name` er navnet med store bogstaver, så `Fisker` og `fisker` er samme navn. ER-diagrammet viser ikke Identitys interne kolonner og tabeller (`security_stamp`, `concurrency_stamp`, `lockout_enabled`, `player_claims` og `role_claims`). `data_protection_keys` er nøglerne, der beskytter login-cookien.
 
 **Statistik (S3.8).** Antal fanget og mistet pr. art findes ved at tælle `catches` grupperet efter `casts.fish_species_id`.
 
@@ -141,6 +158,9 @@ erDiagram
 | Startdata er kun udgangspunktet. Efter release rettes tal i admin-panelet | Ændrer man et tal i `Seed/`, laver EF en migration, der overskriver det, admin har rettet |
 | Arter, niveauer, baner og udstyr, der er brugt, kan ikke slettes | Statistik og fangster peger på dem. Admin-panelet skal svare `409`, når databasen afviser en sletning |
 | Sletter man en spiller, slettes kast, fangster og udstyr også | Spillerens data hører kun til spilleren |
+| E-mail, telefon og totrinslogin fra Identity er udeladt af `players` | En konto er kun et navn og et password. Vi gemmer ikke personoplysninger, spillet ikke bruger |
+| Cookie-nøglerne ligger i databasen | I containeren ville de gå tabt ved hvert deploy, og alle ville blive logget ud |
+| Rollen `admin` ligger i startdata, men ingen konto har den fra start | Så er der ikke et password i koden. Rollen gives i databasen |
 | Tidspunkter i UTC, penge og priser som heltal | Samme regler som i API-kontrakten |
 
 ## Constraints i databasen
@@ -156,7 +176,7 @@ Databasen afviser ugyldige værdier, også hvis API'et glemmer at tjekke dem:
 - `zone_multipliers.multiplier` mindst 0
 - `players.money` mindst 0, så et køb aldrig giver negativ saldo
 - `catches`: kun fanget fisk kan sælges eller komme i akvariet, ikke begge dele, og et salg har både tidspunkt og pris
-- Unikke navne på udstyr og spillere, artens navn unikt pr. bane, unikt banenummer og niveau 1–2 kun én gang pr. bane
+- Unikke navne på udstyr og spillere (spillernavne uanset store og små bogstaver), artens navn unikt pr. bane, unikt banenummer og niveau 1–2 kun én gang pr. bane
 
 ## Startdata
 
