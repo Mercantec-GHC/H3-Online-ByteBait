@@ -8,16 +8,25 @@ using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Validation errors use the JSON names ("zone", not "Zone"), same as the request body
+// Locally the connection string comes from user-secrets, in CI and Dokploy from ConnectionStrings__Default.
+// First, so the migrations have run before the accounts read the cookie keys from the database.
+builder.Services.AddByteBaitData(builder.Configuration);
+
+// Accounts, login cookie and roles (S2.13)
+builder.Services.AddPlayerAccounts();
+
 builder.Services.AddControllers(options =>
-    options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider()));
+{
+    // Validation errors use the JSON names ("zone", not "Zone"), same as the request body
+    options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+
+    // Every POST, PUT, PATCH and DELETE needs the antiforgery token, also register and login (S2.13)
+    options.Filters.Add<AntiforgeryFilter>();
+});
 builder.Services.AddOpenApi();
 
 // All error responses are ProblemDetails (RFC 9457), see docs/api-contract.md
 builder.Services.AddProblemDetails();
-
-// Locally the connection string comes from user-secrets, in CI and Dokploy from ConnectionStrings__Default
-builder.Services.AddByteBaitData(builder.Configuration);
 
 // Weather from Open-Meteo, cached per town (S2.9). The timeout keeps a slow Open-Meteo from holding up the game.
 builder.Services.AddHttpClient(OpenMeteoClient.HttpClientName, client =>
@@ -27,9 +36,6 @@ builder.Services.AddHttpClient(OpenMeteoClient.HttpClientName, client =>
 });
 builder.Services.AddSingleton<OpenMeteoClient>();
 builder.Services.AddSingleton<WeatherService>();
-
-// The logged-in player for the game endpoints. Always null until player accounts (S2.13, #76).
-builder.Services.AddScoped<CurrentPlayer>();
 
 // Picks the fish for a cast on the server (S2.8). Random.Shared is safe to use from several requests at once.
 builder.Services.AddSingleton(new FishPicker(Random.Shared));
@@ -68,6 +74,7 @@ app.UseHttpsRedirection();
 // and conflicts with it).
 app.MapStaticAssets();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

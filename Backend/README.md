@@ -22,10 +22,12 @@ builder.Services.AddByteBaitData(builder.Configuration);
 Start API'et lokalt (bruger connection string fra user-secrets, se "Kom i gang lokalt"):
 
 ```bash
-dotnet run --project Backend/ByteBait.Api
+dotnet run --project Backend/ByteBait.Api --launch-profile https
 ```
 
-API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på http://localhost:5250/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
+Brug https-profilen. Login- og antiforgery-cookien sendes kun over HTTPS (S2.13), så over http kan man hverken logge ind eller sende `POST`. Første gang skal udviklercertifikatet måske godkendes med `dotnet dev-certs https --trust`.
+
+API'et udleverer også Blazor-klienten (`Frontend/ByteBait.Client`), så spillet åbnes på https://localhost:7172/game. Ukendte `/api/...`-adresser giver `404` som ProblemDetails, alle andre ukendte adresser giver Blazor-siden.
 
 Det samme image, som Dokploy bygger, kan bygges lokalt fra roden af repoet (kræver Docker):
 
@@ -93,6 +95,18 @@ Her kører ingen migrations i hånden. I Dokploy er `Database__MigrateOnStartup=
 - Fejler en migration, starter containeren ikke, og fejlen står i loggen i Dokploy.
 - Indstillingen er slået fra som standard, så tests og `dotnet run` aldrig ændrer en database af sig selv.
 - Migrations skal kunne køre på en database, der allerede har data. Er man i tvivl, så prøv dem først på Neon-branchen `dev`, og læs SQL'en med `dotnet ef migrations script --idempotent`.
+
+## Giv en spiller rollen admin
+
+Ingen konto er admin fra start. Opret en konto i spillet, og kør så denne linje på miljøets Neon-branch (SQL Editor i Neon):
+
+```sql
+INSERT INTO player_roles (player_id, role_id)
+SELECT p.id, r.id FROM players p, roles r
+WHERE p.normalized_user_name = upper('<brugernavn>') AND r.name = 'admin';
+```
+
+Spilleren skal logge ud og ind igen, før rollen virker.
 
 ## Konventioner i databasen
 

@@ -25,8 +25,8 @@ Stop the server with `Ctrl+C`.
 The foundation page at `/` displays **ByteBait** and **Frontend foundation is ready.**
 Choose **Open game** to navigate to `/game`, or open <http://localhost:5173/game> directly.
 The meter, USB connection and LEDs work on the standalone client. To save a cast, run
-the API with a PostgreSQL connection and open its copy of the game at
-<http://localhost:5250/game>. See the [backend setup](../Backend/README.md).
+the API with a PostgreSQL connection and the https profile, log in (S2.13) and open its copy of the game at
+<https://localhost:7172/game>. See the [backend setup](../Backend/README.md).
 
 ## Casting meter
 
@@ -194,7 +194,7 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
    0 to 100, and one received throw. The needle should keep moving. Pause and cast again.
    Expect the missing-history message and a count of two. Unplug, reconnect and confirm
    the counter starts at zero and the previous result has cleared.
-7. For the physical LED check, open the API-hosted game at <http://localhost:5250/game>
+7. For the physical LED check, open the API-hosted game at <https://localhost:7172/game>
    with the local API running. Start the meter and connect USB during a sweep. Watch all
    five LEDs together as the needle crosses red, yellow and green in both directions.
    Pause, resume, switch to another tab, then return. The LEDs should go dark while

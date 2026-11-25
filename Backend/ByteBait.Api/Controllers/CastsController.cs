@@ -3,12 +3,14 @@ using ByteBait.Api.Game;
 using ByteBait.Api.Players;
 using ByteBait.Data;
 using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace ByteBait.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/casts")]
 public class CastsController(ByteBaitDbContext db, CurrentPlayer player, FishPicker fishPicker) : ControllerBase
 {

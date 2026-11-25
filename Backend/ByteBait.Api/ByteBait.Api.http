@@ -1,28 +1,55 @@
-@ByteBait.Api_HostAddress = http://localhost:5250
-
-POST {{ByteBait.Api_HostAddress}}/api/casts
-Content-Type: application/json
-
-{
-  "zone": "green",
-  "strength": 0.8,
-  "castAt": "2026-11-17T09:15:30.123Z"
-}
-
-###
+# Run the API with the https profile. The login and antiforgery cookies are only sent over https (S2.13).
+@ByteBait.Api_HostAddress = https://localhost:7172
 
 GET {{ByteBait.Api_HostAddress}}/api/lanes/3/weather
 Accept: application/json
 
 ###
 
-# S2.7: start a level, cast on it and save how the fight ended (levels are seeded in S2.10)
+# S2.13: every POST needs the antiforgery token. Run this first, and again after register, login and logout.
+# @name antiforgery
+GET {{ByteBait.Api_HostAddress}}/api/account/antiforgery
+Accept: application/json
+
+###
+
+# Create an account. It also logs in, so get a new token above afterwards.
+POST {{ByteBait.Api_HostAddress}}/api/account/register
+Content-Type: application/json
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
+
+{
+  "userName": "fisker42",
+  "password": "a long password"
+}
+
+###
+
+POST {{ByteBait.Api_HostAddress}}/api/account/login
+Content-Type: application/json
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
+
+{
+  "userName": "fisker42",
+  "password": "a long password"
+}
+
+###
+
+GET {{ByteBait.Api_HostAddress}}/api/account/me
+Accept: application/json
+
+###
+
+# S2.7: start a level, cast on it and save how the fight ended. Needs login.
 POST {{ByteBait.Api_HostAddress}}/api/levels/1/start
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
 
 ###
 
 POST {{ByteBait.Api_HostAddress}}/api/casts
 Content-Type: application/json
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
 
 {
   "zone": "green",
@@ -36,10 +63,16 @@ Content-Type: application/json
 # Use the id from the cast above
 POST {{ByteBait.Api_HostAddress}}/api/catches
 Content-Type: application/json
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
 
 {
   "castId": 1,
   "result": "caught"
 }
+
+###
+
+POST {{ByteBait.Api_HostAddress}}/api/account/logout
+X-XSRF-TOKEN: {{antiforgery.response.body.$.token}}
 
 ###

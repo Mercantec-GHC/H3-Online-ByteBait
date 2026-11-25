@@ -1,11 +1,13 @@
 using ByteBait.Api.Dtos;
 using ByteBait.Api.Players;
 using ByteBait.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ByteBait.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/levels")]
 public class LevelsController(ByteBaitDbContext db, CurrentPlayer player) : ControllerBase
 {

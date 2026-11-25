@@ -40,7 +40,7 @@ public sealed class TestWorld : IAsyncDisposable
         var level = new Level { Lane = lane, Number = 1, RequiredFish = 5 };
         var species = NewSpecies(0, minWeightKg: 1, maxWeightKg: 3);
         species.Lane = lane;
-        var player = new Player { UserName = UniqueName("player") };
+        var player = NewPlayer();
 
         await using var db = database.CreateContext();
         db.AddRange(lane, level, species, player);
@@ -61,6 +61,18 @@ public sealed class TestWorld : IAsyncDisposable
         MaxLengthCm = 60,
         Price = 10,
     };
+
+    // Added without Identity, so what it normally fills in is set here
+    public static Player NewPlayer()
+    {
+        var name = UniqueName("player");
+        return new Player
+        {
+            UserName = name,
+            NormalizedUserName = name.ToUpperInvariant(),
+            SecurityStamp = Guid.NewGuid().ToString(),
+        };
+    }
 
     public static string UniqueName(string prefix) => $"{prefix}-{Guid.NewGuid():N}"[..30];
 
