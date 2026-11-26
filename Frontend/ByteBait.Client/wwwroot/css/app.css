@@ -134,8 +134,13 @@ code {
         cursor: pointer;
     }
 
+    /* A light ring on the dark banner (at least 3:1 contrast, WCAG 1.4.11) */
     .cookie-banner a:focus-visible,
-    .cookie-banner button:focus-visible,
+    .cookie-banner button:focus-visible {
+        outline: 3px solid #ffffff;
+        outline-offset: 3px;
+    }
+
     .site-footer a:focus-visible,
     .cookie-page a:focus-visible {
         outline: 3px solid #006b3c;
