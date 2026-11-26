@@ -1,4 +1,11 @@
-@* Supplies the shared page layout; individual pages own their visual theme. *@
+@* Supplies the shared page layout: the cookie banner on the first visit and a link to the cookie policy at the bottom
+   of every page (S2.15). Individual pages own their visual theme. *@
 @inherits LayoutComponentBase
 
+<CookieBanner />
+
 @Body
+
+<footer class="site-footer">
+    <a href="/cookies">Cookie policy</a>
+</footer>
