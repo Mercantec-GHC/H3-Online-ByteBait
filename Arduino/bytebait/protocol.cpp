@@ -3,6 +3,7 @@
 #include "config.h"
 #include "leds.h"
 #include "motion.h"
+#include "buzzer.h"
 
 #if __has_include("arduino_secrets.h")
 #include "arduino_secrets.h"
@@ -39,7 +40,11 @@ static void handleLine(char* line) {
     if (!ledsSetByName(a1)) sendErr("RANGE");
     // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
     else if (!strcmp(a1, "RED") || !strcmp(a1, "YELLOW")) motionStopFight();
-  // TODO(#19): } else if (!strcmp(cmd, "BUZZ") && a1) { BUZZ:LOST -> buzzerPlayLost(); motionStopFight();
+  } else if (!strcmp(cmd, "BUZZ") && a1) {
+    if (!strcmp(a1, "LOST")) {
+      buzzerPlayLost();
+      motionStopFight();                         // the fish is gone: back to cast mode
+    } else sendErr("RANGE");
   } else {
     sendErr("UNKNOWN");
   }

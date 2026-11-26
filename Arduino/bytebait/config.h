@@ -73,7 +73,14 @@ const uint8_t CAL_BTN_MORE  = 2;               // more sensitive
 const uint8_t CAL_BTN_RECAL = 3;               // calibrate the rest position again
 
 // ---------- Buzzer (S2.3, #19) ----------
-// TODO(#19): tone frequencies and durations for "EEEEEEEUUHH"
+// "EEEEEEEUUHH": a held high "EEE" with a little wobble, then "UUHH" sliding down to a low tone.
+const uint16_t BUZZ_HIGH_HZ      = 900;    // pitch of the "EEE" part
+const uint16_t BUZZ_LOW_HZ       = 200;    // pitch where "UUHH" ends
+const uint16_t BUZZ_WOBBLE_HZ    = 40;     // +/- pitch change of the wobble in the "EEE" part
+const unsigned long BUZZ_WOBBLE_MS = 70;   // time for one half wobble
+const unsigned long BUZZ_HOLD_MS = 700;    // length of the "EEE" part
+const unsigned long BUZZ_SLIDE_MS = 600;   // length of the "UUHH" part (pitch falls from HIGH to LOW)
+
 
 // ---------- WiFi (S3.9, #38) ----------
 // TODO(#38): timeouts, pause between reconnect attempts (WiFi credentials live in arduino_secrets.h)

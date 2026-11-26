@@ -13,4 +13,5 @@ void hwShowLevel(uint8_t n, uint8_t r, uint8_t g, uint8_t b);  // light the firs
 void hwButtonsUpdate();
 bool hwTouch(uint8_t n);                           // true while pad n is touched
 
-// TODO(#19): void hwBuzzerOn(uint16_t freq);  void hwBuzzerOff();  (the Carrier buzzer)
+void hwBuzzerOn(uint16_t freq);                    // play a tone until hwBuzzerOff() (does not block)
+void hwBuzzerOff();

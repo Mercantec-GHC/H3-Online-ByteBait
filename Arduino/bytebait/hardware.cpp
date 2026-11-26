@@ -57,3 +57,11 @@ bool hwTouch(uint8_t n) {
   }
   return false;
 }
+
+void hwBuzzerOn(uint16_t freq) {
+  carrier.Buzzer.sound(freq);
+}
+
+void hwBuzzerOff() {
+  carrier.Buzzer.noSound();
+}
