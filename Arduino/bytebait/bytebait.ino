@@ -25,14 +25,16 @@ void setup() {
   while (!Serial && millis() - t < 2000) {}   // wait at most 2 s for USB
 
   hwBegin();
-  calibrationRun();                           // TODO(#18): empty for now
+  calibrationRun();                           // wait for rest, average the rest position (a few seconds)
   // linkBegin();                             // TODO(#38): enable when protocol.cpp uses link* (move Serial.begin here)
   if (!PLOT_MODE) protocolBegin();
 }
 
 void loop() {
   // linkUpdate();                            // TODO(#38)
+  hwAccelPoll();    // read the sensor once; throw and motion share the sample
   protocolPoll();   // read messages from the game
+  calibrationUpdate(); // touch pads: sensitivity and recalibrate  (#18)
   throwUpdate();    // detect throws and send THROW        (#5)
   motionUpdate();   // hook, tilt, hold still, yank        (#17)
   buzzerUpdate();   // play the "lost fish" sound          (#19)
