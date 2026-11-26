@@ -1,5 +1,7 @@
-@* A change of level creates a fresh canvas, USB receiver and pending-cast lifetime. *@
+@* A change of level creates a fresh canvas, USB receiver and pending-cast lifetime.
+   Needs login, because the casts are saved on the player (S2.14). *@
 @page "/game"
+@attribute [Authorize]
 @using System.Globalization
 
 <PageTitle>Casting meter | ByteBait</PageTitle>

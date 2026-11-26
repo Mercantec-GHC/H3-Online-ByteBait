@@ -23,12 +23,23 @@ Local development uses HTTP on localhost, so no development certificate is neede
 Stop the server with `Ctrl+C`.
 
 The foundation page at `/` displays **ByteBait** and **Frontend foundation is ready.**
-Choose **Open game** to navigate to `/game`, or open <http://localhost:5173/game> directly.
-The meter, USB connection and LEDs work on the standalone client. To save a cast, run
-the API with a local PostgreSQL database and the `https` profile. Open
-<https://localhost:7172/game> in the signed-in browser. Until the account pages in
-#77 are available, use the [authenticated browser tests](#cast-saving-tests-in-chrome)
-to exercise the same flow with temporary local players. See the [backend setup](../Backend/README.md).
+Choose **Open game** to navigate to `/game`.
+
+`/game` needs a signed-in player (#77), and the standalone client has no API to sign in
+against, so it sends you to **Sign in**. To play, run the API with a local PostgreSQL
+database and the `https` profile, open <https://localhost:7172>, choose **Create account**
+and then **Open game**. The [browser tests](#cast-saving-tests-in-chrome) still use the
+standalone client: they answer `GET /api/account/me` themselves. See the
+[backend setup](../Backend/README.md).
+
+## Accounts
+
+The bar at the top shows who is signed in, with **Sign in** and **Create account** or
+**Sign out**. `/login` and `/register` use the account endpoints in the
+[API contract](../docs/api-contract.md). A page with `[Authorize]` sends a signed-out
+player to `/login` and back afterwards. `/admin` also needs the `admin` role; see the
+[backend setup](../Backend/README.md) for how to give it. The login cookie is `HttpOnly`,
+so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
 
 ## Casting meter
 

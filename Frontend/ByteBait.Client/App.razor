@@ -1,7 +1,26 @@
-@* Routes browser navigation to pages and moves focus to the destination heading. *@
+@* Routes browser navigation to pages and moves focus to the destination heading.
+   Pages with [Authorize] send a player who isn't logged in to /login, and tell a player without the role so. *@
 <Router AppAssembly="@typeof(App).Assembly" NotFoundPage="typeof(Pages.NotFound)">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)"/>
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated == true)
+                {
+                    <main class="account-page">
+                        <h1>No access</h1>
+                        <p>Your account doesn't have access to this page.</p>
+                        <a href="/">Back to home</a>
+                    </main>
+                }
+                else
+                {
+                    <RedirectToLogin />
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <p class="account-page">Checking your login…</p>
+            </Authorizing>
+        </AuthorizeRouteView>
         <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
 </Router>

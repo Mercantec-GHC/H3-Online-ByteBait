@@ -1,0 +1,32 @@
+@* Create an account with a username and password. The player is logged in straight away. *@
+@page "/register"
+@inject AccountClient Accounts
+@inject NavigationManager Navigation
+
+<PageTitle>Create account | ByteBait</PageTitle>
+
+<main class="account-page">
+    <h1>Create account</h1>
+
+    <AuthorizeView>
+        <Authorized>
+            <p>You're signed in as <strong>@context.User.Identity?.Name</strong>. Sign out first to create another account.</p>
+        </Authorized>
+        <NotAuthorized>
+            <p>Letters (also æ, ø and å), numbers, - and _ in the username. The password needs at least 8 characters.</p>
+
+            <AccountFormView SubmitText="Create account" PasswordAutocomplete="new-password"
+                             OnSubmit="Accounts.RegisterAsync" OnSucceeded="GoBack" />
+
+            <p>Already have an account? <a href="@LoginLink">Sign in</a></p>
+        </NotAuthorized>
+    </AuthorizeView>
+</main>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private string LoginLink => ReturnUrl is null ? "login" : $"login?returnUrl={Uri.EscapeDataString(ReturnUrl)}";
+
+    private void GoBack() => Navigation.NavigateTo(SafeReturnUrl.OrHome(ReturnUrl));
+}

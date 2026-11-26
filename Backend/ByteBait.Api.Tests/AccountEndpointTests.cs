@@ -218,6 +218,26 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
     }
 
+    // On Dokploy the request reaches the API as http, because Cloudflare handles HTTPS
+    [Theory]
+    [InlineData(null)]
+    [InlineData("http")]
+    public async Task Antiforgery_works_when_the_request_arrives_as_http(string? forwardedProto)
+    {
+        var client = _factory.CreateClient(new() { BaseAddress = new Uri("http://localhost") });
+        if (forwardedProto is not null)
+        {
+            client.DefaultRequestHeaders.Add("X-Forwarded-Proto", forwardedProto);
+        }
+
+        var token = await client.GetAsync("/api/account/antiforgery");
+        var logout = await client.PostAsync("/api/account/logout", null);
+
+        Assert.Equal(HttpStatusCode.OK, token.StatusCode);
+        // Without the token, so 400 and not 500
+        Assert.Equal(HttpStatusCode.BadRequest, logout.StatusCode);
+    }
+
     // Register and login are protected too, so another site can't log a player into its own account
     [Theory]
     [InlineData("/api/account/register")]

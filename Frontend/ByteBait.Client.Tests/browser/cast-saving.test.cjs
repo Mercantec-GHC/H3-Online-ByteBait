@@ -10,6 +10,7 @@ const port = Number(process.env.BYTEBAIT_TEST_PORT ?? (realDatabase ? 7172 : 517
 const gameUrl = `${realDatabase ? "https" : "http"}://localhost:${port}/game`;
 const castUrl = new URL("/api/casts", gameUrl).href;
 const tokenUrl = new URL("/api/account/antiforgery", gameUrl).href;
+const meUrl = new URL("/api/account/me", gameUrl).href;
 
 async function openGame(t, query = "", connect = true) {
     const browser = await chromium.launch({ channel: "chrome" });
@@ -57,6 +58,12 @@ async function openGame(t, query = "", connect = true) {
     });
     const epoch = Date.UTC(2026, 0, 1);
     await page.clock.install({ time: new Date(epoch) });
+    // /game needs a logged-in player (S2.14). The real API gets a new one, the mocked API answers for one.
+    if (realDatabase) {
+        await registerTestPlayer(page);
+    } else {
+        await page.route(meUrl, route => route.fulfill({ json: { id: randomUUID(), userName: "tester", roles: [], money: 0 } }));
+    }
     await page.goto(gameUrl + query);
     const visible = text => page.getByText(text, { exact: true }).waitFor();
     // Fetch and WebAssembly continuations cross real network and browser timer queues.
@@ -703,6 +710,14 @@ test("a token arriving after USB disconnect cannot send the abandoned cast", asy
     assert.equal(requests.length, 0);
 });
 
+// Logging out through the API keeps the game open, so its next cast is anonymous
+async function logoutTestPlayer(page) {
+    const api = page.context().request;
+    const { token } = await (await api.get(tokenUrl)).json();
+    const response = await api.post(new URL("/api/account/logout", gameUrl).href, { headers: { "X-XSRF-TOKEN": token } });
+    assert.equal(response.status(), 204);
+}
+
 // Registration signs a unique local player in. The browser and APIRequestContext share cookies.
 async function registerTestPlayer(page) {
     const api = page.context().request;
@@ -721,6 +736,7 @@ test("the API rejects an anonymous cast and a signed-in cast carrying the pre-lo
     skip: !realDatabase,
 }, async t => {
     const game = await openGame(t);
+    await logoutTestPlayer(game.page);
     await game.calibrate();
     const unauthorized = game.page.waitForResponse(castUrl);
     await game.feed(72);
@@ -742,7 +758,6 @@ test("one simulated throw through the real API receives a database receipt", {
     skip: process.env.BYTEBAIT_TEST_CAST_DATABASE !== "1",
 }, async t => {
     const game = await openGame(t);
-    await registerTestPlayer(game.page);
     const requests = [];
     game.page.on("request", r => { if (r.url() === castUrl) requests.push(r); });
     await game.calibrate();
@@ -769,7 +784,6 @@ test("the fish from the real level endpoint reaches the hooked game state unchan
     assert.ok(Number.isInteger(levelId) && levelId > 0);
     const game = await openGame(t, "?levelId=" + levelId);
     const { page } = game;
-    await registerTestPlayer(page);
     const hooks = await watchHooks(page);
     const apiCalls = [];
     page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api/")) apiCalls.push(request.url()); });

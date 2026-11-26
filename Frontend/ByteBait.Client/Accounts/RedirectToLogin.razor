@@ -1,0 +1,10 @@
+@* Shown instead of a page that needs login. Sends the player to /login and back here afterwards. *@
+@inject NavigationManager Navigation
+
+@code {
+    protected override void OnInitialized()
+    {
+        var here = "/" + Navigation.ToBaseRelativePath(Navigation.Uri);
+        Navigation.NavigateTo($"login?returnUrl={Uri.EscapeDataString(here)}", replace: true);
+    }
+}

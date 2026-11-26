@@ -101,3 +101,42 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Login, register and the bar at the top that shows who is logged in (S2.14) */
+.account-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0.5rem 1.5rem;
+    border-bottom: 1px solid #ddd;
+}
+
+.account-page {
+    max-width: 24rem;
+    padding: 1.5rem;
+}
+
+.account-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+    .account-form button {
+        margin-top: 0.8rem;
+        align-self: flex-start;
+    }
+
+.account-error {
+    color: #b32121;
+    font-weight: bold;
+}
+
+.account-bar a:focus-visible,
+.account-page a:focus-visible,
+.account-form :focus-visible {
+    outline: 3px solid #006b3c;
+    outline-offset: 2px;
+}

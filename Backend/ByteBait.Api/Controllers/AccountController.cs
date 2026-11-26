@@ -41,7 +41,12 @@ public class AccountController(UserManager<Player> players, SignInManager<Player
             {
                 // Identity's codes for a bad password all begin with Password, e.g. PasswordTooShort
                 var field = error.Code.StartsWith("Password", StringComparison.Ordinal) ? "password" : "userName";
-                ModelState.AddModelError(field, error.Description);
+
+                // Identity's own text says only letters or digits, but we also allow æ, ø, å, - and _
+                var message = error.Code == nameof(IdentityErrorDescriber.InvalidUserName)
+                    ? "Username can only contain letters (also æ, ø and å), numbers, - and _."
+                    : error.Description;
+                ModelState.AddModelError(field, message);
             }
 
             return ValidationProblem(ModelState);

@@ -1,0 +1,67 @@
+@* The username and password form shared by the login and register pages. Shows the API's errors under each field. *@
+@using ByteBait.Client.Accounts
+
+<EditForm Model="form" OnValidSubmit="SubmitAsync" FormName="@SubmitText" class="account-form">
+    <DataAnnotationsValidator />
+
+    @if (error is not null)
+    {
+        <p class="account-error" role="alert">@error.Message</p>
+    }
+
+    <label for="userName">Username</label>
+    <InputText id="userName" @bind-Value="form.UserName" autocomplete="username" />
+    <ValidationMessage For="() => form.UserName" />
+    @foreach (var message in FieldErrors("userName"))
+    {
+        <div class="validation-message">@message</div>
+    }
+
+    <label for="password">Password</label>
+    <InputText id="password" type="password" @bind-Value="form.Password" autocomplete="@PasswordAutocomplete" />
+    <ValidationMessage For="() => form.Password" />
+    @foreach (var message in FieldErrors("password"))
+    {
+        <div class="validation-message">@message</div>
+    }
+
+    <button type="submit" disabled="@sending">@(sending ? "Please wait…" : SubmitText)</button>
+</EditForm>
+
+@code {
+    [Parameter, EditorRequired] public string SubmitText { get; set; } = "";
+
+    // "current-password" on login, "new-password" on register, so password managers fill in the right one
+    [Parameter, EditorRequired] public string PasswordAutocomplete { get; set; } = "";
+
+    // Returns null when it worked
+    [Parameter, EditorRequired] public Func<AccountForm, Task<AccountError?>> OnSubmit { get; set; } = null!;
+
+    [Parameter] public EventCallback OnSucceeded { get; set; }
+
+    private readonly AccountForm form = new();
+    private AccountError? error;
+    private bool sending;
+
+    private IEnumerable<string> FieldErrors(string field) =>
+        error?.FieldErrors.TryGetValue(field, out var messages) == true ? messages : [];
+
+    private async Task SubmitAsync()
+    {
+        sending = true;
+        error = null;
+        try
+        {
+            error = await OnSubmit(form);
+        }
+        finally
+        {
+            sending = false;
+        }
+
+        if (error is null)
+        {
+            await OnSucceeded.InvokeAsync();
+        }
+    }
+}

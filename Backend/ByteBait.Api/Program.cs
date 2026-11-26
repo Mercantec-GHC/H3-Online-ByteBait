@@ -58,6 +58,18 @@ var app = builder.Build();
 // First, so everything after it sees the original scheme
 app.UseForwardedHeaders();
 
+// On Dokploy, Cloudflare handles HTTPS before the proxy, so X-Forwarded-Proto can't be trusted to say https.
+// Antiforgery only works over https, so outside Development every request counts as https.
+// Locally the https profile is used, so the request already is.
+if (!app.Environment.IsDevelopment())
+{
+    app.Use((context, next) =>
+    {
+        context.Request.Scheme = "https";
+        return next(context);
+    });
+}
+
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

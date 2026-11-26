@@ -1,0 +1,10 @@
+@* The admin panel. Only for players with the admin role, and the API checks the role again on its own endpoints. *@
+@page "/admin"
+@attribute [Authorize(Roles = Roles.Admin)]
+
+<PageTitle>Admin | ByteBait</PageTitle>
+
+<main class="account-page">
+    <h1>Admin</h1>
+    <p>Fish species, prices and catch chances will be edited here (S2.11).</p>
+</main>

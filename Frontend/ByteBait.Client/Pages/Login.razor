@@ -1,0 +1,30 @@
+@* Log in with username and password. The API sets the login cookie. *@
+@page "/login"
+@inject AccountClient Accounts
+@inject NavigationManager Navigation
+
+<PageTitle>Sign in | ByteBait</PageTitle>
+
+<main class="account-page">
+    <h1>Sign in</h1>
+
+    <AuthorizeView>
+        <Authorized>
+            <p>You're signed in as <strong>@context.User.Identity?.Name</strong>. <a href="game">Go to the game</a></p>
+        </Authorized>
+        <NotAuthorized>
+            <AccountFormView SubmitText="Sign in" PasswordAutocomplete="current-password"
+                             OnSubmit="Accounts.LoginAsync" OnSucceeded="GoBack" />
+
+            <p>No account yet? <a href="@RegisterLink">Create one</a></p>
+        </NotAuthorized>
+    </AuthorizeView>
+</main>
+
+@code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
+    private string RegisterLink => ReturnUrl is null ? "register" : $"register?returnUrl={Uri.EscapeDataString(ReturnUrl)}";
+
+    private void GoBack() => Navigation.NavigateTo(SafeReturnUrl.OrHome(ReturnUrl));
+}
