@@ -99,7 +99,7 @@ Oplà'en kan ikke se forskel på dem uden at kende fasen, så den har to tilstan
 
 Konsekvenser for spillet:
 - Spillet kan ikke få `THROW` og `HOOK` for den samme bevægelse.
-- Næste kast kan først registreres, når spillet har startet timingmåleren (`LED:RED`/`LED:YELLOW`).
+- Næste kast kan først registreres, når kampfasen er slut. Den slutter, når spillet sender `LED:RED` eller `LED:YELLOW`, når spillet sender `BUZZ:LOST`, eller efter 60 sekunders timeout.
 - `HOLD:1` kommer, når Oplà'en har holdt sig helt stille i 400 ms, også før fisken bider. Spillet bruger den kun i kampfasen.
 - Bevægelserne kommer først ca. 150 ms efter, de er startet (Oplà'en måler toppen, før den vælger).
 - `HOOK` = moderat ryk opad, `YANK` = hårdere og hurtigere ryk opad.

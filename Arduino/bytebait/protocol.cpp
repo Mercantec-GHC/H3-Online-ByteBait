@@ -27,8 +27,22 @@ static void sendErr(const char* code) {
   Serial.println(code);
 }
 
+// BUZZ is checked on the whole line, before strtok() splits it. strtok() skips empty fields and
+// extra parts, so "BUZZ:LOST:EXTRA" and "BUZZ::LOST" would otherwise look like a valid BUZZ:LOST.
+static void handleBuzz(const char* line) {
+  if (!strcmp(line, "BUZZ:LOST")) {
+    buzzerPlayLost();
+    motionStopFight();                           // the fish is gone: back to cast mode
+  } else if (line[4] == 0 || line[5] == 0 || strchr(line + 5, ':')) {
+    sendErr("ARGS");                             // missing, empty or extra parts
+  } else {
+    sendErr("RANGE");                            // one value, but not LOST
+  }
+}
+
 // Handle one complete line from the game
 static void handleLine(char* line) {
+  if (!strncmp(line, "BUZZ", 4) && (line[4] == ':' || line[4] == 0)) { handleBuzz(line); return; }
   char* cmd = strtok(line, ":");
   char* a1  = strtok(nullptr, ":");
   if (!cmd) return;
@@ -40,11 +54,6 @@ static void handleLine(char* line) {
     if (!ledsSetByName(a1)) sendErr("RANGE");
     // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
     else if (!strcmp(a1, "RED") || !strcmp(a1, "YELLOW")) motionStopFight();
-  } else if (!strcmp(cmd, "BUZZ") && a1) {
-    if (!strcmp(a1, "LOST")) {
-      buzzerPlayLost();
-      motionStopFight();                         // the fish is gone: back to cast mode
-    } else sendErr("RANGE");
   } else {
     sendErr("UNKNOWN");
   }

@@ -80,7 +80,7 @@ const uint16_t BUZZ_WOBBLE_HZ    = 40;     // +/- pitch change of the wobble in 
 const unsigned long BUZZ_WOBBLE_MS = 70;   // time for one half wobble
 const unsigned long BUZZ_HOLD_MS = 700;    // length of the "EEE" part
 const unsigned long BUZZ_SLIDE_MS = 600;   // length of the "UUHH" part (pitch falls from HIGH to LOW)
-
+const unsigned long BUZZ_SLIDE_STEP_MS = 30; // the falling pitch changes this often (tone() restarts the timer on every call)
 
 // ---------- WiFi (S3.9, #38) ----------
 // TODO(#38): timeouts, pause between reconnect attempts (WiFi credentials live in arduino_secrets.h)
