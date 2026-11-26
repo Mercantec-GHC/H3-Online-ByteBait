@@ -101,3 +101,74 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+/* Cookie notice and policy (S2.15). The notice sits above the page instead of over it, so it never hides the game's buttons. */
+.cookie-banner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1rem;
+    padding: 0.75rem 1rem;
+    background: #1f2a33;
+    color: #ffffff;
+    font-size: 0.95rem;
+}
+
+    .cookie-banner p {
+        flex: 1 1 18rem;
+        margin: 0;
+    }
+
+    .cookie-banner a {
+        color: #ffffff;
+    }
+
+    .cookie-banner button {
+        padding: 0.4rem 1rem;
+        border: 0;
+        border-radius: 4px;
+        background: #ffffff;
+        color: #1f2a33;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .cookie-banner a:focus-visible,
+    .cookie-banner button:focus-visible,
+    .site-footer a:focus-visible,
+    .cookie-page a:focus-visible {
+        outline: 3px solid #006b3c;
+        outline-offset: 3px;
+    }
+
+.site-footer {
+    padding: 1rem;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.cookie-page {
+    max-width: 48rem;
+    padding: 1.5rem 1rem;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+
+/* Wide tables scroll on their own on a phone instead of the whole page */
+.cookie-table {
+    overflow-x: auto;
+}
+
+    .cookie-table table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .cookie-table th,
+    .cookie-table td {
+        padding: 0.5rem;
+        border: 1px solid #c8cdd2;
+        text-align: left;
+        vertical-align: top;
+    }

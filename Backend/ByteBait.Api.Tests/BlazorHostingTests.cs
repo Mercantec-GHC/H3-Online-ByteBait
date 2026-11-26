@@ -10,6 +10,7 @@ public class BlazorHostingTests(ApiFactory factory) : IClassFixture<ApiFactory>
     [Theory]
     [InlineData("/")]
     [InlineData("/game")]
+    [InlineData("/cookies")]
     public async Task Pages_return_the_Blazor_client(string path)
     {
         var response = await _client.GetAsync(path);
