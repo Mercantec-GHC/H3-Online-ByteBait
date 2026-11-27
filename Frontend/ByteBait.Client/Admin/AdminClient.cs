@@ -1,6 +1,5 @@
 // The admin panel's calls to /api/admin (see docs/api-contract.md, "Admin")
 using System.Net.Http.Json;
-using System.Text.Json;
 using ByteBait.Client.Api;
 
 namespace ByteBait.Client.Admin;
@@ -29,7 +28,7 @@ public sealed class AdminClient(HttpClient http)
             using var response = await http.SendWithTokenAsync(method, url, content);
             return response.IsSuccessStatusCode ? null : await ApiError.FromAsync(response);
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
+        catch (Exception ex) when (ApiError.IsConnectionError(ex))
         {
             return ApiError.NoConnection;
         }

@@ -17,9 +17,21 @@
         }
     </div>
 
+    @* Also after a save or delete: then the table below is from before, and the admin must know *@
+    @if (loadFailed)
+    {
+        <p class="account-error" role="alert">
+            @(species is null ? "Couldn't load the species." : "Couldn't load the latest species, so the list below may be out of date.")
+            Reload the page to try again.
+        </p>
+    }
+
     @if (species is null)
     {
-        <p>@(loadFailed ? "Couldn't load the species. Reload the page to try again." : "Loading species…")</p>
+        @if (!loadFailed)
+        {
+            <p>Loading species…</p>
+        }
     }
     else
     {
@@ -144,15 +156,16 @@
                                 <td>@Range(fish.MinLengthCm, fish.MaxLengthCm)</td>
                                 <td>@fish.Price</td>
                                 <td class="row-actions">
+                                    @* Locked while a save or delete is on its way, so the form can't change under it *@
                                     @if (confirmDeleteId == fish.Id)
                                     {
-                                        <button type="button" @onclick="() => DeleteAsync(fish)">Delete @fish.Name</button>
-                                        <button type="button" @onclick="() => confirmDeleteId = null">Keep</button>
+                                        <button type="button" @onclick="() => DeleteAsync(fish)" disabled="@sending">Delete @fish.Name</button>
+                                        <button type="button" @onclick="() => confirmDeleteId = null" disabled="@sending">Keep</button>
                                     }
                                     else
                                     {
-                                        <button type="button" @onclick="() => StartEdit(fish)">Edit</button>
-                                        <button type="button" @onclick="() => confirmDeleteId = fish.Id">Delete</button>
+                                        <button type="button" @onclick="() => StartEdit(fish)" disabled="@sending">Edit</button>
+                                        <button type="button" @onclick="() => confirmDeleteId = fish.Id" disabled="@sending">Delete</button>
                                     }
                                 </td>
                             </tr>
@@ -183,12 +196,16 @@
 
     private async Task LoadAsync()
     {
+        loadFailed = false;
         try
         {
-            lanes = await AdminApi.GetLanesAsync();
-            species = await AdminApi.GetSpeciesAsync();
+            // Both lists are fetched before either is shown, so new lanes are never mixed with old species
+            var newLanes = await AdminApi.GetLanesAsync();
+            var newSpecies = await AdminApi.GetSpeciesAsync();
+            lanes = newLanes;
+            species = newSpecies;
         }
-        catch (HttpRequestException)
+        catch (Exception ex) when (ApiError.IsConnectionError(ex))
         {
             loadFailed = true;
         }
@@ -220,12 +237,13 @@
 
     private async Task SaveAsync()
     {
+        var name = form!.Name;
         sending = true;
         try
         {
             error = editingId is { } id
-                ? await AdminApi.UpdateAsync(id, form!)
-                : await AdminApi.CreateAsync(form!);
+                ? await AdminApi.UpdateAsync(id, form)
+                : await AdminApi.CreateAsync(form);
         }
         finally
         {
@@ -234,7 +252,7 @@
 
         if (error is null)
         {
-            message = $"{form!.Name} saved.";
+            message = $"{name} saved.";
             CloseForm();
             await LoadAsync();
         }
@@ -243,7 +261,17 @@
     private async Task DeleteAsync(Species fish)
     {
         confirmDeleteId = null;
-        var deleteError = await AdminApi.DeleteAsync(fish.Id);
+        sending = true;
+        ApiError? deleteError;
+        try
+        {
+            deleteError = await AdminApi.DeleteAsync(fish.Id);
+        }
+        finally
+        {
+            sending = false;
+        }
+
         message = deleteError?.Message ?? $"{fish.Name} deleted.";
 
         if (deleteError is null)

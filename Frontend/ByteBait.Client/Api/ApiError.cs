@@ -12,6 +12,11 @@ public sealed record ApiError(string Message, IReadOnlyDictionary<string, string
 
     public static ApiError NoConnection { get; } = new("Couldn't reach the server. Try again.", NoFieldErrors);
 
+    // The ways a call can fail without an answer from the API: no connection, a timeout
+    // (HttpClient throws TaskCanceledException), or a body that isn't the JSON we expected
+    public static bool IsConnectionError(Exception ex) =>
+        ex is HttpRequestException or OperationCanceledException or JsonException or NotSupportedException;
+
     public IEnumerable<string> For(string field) =>
         FieldErrors.TryGetValue(field, out var messages) ? messages : [];
 
