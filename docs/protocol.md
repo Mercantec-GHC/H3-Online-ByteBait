@@ -100,10 +100,14 @@ Oplà'en kan ikke se forskel på dem uden at kende fasen, så den har to tilstan
 | **Kamp** | kun `HOOK`, `TILT`, `HOLD`, `YANK` | spillet sender `LED:RED` eller `LED:YELLOW` (nyt timingmåler-kast), `BUZZ:LOST` eller efter 60 sek. → kast |
 
 Konsekvenser for spillet:
-- Spillet kan ikke få `THROW` og `HOOK` for den samme bevægelse.
+- Spillet kan ikke få `THROW` og `HOOK` for den samme bevægelse. Skiftet venter på, at armen er stoppet, begge veje:
+  - **Efter `THROW`** leder Oplà'en først efter ryk, når den har været i ro i 150 ms (højst 1,5 sek.). Så læser den også igen, hvad der er "op", fordi stangen kan holdes i en ny vinkel efter kastet.
+  - **Efter kampen** starter kastgenkendelsen i sin pause: næste `THROW` kommer tidligst efter 1 sek. og først, når Oplà'en er i ro (højst 3 sek.). Et ryk, der får spillet til at sende `LED:RED`, bliver altså ikke også til et kast.
 - `THROW` starter kampfasen. Den fortsætter, når spillet sender `LED:OFF` under nap og bid, så `LED:OFF` afslutter ikke kampen.
 - Næste kast kan først registreres, når kampfasen er slut. Den slutter, når spillet sender `LED:RED` eller `LED:YELLOW`, når spillet sender `BUZZ:LOST`, eller efter 60 sekunders timeout.
-- `BUZZ:LOST` kontrolleres på hele linjen. Den afspiller lyden "EEEEEEEUUHH" og afslutter kampfasen. `BUZZ:LOST:EXTRA`, `BUZZ::LOST`, `BUZZ` og `BUZZ:` giver `ERR:ARGS`, og kampen fortsætter. Andre værdier end `LOST` giver `ERR:RANGE`.
+- `LED:RED` og `LED:YELLOW` i de første 300 ms efter `THROW` afslutter ikke kampen. Det er en zonefarve, der allerede var på vej, før spillet fik kastet. Næste zoneskift afslutter den i stedet.
+- `BUZZ:LOST` afspiller lyden "EEEEEEEUUHH" og afslutter kampfasen. Andre værdier end `LOST` giver `ERR:RANGE`, og kampen fortsætter.
+- Alle beskeder fra spillet har præcis ét argument. Mangler det, er det tomt, eller er der flere dele (`LED`, `LED:`, `LED:RED:EXTRA`, `BUZZ::LOST`, `PING:1:2`), giver det `ERR:ARGS`. `PING` skal have et tal, ellers `ERR:RANGE`.
 - `HOLD:1` kommer, når Oplà'en har holdt sig helt stille i 400 ms, også før fisken bider. Spillet bruger den kun i kampfasen.
 - Bevægelserne kommer først ca. 150 ms efter, de er startet (Oplà'en måler toppen, før den vælger).
 - `HOOK` = moderat ryk opad, `YANK` = hårdere og hurtigere ryk opad.
@@ -114,6 +118,7 @@ Kalibreringen ændrer ingen beskeder. Den påvirker kun, hvornår og hvor let Op
 
 - **Ved opstart** venter Oplà'en, til den holdes stille i 1,5 sek. (LED'erne er gule), og gemmer hvilepositionen (grøn). Giver den op efter 6 sek. (rød), bruges standardværdierne.
 - `HELLO:<via>:1` sendes først bagefter. Der kan altså gå op til ca. 7 sek. fra opstart, før spillet hører noget. Spillets 15 sek. timeout på `PONG` er stadig nok.
-- **Følsomhed:** fem niveauer (standard 3). Alle grænser for kast og bevægelser divideres med niveauets værdi, så niveau 3 giver præcis værdierne i `config.h`. Niveauet nulstilles ved genstart.
+- **Følsomhed:** fem niveauer (standard 3). Grænserne, der starter et kast eller en bevægelse, divideres med niveauets værdi, så niveau 3 giver præcis værdierne i `config.h`. Grænserne for at være i ro (`HOLD`, og hvornår et kast eller ryk er slut) er de samme på alle niveauer. Niveauet nulstilles ved genstart.
+- **Lysene:** mens Oplà'en selv bruger LED'erne (gul kalibrering, grønt/rødt resultat, lilla niveauvisning), gemmes spillets farver og vises først bagefter.
 - **Berøringsknapper:** pad 1 = mindre følsom, pad 2 = mere følsom, pad 3 = kalibrér igen. Pad 0 er reserveret til at tvinge WiFi (#38). Knapperne ignoreres i kamp-tilstand.
 - Ny kalibrering via pad 3 blokerer ikke: `PING` besvares, mens LED'erne er gule, og giver den op, bruges standardhvilepositionen.

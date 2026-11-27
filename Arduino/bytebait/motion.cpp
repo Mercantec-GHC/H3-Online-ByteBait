@@ -18,9 +18,11 @@ static bool  prevKnown = false;
 static float deltaAvg = 0;             // smoothed change between samples
 
 // ---------- Motion state (hook / tilt / yank) ----------
-enum MotionState { M_IDLE, M_MEASURING, M_LOCKOUT };
+// M_SETTLING: right after THROW, waiting for the rest of the throw to stop (see FIGHT_SETTLE_MS in config.h)
+enum MotionState { M_SETTLING, M_IDLE, M_MEASURING, M_LOCKOUT };
 static MotionState mState = M_IDLE;
 static unsigned long mStart = 0;
+static unsigned long calmSince = 0;    // while settling: when the Oplà became calm (0 = not calm)
 static float peakUp = 0;               // largest upward acceleration in the window
 static float peakLatPos = 0;           // largest sideways acceleration, positive direction
 static float peakLatNeg = 0;           // largest sideways acceleration, negative direction (stored as positive)
@@ -44,12 +46,21 @@ void motionStartFight() {
   fight = true;
   fightStart = millis();
   resetMotionState();
+  mState = M_SETTLING;                 // the arm is often still moving after the throw
+  mStart = fightStart;
+  calmSince = 0;
 }
 
 void motionStopFight() {
   if (MOTION_TEST_MODE) return;        // in test mode the motions stay on
   fight = false;
   resetMotionState();
+}
+
+void motionMeterStarted() {
+  // A zone color sent just before the game got THROW belongs to the old meter
+  if (fight && millis() - fightStart < FIGHT_GRACE_MS) return;
+  motionStopFight();
 }
 
 bool motionFightActive() {
@@ -144,6 +155,20 @@ void motionUpdate() {
 
   // =====================  Hook / tilt / yank  =====================
   switch (mState) {
+    case M_SETTLING: {
+      // Close to 1 g and hardly changing. Not linMag: "up" is still from before the throw.
+      bool calm = fabs(mag - 1.0f) < QUIET_G && deltaAvg < MOVE_DELTA_G;
+      if (!calm) calmSince = 0;
+      else if (calmSince == 0) calmSince = now;
+
+      bool settled = calmSince != 0 && now - calmSince >= FIGHT_SETTLE_MS;
+      if (settled || now - mStart >= FIGHT_SETTLE_MAX_MS) {
+        if (calm) { gx = x; gy = y; gz = z; }   // the rod may be held at a new angle after the throw
+        mState = M_IDLE;
+      }
+      break;
+    }
+
     case M_IDLE:
       if (linMag > MOTION_TRIGGER_G * k) {
         mState = M_MEASURING;

@@ -3,7 +3,7 @@
 Alle fire tester med **samme firmware i normal spiltilstand**. Du skal ikke bruge `MOTION_TEST_MODE`.
 
 ## Før du starter (alle)
-1. Branchen for #104 (kalibrering) er hentet, og `Arduino/bytebait/` kompilerer.
+1. Firmwaren fra PR #110 er hentet, og `Arduino/bytebait/` kompilerer.
 2. `config.h`: `MOTION_TEST_MODE = false`, `MOTION_PLOT_MODE = false`, `PLOT_MODE = false`. `arduino_secrets.h`: `WIFI_THROW_PROBE 0` (eller filen mangler).
 3. Upload, åbn **Serial Monitor** (115200 baud, **New Line**). Luk spillet, så porten er fri.
 
@@ -49,7 +49,7 @@ Skriv det niveau (1-5), hvor bevægelserne virker bedst, i skemaet.
 | Bjarke | | | | | | | | | |
 | Frederik | | | | | | | | | |
 
-Skriv i #18 (og i PR #104) hvad der ikke virkede og hvorfor, fx om `TILT:L`/`TILT:R` er byttet om for dig.
+Skriv i #18 hvad der ikke virkede og hvorfor, fx om `TILT:L`/`TILT:R` er byttet om for dig.
 
 ## Tjek til sidst
 - `config.h` er uændret (dine egne tal kan stå i din lokale fil, men ikke i en commit).

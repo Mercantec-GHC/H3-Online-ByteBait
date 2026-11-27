@@ -29,6 +29,7 @@ static void calBegin() {
   calState = CAL_RUNNING;
   calStart = millis();
   stillSince = 0; sx = sy = sz = 0; n = 0; havePrev = false;
+  ledsHold();                           // the game's colors wait until the result has been shown
   hwSetLeds(255, 180, 0);               // yellow = hold still, calibrating
 }
 
@@ -50,7 +51,7 @@ static void calStep() {
 
   if (calState == CAL_FEEDBACK) {
     if (now - calEnd >= CAL_FEEDBACK_MS) {
-      ledsRestoreLast();                // the game's last color (OFF if the game has not sent any)
+      ledsRelease();                    // the game's last color (OFF if the game has not sent any)
       calState = CAL_IDLE;
     }
     return;
@@ -118,6 +119,12 @@ float calibrationSensitivity() {
   return SENS_LEVELS[level];
 }
 
+// Purple, one LED per level. The game's colors wait until the display is hidden again.
+static void showLevel() {
+  ledsHold();
+  hwShowLevel(level + 1, 150, 0, 255);
+}
+
 void calibrationUpdate() {
   calStep();                                    // a background calibration (pad 3) moves on a little each loop
   if (!CAL_BUTTONS) return;
@@ -129,7 +136,7 @@ void calibrationUpdate() {
 
   // Hide the level display again after a short time. The game's last color comes back.
   if (shownAt != 0 && now - shownAt >= CAL_LEVEL_SHOW_MS) {
-    ledsRestoreLast();
+    ledsRelease();
     shownAt = 0;
   }
 
@@ -148,11 +155,11 @@ void calibrationUpdate() {
 
   if (downLess && level > 0) {
     level--;
-    hwShowLevel(level + 1, 150, 0, 255);        // purple, one LED per level
+    showLevel();
     shownAt = now;
   } else if (downMore && level + 1 < SENS_LEVEL_COUNT) {
     level++;
-    hwShowLevel(level + 1, 150, 0, 255);
+    showLevel();
     shownAt = now;
   } else if (downRecal) {
     calBegin();                                 // runs in the background: the loop keeps handling the game

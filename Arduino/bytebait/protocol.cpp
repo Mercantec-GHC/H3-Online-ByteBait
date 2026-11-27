@@ -27,36 +27,46 @@ static void sendErr(const char* code) {
   Serial.println(code);
 }
 
-// BUZZ is checked on the whole line, before strtok() splits it. strtok() skips empty fields and
-// extra parts, so "BUZZ:LOST:EXTRA" and "BUZZ::LOST" would otherwise look like a valid BUZZ:LOST.
-static void handleBuzz(const char* line) {
-  if (!strcmp(line, "BUZZ:LOST")) {
-    buzzerPlayLost();
-    motionStopFight();                           // the fish is gone: back to cast mode
-  } else if (line[4] == 0 || line[5] == 0 || strchr(line + 5, ':')) {
-    sendErr("ARGS");                             // missing, empty or extra parts
-  } else {
-    sendErr("RANGE");                            // one value, but not LOST
+static bool isNumber(const char* s) {
+  for (; *s; s++) {
+    if (*s < '0' || *s > '9') return false;
   }
+  return true;
 }
 
-// Handle one complete line from the game
-static void handleLine(char* line) {
-  if (!strncmp(line, "BUZZ", 4) && (line[4] == ':' || line[4] == 0)) { handleBuzz(line); return; }
-  char* cmd = strtok(line, ":");
-  char* a1  = strtok(nullptr, ":");
-  if (!cmd) return;
+static void handlePing(const char* n) {
+  if (!isNumber(n)) { sendErr("RANGE"); return; }   // n is a counter (docs/protocol.md)
+  Serial.print("PONG:");
+  Serial.println(n);
+}
 
-  if (!strcmp(cmd, "PING") && a1) {
-    Serial.print("PONG:");
-    Serial.println(a1);
-  } else if (!strcmp(cmd, "LED") && a1) {
-    if (!ledsSetByName(a1)) sendErr("RANGE");
-    // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
-    else if (!strcmp(a1, "RED") || !strcmp(a1, "YELLOW")) motionStopFight();
-  } else {
-    sendErr("UNKNOWN");
-  }
+static void handleLed(const char* color) {
+  if (!ledsSetByName(color)) { sendErr("RANGE"); return; }
+  // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
+  if (!strcmp(color, "RED") || !strcmp(color, "YELLOW")) motionMeterStarted();
+}
+
+static void handleBuzz(const char* sound) {
+  if (strcmp(sound, "LOST")) { sendErr("RANGE"); return; }
+  buzzerPlayLost();
+  motionStopFight();                             // the fish is gone: back to cast mode
+}
+
+// Handle one complete line from the game. Every command from the game has exactly one argument.
+// Not strtok(): it skips empty and extra parts, so "LED::RED" and "LED:RED:EXTRA" would pass as LED:RED.
+static void handleLine(char* line) {
+  if (line[0] == 0) return;                      // an empty line is not a message
+
+  char* arg = strchr(line, ':');
+  if (arg) *arg++ = 0;                           // line is now the command, arg the rest
+
+  bool known = !strcmp(line, "PING") || !strcmp(line, "LED") || !strcmp(line, "BUZZ");
+  if (!known) { sendErr("UNKNOWN"); return; }
+  if (!arg || !*arg || strchr(arg, ':')) { sendErr("ARGS"); return; }   // missing, empty or extra parts
+
+  if      (!strcmp(line, "PING")) handlePing(arg);
+  else if (!strcmp(line, "LED"))  handleLed(arg);
+  else                            handleBuzz(arg);
 }
 
 void protocolPoll() {

@@ -12,4 +12,5 @@ void motionUpdate();        // call in loop() after hwAccelPoll()
 
 void motionStartFight();    // a cast happened: motions on, throw detection off
 void motionStopFight();     // back to casting: motions off, throw detection on
+void motionMeterStarted();  // LED:RED/YELLOW: like motionStopFight(), unless THROW was sent less than FIGHT_GRACE_MS ago
 bool motionFightActive();   // true during the fight (throw detection is paused)

@@ -23,7 +23,15 @@ void throwReset() {
 
 void throwUpdate() {
   // During the fish fight the motions take over: a hook or yank must not be read as a throw.
-  if (motionFightActive() || MOTION_PLOT_MODE) { state = IDLE; return; }
+  // When the fight ends, the arm may still be moving from the last pull, so start in the lockout:
+  // the next throw is only looked for once the Oplà has been quiet (LOCKOUT_MS / MAX_LOCKOUT_MS).
+  static bool wasFight = false;
+  if (motionFightActive() || MOTION_PLOT_MODE) { wasFight = true; state = IDLE; return; }
+  if (wasFight) {
+    wasFight = false;
+    state = LOCKOUT;
+    stateStart = millis();
+  }
   if (calibrationBusy()) return;               // the Oplà is being calibrated: not a throw
   if (!hwAccelAvailable()) return;
 

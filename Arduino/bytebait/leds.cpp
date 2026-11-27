@@ -3,10 +3,11 @@
 
 // The last color the game asked for (starts as OFF).
 static uint8_t lastR = 0, lastG = 0, lastB = 0;
+static bool held = false;
 
 static void setGameColor(uint8_t r, uint8_t g, uint8_t b) {
   lastR = r; lastG = g; lastB = b;
-  hwSetLeds(r, g, b);
+  if (!held) hwSetLeds(r, g, b);
 }
 
 bool ledsSetByName(const char* name) {
@@ -19,6 +20,11 @@ bool ledsSetByName(const char* name) {
   return true;
 }
 
-void ledsRestoreLast() {
+void ledsHold() {
+  held = true;
+}
+
+void ledsRelease() {
+  held = false;
   hwSetLeds(lastR, lastG, lastB);
 }

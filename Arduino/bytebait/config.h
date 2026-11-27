@@ -52,6 +52,17 @@ const unsigned long STILL_MS = 400;    // must be still this long before HOLD:1 
 // Why: a throw, a hook and a yank are all accelerations, and the Oplà cannot tell them apart without knowing the phase.
 const unsigned long FIGHT_TIMEOUT_MS = 60000;
 
+// The switch between cast and fight waits for the arm to stop, so one movement never gives two messages.
+// After THROW: the rest of the throw must not become HOOK/TILT/YANK. The Oplà waits until it has been close to
+// 1 g and calm for FIGHT_SETTLE_MS (then "up" is read again, the rod may be tilted now), at most FIGHT_SETTLE_MAX_MS.
+// After the fight: the rest of a pull must not become a new THROW. Throw detection starts in its normal lockout.
+const unsigned long FIGHT_SETTLE_MS     = 150;
+const unsigned long FIGHT_SETTLE_MAX_MS = 1500;
+
+// The timing meter sends LED:RED / LED:YELLOW on every zone change. One that was already on its way when THROW
+// was sent must not end the fight that THROW just started. The next zone change ends it instead.
+const unsigned long FIGHT_GRACE_MS = 300;
+
 // ---------- Calibration (S2.2, #18) ----------
 const unsigned long CAL_REST_MS      = 1500;   // the Oplà must be still this long before the rest position is saved
 const unsigned long CAL_TIMEOUT_MS   = 6000;   // give up after this long (default rest position is used)
@@ -59,7 +70,9 @@ const float         CAL_STILL_DELTA_G = 0.06f; // sample-to-sample change (g) th
 const float         CAL_DRIFT_G      = 0.10f;  // the orientation must stay this close to its average (g, ~6 degrees), or the still period starts again
 const unsigned long CAL_FEEDBACK_MS  = 600;    // how long the green (done) / red (gave up) LEDs are shown
 
-// Sensitivity: 5 levels. Every motion/throw limit is divided by the value, so a higher value = more sensitive.
+// Sensitivity: 5 levels. The limits that start a throw or a motion (TRIGGER_G, MIN/MAX_PEAK_G, MOTION_TRIGGER_G,
+// HOOK_G, YANK_G, TILT_G) are divided by the value, so a higher value = more sensitive. The limits for being
+// still (QUIET_G, STILL_DELTA_G, MOVE_DELTA_G) are fixed: holding still is the same for everyone.
 // Level 3 (index 2, value 1.0) gives exactly the limits above.
 const uint8_t SENS_LEVEL_COUNT = 5;
 const float   SENS_LEVELS[SENS_LEVEL_COUNT] = { 0.6f, 0.8f, 1.0f, 1.25f, 1.6f };
