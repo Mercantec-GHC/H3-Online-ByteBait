@@ -1,0 +1,68 @@
+@* The cookie policy (S2.15). Keep the table in step with the API: PlayerAccountExtensions sets both cookies.
+   If a cookie is added or changed, raise CookieBanner.PolicyVersion so everyone sees the banner again. *@
+@page "/cookies"
+
+<PageTitle>Cookie policy | ByteBait</PageTitle>
+
+<main class="cookie-page">
+    <h1>Cookie policy</h1>
+
+    <p>
+        ByteBait only uses cookies that are strictly necessary for the site to work. They don't need your consent,
+        and they are set without you clicking anything. We don't use cookies for tracking, statistics or ads,
+        and no cookies are shared with anyone else.
+    </p>
+
+    <h2>Cookies</h2>
+
+    <div class="cookie-table">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">Name</th>
+                    <th scope="col">Purpose</th>
+                    <th scope="col">Lifetime</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>bytebait_login</code></td>
+                    <td>Keeps you signed in, so your catches, money and aquarium are saved on your account. Set when you sign in or create an account.</td>
+                    <td>Expires after 7 days and may be renewed while you use ByteBait. Deleted when you sign out.</td>
+                </tr>
+                <tr>
+                    <td><code>bytebait_antiforgery</code></td>
+                    <td>Protects your account against forged requests from other websites (CSRF).</td>
+                    <td>Until you close the browser.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p>
+        Both cookies can only be read by ByteBait's server, only over HTTPS, and are never sent along when another site links to us.
+    </p>
+
+    <h2>Local storage</h2>
+
+    <p>
+        When you choose <strong>Got it</strong> on the cookie notice, your browser remembers it in local storage
+        (<code>bytebait_cookie_notice</code>), so the notice isn't shown again. It stays until you clear your browser's site data
+        and is never sent to the server.
+    </p>
+
+    <h2>If this changes</h2>
+
+    <p>
+        If ByteBait ever adds cookies that aren't strictly necessary, such as statistics, we will ask for your consent before they are set,
+        and the cookie notice will be shown again.
+    </p>
+
+    <p>
+        You can delete cookies in your browser's settings at any time. Without the login cookie you will just have to sign in again.
+        ByteBait follows the Danish Agency for Digital Government's
+        <a href="https://digst.dk/tilsyn/sporingsteknologiomraadet/cookievejledningen/" rel="noopener">guidance on cookies</a>.
+    </p>
+
+    <a href="/">Back to home</a>
+</main>

@@ -41,6 +41,14 @@ player to `/login` and back afterwards. `/admin` also needs the `admin` role; se
 [backend setup](../Backend/README.md) for how to give it. The login cookie is `HttpOnly`,
 so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
 
+## Cookie notice
+
+On the first visit every page shows a notice that ByteBait only uses necessary cookies, with **Got it** and a link
+to the cookie policy on `/cookies`. Every page also links to the policy at the bottom. **Got it** is remembered in
+local storage (`bytebait_cookie_notice`), so the notice stays away until the policy changes. Raise
+`CookieBanner.PolicyVersion` when a cookie is added or changed, and update the table on `/cookies`. Login and
+saving casts work without clicking the notice (S2.15).
+
 ## Casting meter
 
 Practice (`/game`) and both Nordborg levels (`/game?levelId=1` and `/game?levelId=2`) show

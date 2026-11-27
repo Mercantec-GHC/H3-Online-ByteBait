@@ -86,6 +86,9 @@ app.UseHttpsRedirection();
 // and conflicts with it).
 app.MapStaticAssets();
 
+// Before anything that sets cookies, so every cookie gets the rules from AddPlayerAccounts (S2.15)
+app.UseCookiePolicy();
+
 app.UseAuthentication();
 app.UseAuthorization();
 

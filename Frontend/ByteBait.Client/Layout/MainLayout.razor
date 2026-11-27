@@ -1,4 +1,5 @@
-@* Supplies the shared page layout: a bar that shows who is logged in. Individual pages own their visual theme. *@
+@* Supplies the shared page layout: a bar that shows who is logged in, the cookie banner on the first visit
+   and a link to the cookie policy at the bottom of every page (S2.14, S2.15). Individual pages own their visual theme. *@
 @inherits LayoutComponentBase
 @inject AccountClient Accounts
 @inject NavigationManager Navigation
@@ -19,7 +20,13 @@
     </AuthorizeView>
 </nav>
 
+<CookieBanner />
+
 @Body
+
+<footer class="site-footer">
+    <a href="/cookies">Cookie policy</a>
+</footer>
 
 @code {
     private async Task LogoutAsync()
