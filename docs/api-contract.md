@@ -447,7 +447,7 @@ Alle admin-endpoints kræver login og rollen `admin`: `401` uden login og `403` 
 | `DELETE` | `/api/admin/species/{id}` | Slet en art. Svar: `204` |
 | `GET` | `/api/admin/lanes` | Banerne (`id`, `number`, `name`), så admin-panelet kan vælge en |
 
-`POST` og `PUT` tager samme body, og svaret har desuden `id`:
+`POST` og `PUT` tager samme body. Svaret har desuden `id` og `version`. `PUT` skal også sende `version`, se nedenfor:
 
 ```json
 {
@@ -459,7 +459,8 @@ Alle admin-endpoints kræver login og rollen `admin`: `401` uden login og `403` 
   "maxWeightKg": 14,
   "minLengthCm": 60,
   "maxLengthCm": 120,
-  "price": 100
+  "price": 100,
+  "version": 1234
 }
 ```
 
@@ -472,10 +473,12 @@ Alle admin-endpoints kræver login og rollen `admin`: `401` uden login og `403` 
 | `minWeightKg`, `maxWeightKg` | 0,01–1000, og max mindst lige så stor som min |
 | `minLengthCm`, `maxLengthCm` | 0,1–1000, og max mindst lige så stor som min |
 | `price` | 0–100000 |
+| `version` | Kun `PUT`: den `version`, arten havde, da formularen blev åbnet |
 
 **Fejl:**
 - `400` ved ugyldige felter eller en bane, der ikke findes (`errors.<felt>`)
 - `404` hvis arten ikke findes
+- `409` med titlen `Species has changed`, hvis en anden har gemt arten, efter formularen blev åbnet (`version` passer ikke længere). Intet bliver gemt, og arten skal hentes igen. `version` er PostgreSQL's `xmin`, som skifter ved hver ændring af rækken
 - `409` hvis navnet allerede er brugt på banen. Også `409`, hvis der er kastet efter arten: så kan den hverken slettes eller flyttes til en anden bane. Ret i stedet sjældenhed eller pris
 
 En ændring gælder kun nye kast. Fanget fisk beholder deres vægt og længde, og solgte fisk beholder prisen (`sold_for`).

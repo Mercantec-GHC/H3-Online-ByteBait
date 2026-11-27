@@ -6,6 +6,9 @@ namespace ByteBait.Client.Admin;
 
 public sealed class AdminClient(HttpClient http)
 {
+    // The 409 title when the form was opened before someone else saved (AdminSpeciesController.SpeciesChangedTitle)
+    public const string SpeciesChangedTitle = "Species has changed";
+
     public async Task<List<Species>> GetSpeciesAsync() =>
         await http.GetFromJsonAsync("api/admin/species", ApiJsonContext.Default.ListSpecies) ?? [];
 

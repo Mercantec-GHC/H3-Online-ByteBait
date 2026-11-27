@@ -40,7 +40,13 @@ The bar at the top shows who is signed in, with **Sign in** and **Create account
 player to `/login` and back afterwards. `/admin` is the admin panel, where fish species are
 created, edited and deleted (#27). It needs the `admin` role; see the
 [backend setup](../Backend/README.md) for how to give it. A warning lists the lanes that are
-missing a rarity at a depth. The login cookie is `HttpOnly`,
+missing a rarity at a depth, and lanes with no species at all, where a cast gives no fish. A form remembers the
+species' `version`, so if another admin saved it in the meantime, the save is turned down with
+**Open the latest version**. Edit and Delete are locked while a save or delete is on its way, and if the list
+can't be fetched again afterwards, **Try again** fetches it. [Admin tests in Chrome](#cast-saving-tests-in-chrome)
+run like the cast tests: `node --test Frontend/ByteBait.Client.Tests/browser/admin-panel.test.cjs`.
+
+The login cookie is `HttpOnly`,
 so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
 
 Only a real answer is kept: `200` (signed in) or `401` (signed out). If the check gets no answer, for example a

@@ -156,7 +156,7 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
     public async Task Update_changes_the_species()
     {
         var id = _level.Species!.Id;
-        var species = NewSpecies(_level.LaneId, name: "Big Carp");
+        var species = NewSpecies(_level.LaneId, name: "Big Carp", version: await VersionOfAsync(id));
         species["price"] = 75;
 
         var response = await Admin.PutAsJsonAsync($"/api/admin/species/{id}", species);
@@ -169,11 +169,54 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
         Assert.Equal(Rarity.Rare, saved.Rarity);
     }
 
+    // Andreas' case from the review: two admins open the same species. The first changes the price,
+    // the second only the name. The second form is from before the price change, so it must not win.
+    [PostgresFact]
+    public async Task A_form_opened_before_another_save_returns_409_and_keeps_that_save()
+    {
+        var id = _level.Species!.Id;
+        var opened = await VersionOfAsync(id);
+
+        var first = NewSpecies(_level.LaneId, version: opened);
+        first["price"] = 80;
+        Assert.Equal(HttpStatusCode.OK, (await Admin.PutAsJsonAsync($"/api/admin/species/{id}", first)).StatusCode);
+
+        var second = NewSpecies(_level.LaneId, name: "Renamed Carp", version: opened);
+        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{id}", second);
+
+        var problem = await AssertProblem(response, HttpStatusCode.Conflict);
+        Assert.Equal(Controllers.AdminSpeciesController.SpeciesChangedTitle, problem.GetProperty("title").GetString());
+        var saved = await Admin.GetFromJsonAsync<JsonElement>($"/api/admin/species/{id}");
+        Assert.Equal(80, saved.GetProperty("price").GetInt32());
+        Assert.Equal("Crucian Carp", saved.GetProperty("name").GetString());
+    }
+
+    [PostgresFact]
+    public async Task A_save_returns_the_new_version()
+    {
+        var id = _level.Species!.Id;
+        var opened = await VersionOfAsync(id);
+
+        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{id}", NewSpecies(_level.LaneId, version: opened));
+        var saved = await response.Content.ReadFromJsonAsync<JsonElement>();
+
+        Assert.NotEqual(opened, saved.GetProperty("version").GetUInt32());
+        Assert.Equal(saved.GetProperty("version").GetUInt32(), await VersionOfAsync(id));
+    }
+
+    [PostgresFact]
+    public async Task Update_without_a_version_returns_400()
+    {
+        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{_level.Species!.Id}", NewSpecies(_level.LaneId));
+
+        await AssertValidationProblem(response, "version");
+    }
+
     [PostgresFact]
     public async Task Species_that_has_been_fished_can_still_be_edited_on_its_lane()
     {
         await CastOnTestLevelAsync();
-        var species = NewSpecies(_level.LaneId, name: "Old Carp");
+        var species = NewSpecies(_level.LaneId, name: "Old Carp", version: await VersionOfAsync(_level.Species!.Id));
         species["price"] = 90;
 
         var response = await Admin.PutAsJsonAsync($"/api/admin/species/{_level.Species!.Id}", species);
@@ -196,7 +239,8 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
         }
 
         var response = await Admin.PutAsJsonAsync(
-            $"/api/admin/species/{_level.Species!.Id}", NewSpecies(otherLaneId, name: "Moved Carp"));
+            $"/api/admin/species/{_level.Species!.Id}",
+            NewSpecies(otherLaneId, name: "Moved Carp", version: await VersionOfAsync(_level.Species.Id)));
 
         await AssertProblem(response, HttpStatusCode.Conflict);
         var saved = await Admin.GetFromJsonAsync<JsonElement>($"/api/admin/species/{_level.Species.Id}");
@@ -206,7 +250,7 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
     [PostgresFact]
     public async Task Update_of_an_unknown_species_returns_404()
     {
-        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{int.MaxValue}", NewSpecies(_level.LaneId));
+        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{int.MaxValue}", NewSpecies(_level.LaneId, version: 1));
 
         await AssertProblem(response, HttpStatusCode.NotFound);
     }
@@ -261,18 +305,32 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
         Assert.Equal(HttpStatusCode.Created, cast.StatusCode);
     }
 
-    private static Dictionary<string, object> NewSpecies(int laneId, string name = "Crucian Carp") => new()
+    // version: the version the form was opened with. PUT needs it, POST ignores it.
+    private static Dictionary<string, object> NewSpecies(int laneId, string name = "Crucian Carp", uint? version = null)
     {
-        ["laneId"] = laneId,
-        ["name"] = name,
-        ["rarity"] = "rare",
-        ["depth"] = "shallow",
-        ["minWeightKg"] = 1.0,
-        ["maxWeightKg"] = 2.5,
-        ["minLengthCm"] = 20,
-        ["maxLengthCm"] = 40,
-        ["price"] = 40,
-    };
+        var species = new Dictionary<string, object>
+        {
+            ["laneId"] = laneId,
+            ["name"] = name,
+            ["rarity"] = "rare",
+            ["depth"] = "shallow",
+            ["minWeightKg"] = 1.0,
+            ["maxWeightKg"] = 2.5,
+            ["minLengthCm"] = 20,
+            ["maxLengthCm"] = 40,
+            ["price"] = 40,
+        };
+        if (version is { } v)
+        {
+            species["version"] = v;
+        }
+
+        return species;
+    }
+
+    // Like the admin panel: the version comes from the list or GET when the form is opened
+    private async Task<uint> VersionOfAsync(int id) =>
+        (await Admin.GetFromJsonAsync<JsonElement>($"/api/admin/species/{id}")).GetProperty("version").GetUInt32();
 
     private static async Task<JsonElement> AssertProblem(HttpResponseMessage response, HttpStatusCode status)
     {

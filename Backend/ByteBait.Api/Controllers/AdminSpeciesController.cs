@@ -14,6 +14,9 @@ namespace ByteBait.Api.Controllers;
 [Route("api/admin/species")]
 public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
 {
+    // The title of the 409 for a form opened before someone else saved. The admin panel offers to open it again.
+    public const string SpeciesChangedTitle = "Species has changed";
+
     // Sorted like the admin panel shows them: by lane, then depth, then rarity
     [HttpGet]
     public async Task<IEnumerable<FishSpeciesDto>> List(CancellationToken cancellationToken)
@@ -56,6 +59,12 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
     [HttpPut("{id:int}")]
     public async Task<ActionResult<FishSpeciesDto>> Update(int id, SaveFishSpeciesDto dto, CancellationToken cancellationToken)
     {
+        if (dto.Version is not { } version)
+        {
+            ModelState.AddModelError("version", "Send the version of the species you opened.");
+            return ValidationProblem(ModelState);
+        }
+
         var species = await db.FishSpecies.SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
         if (species is null)
         {
@@ -66,6 +75,9 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
         {
             return LaneNotFound(dto.LaneId.Value);
         }
+
+        // Saved as "UPDATE ... WHERE xmin = <version>", so a form opened before another admin saved changes nothing
+        db.Entry(species).Property(s => s.Version).OriginalValue = version;
 
         // Old casts were made on a level on this lane, so the species can't move away from them
         if (dto.LaneId != species.LaneId && await db.Casts.AnyAsync(c => c.FishSpeciesId == id, cancellationToken))
@@ -116,6 +128,13 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
         {
             await db.SaveChangesAsync(cancellationToken);
             return null;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(
+                statusCode: StatusCodes.Status409Conflict,
+                title: SpeciesChangedTitle,
+                detail: "Another admin saved this species after you opened it. Open it again to see their change.");
         }
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
         {

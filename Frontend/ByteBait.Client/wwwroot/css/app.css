@@ -147,6 +147,19 @@ code {
     padding: 1.5rem;
 }
 
+/* "Couldn't load" with its Try again button on one line, wrapping on a phone */
+.admin-load-error {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 1rem;
+    margin-bottom: 1rem;
+}
+
+    .admin-load-error p {
+        margin: 0;
+    }
+
 .admin-warning {
     margin-bottom: 1rem;
     border-left: 4px solid #b37400;

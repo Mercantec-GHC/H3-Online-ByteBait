@@ -116,7 +116,7 @@ erDiagram
 |-------|---------|
 | `lanes` | De fire baner. Koordinaterne bruges til vejret fra Open-Meteo |
 | `levels` | To niveauer pr. bane med antal fisk, der skal fanges |
-| `fish_species` | Fiskearter pr. bane med sjældenhed, dybde, størrelse og pris. Samme art kan findes på flere baner |
+| `fish_species` | Fiskearter pr. bane med sjældenhed, dybde, størrelse og pris. Samme art kan findes på flere baner. PostgreSQL's systemkolonne `xmin` bruges som version (`FishSpecies.Version`), så admin-panelet ikke overskriver en andens ændring. Den er ikke en kolonne i tabellen |
 | `rarity_chances` | Basischancen for sjældne og legendariske fisk |
 | `zone_multipliers` | Kastzonens multiplikator: rød ×0, gul ×1, grøn ×1,5 |
 | `equipment` | Stænger, madding og liner til salg i hub'en |

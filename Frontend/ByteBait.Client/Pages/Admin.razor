@@ -20,10 +20,13 @@
     @* Also after a save or delete: then the table below is from before, and the admin must know *@
     @if (loadFailed)
     {
-        <p class="account-error" role="alert">
-            @(species is null ? "Couldn't load the species." : "Couldn't load the latest species, so the list below may be out of date.")
-            Reload the page to try again.
-        </p>
+        <div class="admin-load-error" role="alert">
+            <p class="account-error">
+                @(species is null ? "Couldn't load the species." : "Couldn't load the latest species, so the list below may be out of date.")
+            </p>
+            @* Only fetches the lists again: nothing is saved or deleted a second time *@
+            <button type="button" @onclick="LoadAsync" disabled="@sending">Try again</button>
+        </div>
     }
 
     @if (species is null)
@@ -38,7 +41,10 @@
         @if (Gaps.Count > 0)
         {
             <section class="admin-warning" aria-label="Missing species">
-                <p>A cast only reaches one depth. Where a rarity is missing, the server picks the nearest one instead:</p>
+                <p>
+                    A cast only reaches one depth. Where a rarity is missing, the server picks the nearest rarity instead,
+                    and if the depth has no species at all, one from the other depth. A lane with no species gives no fish.
+                </p>
                 <ul>
                     @foreach (var gap in Gaps)
                     {
@@ -61,6 +67,10 @@
                 @if (error is not null)
                 {
                     <p class="account-error" role="alert">@error.Message</p>
+                    @if (error.Title == AdminClient.SpeciesChangedTitle)
+                    {
+                        <button type="button" @onclick="OpenLatestAsync" disabled="@sending">Open the latest version</button>
+                    }
                 }
 
                 <label for="lane">Lane</label>
@@ -211,13 +221,15 @@
         }
     }
 
-    // Every lane should have a common, a rare and a legendary species at both depths (docs/data-model.md)
+    // Every lane should have a common, a rare and a legendary species at both depths (docs/data-model.md).
+    // An empty lane gets one line of its own, since a cast there gives no fish at all.
     private List<string> Gaps =>
-        (from lane in lanes
-         from depth in SpeciesForm.Depths
-         from rarity in SpeciesForm.Rarities
-         where !species!.Any(s => s.LaneId == lane.Id && s.Depth == depth && s.Rarity == rarity)
-         select $"{lane.Name}: no {rarity} species in {depth} water").ToList();
+        lanes.SelectMany(lane => species!.Any(s => s.LaneId == lane.Id)
+            ? from depth in SpeciesForm.Depths
+              from rarity in SpeciesForm.Rarities
+              where !species!.Any(s => s.LaneId == lane.Id && s.Depth == depth && s.Rarity == rarity)
+              select $"{lane.Name}: no {rarity} species in {depth} water"
+            : [$"{lane.Name}: no species at all, so casts there give no fish"]).ToList();
 
     private void StartCreate() => OpenForm(new SpeciesForm(), id: null, name: null);
 
@@ -234,6 +246,28 @@
     }
 
     private void CloseForm() => form = null;
+
+    // After "Species has changed": fetch the list and open the species as it is now, with its new version
+    private async Task OpenLatestAsync()
+    {
+        var id = editingId;
+        var name = editingName;
+        await LoadAsync();
+        if (loadFailed)
+        {
+            return;
+        }
+
+        if (species!.FirstOrDefault(s => s.Id == id) is { } latest)
+        {
+            StartEdit(latest);
+        }
+        else
+        {
+            CloseForm();
+            message = $"{name} has been deleted by another admin.";
+        }
+    }
 
     private async Task SaveAsync()
     {
@@ -276,6 +310,8 @@
 
         if (deleteError is null)
         {
+            // The API has confirmed it, so the row goes now, also if the list can't be fetched again
+            species?.RemoveAll(s => s.Id == fish.Id);
             await LoadAsync();
         }
     }

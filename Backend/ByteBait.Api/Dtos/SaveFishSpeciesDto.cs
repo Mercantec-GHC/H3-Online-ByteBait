@@ -43,6 +43,9 @@ public class SaveFishSpeciesDto : IValidatableObject
     [Range(0, 100_000, ErrorMessage = "Price must be between 0 and 100000.")]
     public int? Price { get; set; }
 
+    // The version the form was opened with (FishSpeciesDto.Version). Required by PUT, ignored by POST.
+    public uint? Version { get; set; }
+
     // Runs after the checks above, so the values are there. The field names are the JSON names, like the other errors.
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {

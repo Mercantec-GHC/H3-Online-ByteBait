@@ -6,7 +6,8 @@ using System.Text.Json;
 namespace ByteBait.Client.Api;
 
 // FieldErrors uses the API's JSON field names, e.g. "userName" or "maxWeightKg"
-public sealed record ApiError(string Message, IReadOnlyDictionary<string, string[]> FieldErrors)
+// Title is the ProblemDetails title, for the few errors the page reacts to (e.g. "Species has changed")
+public sealed record ApiError(string Message, IReadOnlyDictionary<string, string[]> FieldErrors, string? Title = null)
 {
     private static readonly IReadOnlyDictionary<string, string[]> NoFieldErrors = new Dictionary<string, string[]>();
 
@@ -41,6 +42,6 @@ public sealed record ApiError(string Message, IReadOnlyDictionary<string, string
             _ => problem?.Detail ?? problem?.Title ?? "Something went wrong. Try again.",
         };
 
-        return new ApiError(message, problem?.Errors ?? NoFieldErrors);
+        return new ApiError(message, problem?.Errors ?? NoFieldErrors, problem?.Title);
     }
 }

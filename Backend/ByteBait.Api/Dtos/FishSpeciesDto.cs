@@ -13,7 +13,8 @@ public record FishSpeciesDto(
     double MaxWeightKg,
     double MinLengthCm,
     double MaxLengthCm,
-    int Price)
+    int Price,
+    uint Version)
 {
     public static FishSpeciesDto From(FishSpecies species) => new(
         species.Id,
@@ -25,7 +26,8 @@ public record FishSpeciesDto(
         species.MaxWeightKg,
         species.MinLengthCm,
         species.MaxLengthCm,
-        species.Price);
+        species.Price,
+        species.Version);
 }
 
 // A lane to choose in the species form

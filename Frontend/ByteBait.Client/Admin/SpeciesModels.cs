@@ -13,7 +13,8 @@ public sealed record Species(
     double MaxWeightKg,
     double MinLengthCm,
     double MaxLengthCm,
-    int Price);
+    int Price,
+    uint Version);
 
 public sealed record AdminLane(int Id, int Number, string Name);
 
@@ -51,6 +52,10 @@ public sealed class SpeciesForm : IValidatableObject
     [Range(0, 100_000, ErrorMessage = "Price must be between 0 and 100000.")]
     public int Price { get; set; } = 10;
 
+    // The version of the species when the form was opened (null for a new one). The API turns down a save
+    // from a form opened before someone else saved (409 "Species has changed").
+    public uint? Version { get; set; }
+
     public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (MaxWeightKg < MinWeightKg)
@@ -75,5 +80,6 @@ public sealed class SpeciesForm : IValidatableObject
         MinLengthCm = species.MinLengthCm,
         MaxLengthCm = species.MaxLengthCm,
         Price = species.Price,
+        Version = species.Version,
     };
 }

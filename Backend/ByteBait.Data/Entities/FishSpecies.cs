@@ -26,4 +26,8 @@ public class FishSpecies
 
     // What the hub pays for the fish
     public int Price { get; set; }
+
+    // PostgreSQL's xmin: changes on every update of the row. The admin panel sends back the version it opened,
+    // so a save from an old form is turned down instead of overwriting another admin's change.
+    public uint Version { get; set; }
 }
