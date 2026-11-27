@@ -3,7 +3,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text.Json;
 using ByteBait.Client.Api;
 using Microsoft.AspNetCore.Components.Authorization;
 
@@ -16,12 +15,27 @@ public sealed class PlayerAuthenticationStateProvider(HttpClient http) : Authent
     // Asked once, then kept until the player logs in or out
     private Task<AuthenticationState>? state;
 
+    // True when the last check got no real answer (no connection, timeout, or a 5xx while the API or Neon wakes up).
+    // The player may still be logged in, so pages show "Try again" instead of sending them to /login.
+    public bool CheckFailed { get; private set; }
+
     public override Task<AuthenticationState> GetAuthenticationStateAsync() => state ??= LoadAsync();
 
-    // Called after login and register, which already answer with the player
-    public void LoggedIn(Player player) => Set(Task.FromResult(StateFor(player)));
+    // Asks GET /api/account/me again, e.g. from the "Try again" button after a failed check
+    public void CheckAgain() => Set(LoadAsync());
 
-    public void LoggedOutNow() => Set(Task.FromResult(LoggedOut));
+    // Called after login and register, which already answer with the player
+    public void LoggedIn(Player player)
+    {
+        CheckFailed = false;
+        Set(Task.FromResult(StateFor(player)));
+    }
+
+    public void LoggedOutNow()
+    {
+        CheckFailed = false;
+        Set(Task.FromResult(LoggedOut));
+    }
 
     // The API answered 401, so the login cookie has expired. Only acts if the page still shows a player,
     // so a wrong password or the first GET /api/account/me doesn't replace the state.
@@ -41,22 +55,30 @@ public sealed class PlayerAuthenticationStateProvider(HttpClient http) : Authent
 
     private async Task<AuthenticationState> LoadAsync()
     {
+        CheckFailed = false;
         try
         {
             using var response = await http.GetAsync("api/account/me");
-            if (response.StatusCode != HttpStatusCode.OK)
+
+            // Only 200 and 401 are real answers: logged in, or not
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
                 return LoggedOut;
             }
 
-            var player = await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.Player);
-            return player is null ? LoggedOut : StateFor(player);
+            if (response.StatusCode == HttpStatusCode.OK
+                && await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.Player) is { } player)
+            {
+                return StateFor(player);
+            }
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
+        catch (Exception ex) when (ApiError.IsConnectionError(ex))
         {
-            // No API (the standalone client) or no connection: treat it as logged out
-            return LoggedOut;
+            // No connection, a timeout, or no API at all (the standalone client)
         }
+
+        CheckFailed = true;
+        return LoggedOut;
     }
 
     private static AuthenticationState StateFor(Player player)
