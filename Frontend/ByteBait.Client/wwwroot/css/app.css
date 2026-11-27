@@ -140,3 +140,74 @@ code {
     outline: 3px solid #006b3c;
     outline-offset: 2px;
 }
+
+/* The admin panel (S2.11) */
+.admin-page {
+    max-width: 60rem;
+    padding: 1.5rem;
+}
+
+.admin-warning {
+    margin-bottom: 1rem;
+    border-left: 4px solid #b37400;
+    padding: 0.2rem 1rem;
+    background: #fff6e5;
+}
+
+.species-form {
+    display: grid;
+    grid-template-columns: minmax(8rem, max-content) minmax(0, 18rem);
+    gap: 0.4rem 1rem;
+    align-items: center;
+    margin: 1rem 0;
+}
+
+    .species-form h2,
+    .species-form .account-error,
+    .species-form .validation-message,
+    .species-form-buttons {
+        grid-column: 1 / -1;
+    }
+
+.species-form-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.table-scroll {
+    overflow-x: auto;
+    /* Keeps the hidden "Actions" heading inside the box, so the page itself doesn't scroll sideways */
+    position: relative;
+    margin-bottom: 1rem;
+}
+
+.admin-page table {
+    border-collapse: collapse;
+    width: 100%;
+}
+
+.admin-page th,
+.admin-page td {
+    border-bottom: 1px solid #ddd;
+    padding: 0.3rem 0.6rem;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.row-actions button + button {
+    margin-left: 0.4rem;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.admin-page :focus-visible {
+    outline: 3px solid #006b3c;
+    outline-offset: 2px;
+}

@@ -1,0 +1,13 @@
+@* The API's messages for one field, shown under the input next to Blazor's own validation message *@
+
+@foreach (var message in Error?.For(Field) ?? [])
+{
+    <div class="validation-message">@message</div>
+}
+
+@code {
+    [Parameter] public ApiError? Error { get; set; }
+
+    // The API's JSON name, e.g. "userName" or "maxWeightKg"
+    [Parameter, EditorRequired] public string Field { get; set; } = "";
+}

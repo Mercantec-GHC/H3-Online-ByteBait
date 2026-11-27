@@ -37,8 +37,10 @@ standalone client: they answer `GET /api/account/me` themselves. See the
 The bar at the top shows who is signed in, with **Sign in** and **Create account** or
 **Sign out**. `/login` and `/register` use the account endpoints in the
 [API contract](../docs/api-contract.md). A page with `[Authorize]` sends a signed-out
-player to `/login` and back afterwards. `/admin` also needs the `admin` role; see the
-[backend setup](../Backend/README.md) for how to give it. The login cookie is `HttpOnly`,
+player to `/login` and back afterwards. `/admin` is the admin panel, where fish species are
+created, edited and deleted (#27). It needs the `admin` role; see the
+[backend setup](../Backend/README.md) for how to give it. A warning lists the lanes that are
+missing a rarity at a depth. The login cookie is `HttpOnly`,
 so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
 
 ## Casting meter

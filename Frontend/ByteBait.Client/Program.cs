@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using ByteBait.Client;
 using ByteBait.Client.Accounts;
+using ByteBait.Client.Admin;
 using Microsoft.AspNetCore.Components.Authorization;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -18,5 +19,8 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddScoped<PlayerAuthenticationStateProvider>();
 builder.Services.AddScoped<AuthenticationStateProvider>(sp => sp.GetRequiredService<PlayerAuthenticationStateProvider>());
 builder.Services.AddScoped<AccountClient>();
+
+// The admin panel (S2.11). The API checks the admin role on every call.
+builder.Services.AddScoped<AdminClient>();
 
 await builder.Build().RunAsync();

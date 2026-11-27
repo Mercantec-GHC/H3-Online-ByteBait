@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text.Json;
+using ByteBait.Client.Api;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace ByteBait.Client.Accounts;
@@ -38,7 +39,7 @@ public sealed class PlayerAuthenticationStateProvider(HttpClient http) : Authent
                 return LoggedOut;
             }
 
-            var player = await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.Player);
+            var player = await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.Player);
             return player is null ? LoggedOut : StateFor(player);
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)

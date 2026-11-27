@@ -1,10 +1,257 @@
-@* The admin panel. Only for players with the admin role, and the API checks the role again on its own endpoints. *@
+@* The admin panel: create, edit and delete fish species (S2.11).
+   Only for players with the admin role, and the API checks the role again on every call. *@
 @page "/admin"
 @attribute [Authorize(Roles = Roles.Admin)]
+@using System.Globalization
+@inject AdminClient AdminApi
 
 <PageTitle>Admin | ByteBait</PageTitle>
 
-<main class="account-page">
-    <h1>Admin</h1>
-    <p>Fish species, prices and catch chances will be edited here (S2.11).</p>
+<main class="admin-page">
+    <h1>Fish species</h1>
+
+    <div role="status">
+        @if (message is not null)
+        {
+            <p>@message</p>
+        }
+    </div>
+
+    @if (species is null)
+    {
+        <p>@(loadFailed ? "Couldn't load the species. Reload the page to try again." : "Loading species…")</p>
+    }
+    else
+    {
+        @if (Gaps.Count > 0)
+        {
+            <section class="admin-warning" aria-label="Missing species">
+                <p>A cast only reaches one depth. Where a rarity is missing, the server picks the nearest one instead:</p>
+                <ul>
+                    @foreach (var gap in Gaps)
+                    {
+                        <li>@gap</li>
+                    }
+                </ul>
+            </section>
+        }
+
+        @if (form is null)
+        {
+            <button type="button" @onclick="StartCreate">New species</button>
+        }
+        else
+        {
+            <EditForm Model="form" OnValidSubmit="SaveAsync" FormName="species" class="species-form">
+                <DataAnnotationsValidator />
+                <h2>@(editingId is null ? "New species" : $"Edit {editingName}")</h2>
+
+                @if (error is not null)
+                {
+                    <p class="account-error" role="alert">@error.Message</p>
+                }
+
+                <label for="lane">Lane</label>
+                <InputSelect id="lane" @bind-Value="form.LaneId">
+                    <option value="0">Choose a lane</option>
+                    @foreach (var lane in lanes)
+                    {
+                        <option value="@lane.Id">@lane.Number. @lane.Name</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => form.LaneId" />
+                <ApiFieldErrors Error="error" Field="laneId" />
+
+                <label for="name">Name</label>
+                <InputText id="name" @bind-Value="form.Name" />
+                <ValidationMessage For="() => form.Name" />
+                <ApiFieldErrors Error="error" Field="name" />
+
+                <label for="rarity">Rarity</label>
+                <InputSelect id="rarity" @bind-Value="form.Rarity">
+                    @foreach (var rarity in SpeciesForm.Rarities)
+                    {
+                        <option value="@rarity">@rarity</option>
+                    }
+                </InputSelect>
+                <ApiFieldErrors Error="error" Field="rarity" />
+
+                <label for="depth">Depth</label>
+                <InputSelect id="depth" @bind-Value="form.Depth">
+                    @foreach (var depth in SpeciesForm.Depths)
+                    {
+                        <option value="@depth">@depth</option>
+                    }
+                </InputSelect>
+                <ApiFieldErrors Error="error" Field="depth" />
+
+                <label for="minWeight">Min weight (kg)</label>
+                <InputNumber id="minWeight" @bind-Value="form.MinWeightKg" step="0.01" />
+                <ValidationMessage For="() => form.MinWeightKg" />
+                <ApiFieldErrors Error="error" Field="minWeightKg" />
+
+                <label for="maxWeight">Max weight (kg)</label>
+                <InputNumber id="maxWeight" @bind-Value="form.MaxWeightKg" step="0.01" />
+                <ValidationMessage For="() => form.MaxWeightKg" />
+                <ApiFieldErrors Error="error" Field="maxWeightKg" />
+
+                <label for="minLength">Min length (cm)</label>
+                <InputNumber id="minLength" @bind-Value="form.MinLengthCm" step="0.1" />
+                <ValidationMessage For="() => form.MinLengthCm" />
+                <ApiFieldErrors Error="error" Field="minLengthCm" />
+
+                <label for="maxLength">Max length (cm)</label>
+                <InputNumber id="maxLength" @bind-Value="form.MaxLengthCm" step="0.1" />
+                <ValidationMessage For="() => form.MaxLengthCm" />
+                <ApiFieldErrors Error="error" Field="maxLengthCm" />
+
+                <label for="price">Price</label>
+                <InputNumber id="price" @bind-Value="form.Price" />
+                <ValidationMessage For="() => form.Price" />
+                <ApiFieldErrors Error="error" Field="price" />
+
+                <div class="species-form-buttons">
+                    <button type="submit" disabled="@sending">@(sending ? "Saving…" : "Save")</button>
+                    <button type="button" @onclick="CloseForm" disabled="@sending">Cancel</button>
+                </div>
+            </EditForm>
+        }
+
+        @foreach (var lane in lanes)
+        {
+            <h2>@lane.Number. @lane.Name</h2>
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">Name</th>
+                            <th scope="col">Rarity</th>
+                            <th scope="col">Depth</th>
+                            <th scope="col">Weight (kg)</th>
+                            <th scope="col">Length (cm)</th>
+                            <th scope="col">Price</th>
+                            <th scope="col"><span class="visually-hidden">Actions</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var fish in species.Where(s => s.LaneId == lane.Id))
+                        {
+                            <tr>
+                                <td>@fish.Name</td>
+                                <td>@fish.Rarity</td>
+                                <td>@fish.Depth</td>
+                                <td>@Range(fish.MinWeightKg, fish.MaxWeightKg)</td>
+                                <td>@Range(fish.MinLengthCm, fish.MaxLengthCm)</td>
+                                <td>@fish.Price</td>
+                                <td class="row-actions">
+                                    @if (confirmDeleteId == fish.Id)
+                                    {
+                                        <button type="button" @onclick="() => DeleteAsync(fish)">Delete @fish.Name</button>
+                                        <button type="button" @onclick="() => confirmDeleteId = null">Keep</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" @onclick="() => StartEdit(fish)">Edit</button>
+                                        <button type="button" @onclick="() => confirmDeleteId = fish.Id">Delete</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
 </main>
+
+@code {
+    private List<Species>? species;
+    private List<AdminLane> lanes = [];
+    private bool loadFailed;
+    private string? message;
+
+    // The open form, and the species it edits (null for a new one)
+    private SpeciesForm? form;
+    private int? editingId;
+    private string? editingName;
+    private ApiError? error;
+    private bool sending;
+
+    private int? confirmDeleteId;
+
+    protected override Task OnInitializedAsync() => LoadAsync();
+
+    private async Task LoadAsync()
+    {
+        try
+        {
+            lanes = await AdminApi.GetLanesAsync();
+            species = await AdminApi.GetSpeciesAsync();
+        }
+        catch (HttpRequestException)
+        {
+            loadFailed = true;
+        }
+    }
+
+    // Every lane should have a common, a rare and a legendary species at both depths (docs/data-model.md)
+    private List<string> Gaps =>
+        (from lane in lanes
+         from depth in SpeciesForm.Depths
+         from rarity in SpeciesForm.Rarities
+         where !species!.Any(s => s.LaneId == lane.Id && s.Depth == depth && s.Rarity == rarity)
+         select $"{lane.Name}: no {rarity} species in {depth} water").ToList();
+
+    private void StartCreate() => OpenForm(new SpeciesForm(), id: null, name: null);
+
+    private void StartEdit(Species fish) => OpenForm(SpeciesForm.From(fish), fish.Id, fish.Name);
+
+    private void OpenForm(SpeciesForm newForm, int? id, string? name)
+    {
+        form = newForm;
+        editingId = id;
+        editingName = name;
+        error = null;
+        message = null;
+        confirmDeleteId = null;
+    }
+
+    private void CloseForm() => form = null;
+
+    private async Task SaveAsync()
+    {
+        sending = true;
+        try
+        {
+            error = editingId is { } id
+                ? await AdminApi.UpdateAsync(id, form!)
+                : await AdminApi.CreateAsync(form!);
+        }
+        finally
+        {
+            sending = false;
+        }
+
+        if (error is null)
+        {
+            message = $"{form!.Name} saved.";
+            CloseForm();
+            await LoadAsync();
+        }
+    }
+
+    private async Task DeleteAsync(Species fish)
+    {
+        confirmDeleteId = null;
+        var deleteError = await AdminApi.DeleteAsync(fish.Id);
+        message = deleteError?.Message ?? $"{fish.Name} deleted.";
+
+        if (deleteError is null)
+        {
+            await LoadAsync();
+        }
+    }
+
+    private static string Range(double min, double max) =>
+        string.Create(CultureInfo.InvariantCulture, $"{min}–{max}");
+}
