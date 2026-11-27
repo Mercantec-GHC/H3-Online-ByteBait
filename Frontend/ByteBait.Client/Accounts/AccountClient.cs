@@ -10,6 +10,11 @@ public sealed record AccountError(string Message, IReadOnlyDictionary<string, st
 
 public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProvider authentication)
 {
+    // The ways a call can fail without an answer from the API: no connection, a timeout
+    // (HttpClient throws TaskCanceledException), or a body that isn't the JSON we expected
+    internal static bool IsConnectionError(Exception ex) =>
+        ex is HttpRequestException or OperationCanceledException or JsonException or NotSupportedException;
+
     // Null when it worked
     public Task<AccountError?> RegisterAsync(AccountForm form) => SignInAsync("api/account/register", form);
 
@@ -30,7 +35,7 @@ public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProv
             authentication.LoggedOutNow();
             return null;
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
+        catch (Exception ex) when (IsConnectionError(ex))
         {
             return LogoutFailed;
         }
@@ -50,7 +55,7 @@ public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProv
 
             return await ErrorFromAsync(response);
         }
-        catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
+        catch (Exception ex) when (IsConnectionError(ex))
         {
             return new AccountError("Couldn't reach the server. Try again.", NoFieldErrors);
         }
@@ -91,5 +96,5 @@ public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProv
 
     private static readonly IReadOnlyDictionary<string, string[]> NoFieldErrors = new Dictionary<string, string[]>();
 
-    private static readonly AccountError LogoutFailed = new("Couldn't sign out, so you're still signed in. Try again.", NoFieldErrors);
+    private static readonly AccountError LogoutFailed = new("Couldn't confirm that you're signed out. Try again.", NoFieldErrors);
 }

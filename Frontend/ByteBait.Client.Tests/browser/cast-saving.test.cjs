@@ -12,7 +12,8 @@ const castUrl = new URL("/api/casts", gameUrl).href;
 const tokenUrl = new URL("/api/account/antiforgery", gameUrl).href;
 const meUrl = new URL("/api/account/me", gameUrl).href;
 
-async function openGame(t, query = "", connect = true) {
+// failedMeChecks: how many GET /api/account/me answer 503 first (mocked API only)
+async function openGame(t, query = "", connect = true, failedMeChecks = 0) {
     const browser = await chromium.launch({ channel: "chrome" });
     t.after(() => browser.close());
     // Only the real, loopback API uses the local ASP.NET development certificate.
@@ -64,7 +65,9 @@ async function openGame(t, query = "", connect = true) {
     if (realDatabase) {
         anonymousToken = await registerTestPlayer(page);
     } else {
-        await page.route(meUrl, route => route.fulfill({ json: { id: randomUUID(), userName: "tester", roles: [], money: 0 } }));
+        const player = { id: randomUUID(), userName: "tester", roles: [], money: 0 };
+        let meChecks = 0;
+        await page.route(meUrl, route => route.fulfill(meChecks++ < failedMeChecks ? { status: 503, json: {} } : { json: player }));
     }
     await page.goto(gameUrl + query);
     const visible = text => page.getByText(text, { exact: true }).waitFor();
@@ -598,6 +601,17 @@ test("a 401 sends the player to login and back to the same level afterwards", { 
     while (page.url() !== gameUrl + "?levelId=7" && Date.now() < deadline) await page.clock.runFor(16);
     assert.equal(page.url(), gameUrl + "?levelId=7");
     await game.visible("USB disconnected.");
+});
+
+test("a 503 from the login check keeps the player on the level until the check works", { skip: realDatabase }, async t => {
+    const game = await openGame(t, "?levelId=7", false, 1);
+    const { page } = game;
+    await page.getByRole("heading", { name: "Couldn't check your login", exact: true }).waitFor();
+    assert.equal(page.url(), gameUrl + "?levelId=7");
+
+    await game.click("Try again");
+    await game.visible("USB disconnected.");
+    assert.equal(page.url(), gameUrl + "?levelId=7");
 });
 
 test("late receipts cannot start the float after unplugging, reconnecting or leaving the page", async t => {
