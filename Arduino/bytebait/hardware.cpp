@@ -6,7 +6,7 @@
 static MKRIoTCarrier carrier;
 
 void hwBegin() {
-  CARRIER_CASE = true;                       // true if the Oplà sits in its case
+  CARRIER_CASE = false;                       // true if the Oplà sits in its case
   carrier.begin();
   carrier.leds.setBrightness(LED_BRIGHTNESS);
 }
