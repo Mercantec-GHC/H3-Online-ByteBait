@@ -5,7 +5,7 @@ name: Sprint-board
 
 on:
   issues:
-    types: [opened, closed, reopened, assigned, unassigned, labeled, unlabeled, milestoned, demilestoned]
+    types: [opened, edited, closed, reopened, assigned, unassigned, labeled, unlabeled, milestoned, demilestoned]
   schedule:
     - cron: '30 6 * * 1-5'   # hverdage kl. 07:30 dansk tid (vintertid)
   workflow_dispatch:

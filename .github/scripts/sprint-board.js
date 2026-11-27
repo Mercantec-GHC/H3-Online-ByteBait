@@ -60,8 +60,10 @@ module.exports = async ({ github, context, core }) => {
   }
 
   for (const m of sprints) {
+    // By deadline, so the table reads as the week's plan. Same deadline: by title. No deadline: last.
     const items = all.filter((i) => i.milestone && i.milestone.number === m.number)
-      .sort((a, b) => a.title.localeCompare(b.title, 'da', { numeric: true }));
+      .sort((a, b) => (dueOf(a) || '9999').localeCompare(dueOf(b) || '9999')
+        || a.title.localeCompare(b.title, 'da', { numeric: true }));
     const done = items.filter((i) => i.state === 'closed').length;
     const due = m.due_on ? m.due_on.slice(0, 10) : null;
     const late = due && due < today && done < items.length;
