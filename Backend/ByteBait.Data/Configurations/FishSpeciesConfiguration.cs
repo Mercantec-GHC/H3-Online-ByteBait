@@ -24,6 +24,9 @@ public class FishSpeciesConfiguration : IEntityTypeConfiguration<FishSpecies>
         builder.HasIndex(f => new { f.LaneId, f.Name }).IsUnique();
         builder.Property(f => f.Name).HasMaxLength(50);
 
+        // Mapped to the system column xmin, so no column is added to the table
+        builder.Property(f => f.Version).IsRowVersion();
+
         builder.Property(f => f.Rarity).HasLowercaseConversion();
         builder.Property(f => f.Depth).HasLowercaseConversion();
 

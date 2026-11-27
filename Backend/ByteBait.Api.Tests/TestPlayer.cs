@@ -3,6 +3,8 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using ByteBait.Api.Players;
 using ByteBait.Data;
+using ByteBait.Data.Entities;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -72,6 +74,27 @@ public sealed class TestPlayer : IAsyncDisposable
         await RefreshAntiforgeryTokenAsync(client);
 
         return new TestPlayer(factory, client, body.GetProperty("id").GetGuid(), userName);
+    }
+
+    // A player with the admin role. The role is in the login cookie, so the player logs in again after getting it.
+    public static async Task<TestPlayer> RegisterAdminAsync(ApiFactory factory)
+    {
+        var player = await RegisterAsync(factory);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var players = scope.ServiceProvider.GetRequiredService<UserManager<Player>>();
+            await players.AddToRoleAsync((await players.FindByIdAsync(player.Id.ToString()))!, RoleNames.Admin);
+        }
+
+        var login = await player.Client.PostAsJsonAsync("/api/account/login", new { userName = player.UserName, password = Password });
+        if (login.StatusCode != HttpStatusCode.OK)
+        {
+            throw new InvalidOperationException($"Login failed with {(int)login.StatusCode}: {await login.Content.ReadAsStringAsync()}");
+        }
+
+        await RefreshAntiforgeryTokenAsync(player.Client);
+        return player;
     }
 
     // The player's casts, catches and equipment are deleted with it (cascade)

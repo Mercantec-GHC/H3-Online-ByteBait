@@ -278,6 +278,12 @@ namespace ByteBait.Data.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("rarity");
 
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
                     b.HasKey("Id")
                         .HasName("pk_fish_species");
 
@@ -310,7 +316,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.10000000000000001,
                             Name = "Perch",
                             Price = 10,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -323,7 +330,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.80000000000000004,
                             Name = "Tench",
                             Price = 30,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -336,7 +344,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 3.0,
                             Name = "Pike",
                             Price = 100,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -349,7 +358,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.5,
                             Name = "Bream",
                             Price = 12,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -362,7 +372,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 1.0,
                             Name = "Zander",
                             Price = 35,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -375,7 +386,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 10.0,
                             Name = "Wels Catfish",
                             Price = 120,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -388,7 +400,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.29999999999999999,
                             Name = "Grayling",
                             Price = 18,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -401,7 +414,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.5,
                             Name = "Trout",
                             Price = 50,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -414,7 +428,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 3.0,
                             Name = "Sea Trout",
                             Price = 150,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -427,7 +442,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.29999999999999999,
                             Name = "Perch",
                             Price = 20,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -440,7 +456,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 2.0,
                             Name = "Pike",
                             Price = 60,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -453,7 +470,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 5.0,
                             Name = "Salmon",
                             Price = 180,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -466,7 +484,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.29999999999999999,
                             Name = "Flounder",
                             Price = 25,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -479,7 +498,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.40000000000000002,
                             Name = "Garfish",
                             Price = 70,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -492,7 +512,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 2.0,
                             Name = "Turbot",
                             Price = 220,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -505,7 +526,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.10000000000000001,
                             Name = "Herring",
                             Price = 28,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -518,7 +540,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 1.0,
                             Name = "Sea Bass",
                             Price = 80,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -531,7 +554,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 8.0,
                             Name = "Conger Eel",
                             Price = 250,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -544,7 +568,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.29999999999999999,
                             Name = "Mackerel",
                             Price = 35,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -557,7 +582,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 1.5,
                             Name = "Sea Trout",
                             Price = 100,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -570,7 +596,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 30.0,
                             Name = "Swordfish",
                             Price = 320,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         },
                         new
                         {
@@ -583,7 +610,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 0.80000000000000004,
                             Name = "Cod",
                             Price = 40,
-                            Rarity = "common"
+                            Rarity = "common",
+                            Version = 0u
                         },
                         new
                         {
@@ -596,7 +624,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 3.0,
                             Name = "Ling",
                             Price = 120,
-                            Rarity = "rare"
+                            Rarity = "rare",
+                            Version = 0u
                         },
                         new
                         {
@@ -609,7 +638,8 @@ namespace ByteBait.Data.Migrations
                             MinWeightKg = 80.0,
                             Name = "Bluefin Tuna",
                             Price = 400,
-                            Rarity = "legendary"
+                            Rarity = "legendary",
+                            Version = 0u
                         });
                 });
 

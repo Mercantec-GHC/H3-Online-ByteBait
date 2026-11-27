@@ -3,7 +3,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
-using System.Text.Json;
+using ByteBait.Client.Api;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace ByteBait.Client.Accounts;
@@ -67,12 +67,12 @@ public sealed class PlayerAuthenticationStateProvider(HttpClient http) : Authent
             }
 
             if (response.StatusCode == HttpStatusCode.OK
-                && await response.Content.ReadFromJsonAsync(AccountJsonContext.Default.Player) is { } player)
+                && await response.Content.ReadFromJsonAsync(ApiJsonContext.Default.Player) is { } player)
             {
                 return StateFor(player);
             }
         }
-        catch (Exception ex) when (AccountClient.IsConnectionError(ex))
+        catch (Exception ex) when (ApiError.IsConnectionError(ex))
         {
             // No connection, a timeout, or no API at all (the standalone client)
         }

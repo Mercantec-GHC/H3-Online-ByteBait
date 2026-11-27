@@ -1,7 +1,5 @@
 // The account endpoints' JSON (see docs/api-contract.md, "Konto")
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace ByteBait.Client.Accounts;
 
@@ -18,15 +16,3 @@ public sealed class AccountForm
     [StringLength(128, MinimumLength = 8, ErrorMessage = "Password must be between 8 and 128 characters.")]
     public string Password { get; set; } = "";
 }
-
-// The error responses from the API (ProblemDetails)
-internal sealed record Problem(string? Title, string? Detail, Dictionary<string, string[]>? Errors);
-
-internal sealed record AntiforgeryTokenResponse(string Token);
-
-[JsonSourceGenerationOptions(JsonSerializerDefaults.Web)]
-[JsonSerializable(typeof(Player))]
-[JsonSerializable(typeof(AccountForm))]
-[JsonSerializable(typeof(Problem))]
-[JsonSerializable(typeof(AntiforgeryTokenResponse))]
-internal partial class AccountJsonContext : JsonSerializerContext { }

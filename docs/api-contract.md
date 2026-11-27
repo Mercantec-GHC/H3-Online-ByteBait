@@ -434,15 +434,64 @@ Chancer og multiplikatorer læses fra databasen ved hvert kast, så ændringer i
 
 ### Admin (S2.11, S3.7, S3.8)
 
-<!-- FORSLAG | af: @Bmantaz | berører: S2.11 (#27), S3.7 (#36), S3.8 (#37) | ejer: @Juuul999 | status: ikke besluttet -->
-> [!WARNING]
-> **FORSLAG fra Bjarke (@Bmantaz) – ikke besluttet.**
-> Berører S2.11 (#27), S3.7 (#36) og S3.8 (#37, Frederik @Juuul999). Hele tabellen nedenfor er et forslag.
+Alle admin-endpoints kræver login og rollen `admin`: `401` uden login og `403` uden rollen. `POST`, `PUT` og `DELETE` kræver også antiforgery-token.
+
+#### Fiskearter (S2.11 – lavet)
 
 | Metode | URL | Beskrivelse |
 |--------|-----|-------------|
-| `GET`, `POST` | `/api/admin/species` | List og opret fiskearter |
-| `GET`, `PUT`, `DELETE` | `/api/admin/species/{id}` | Hent, ret og slet en fiskeart (sjældenhed, pris, bane) |
+| `GET` | `/api/admin/species` | Alle arter, sorteret efter bane, dybde og sjældenhed |
+| `GET` | `/api/admin/species/{id}` | Én art |
+| `POST` | `/api/admin/species` | Opret en art. Svar: `201` med arten og `Location` |
+| `PUT` | `/api/admin/species/{id}` | Ret en art. Svar: `200` med arten |
+| `DELETE` | `/api/admin/species/{id}` | Slet en art. Svar: `204` |
+| `GET` | `/api/admin/lanes` | Banerne (`id`, `number`, `name`), så admin-panelet kan vælge en |
+
+`POST` og `PUT` tager samme body. Svaret har desuden `id` og `version`. `PUT` skal også sende `version`, se nedenfor:
+
+```json
+{
+  "laneId": 1,
+  "name": "Pike",
+  "rarity": "legendary",
+  "depth": "shallow",
+  "minWeightKg": 3,
+  "maxWeightKg": 14,
+  "minLengthCm": 60,
+  "maxLengthCm": 120,
+  "price": 100,
+  "version": 1234
+}
+```
+
+| Felt | Krav |
+|------|------|
+| `laneId` | En bane, der findes |
+| `name` | Højst 50 tegn og unikt på banen |
+| `rarity` | `"common"`, `"rare"` eller `"legendary"` |
+| `depth` | `"shallow"` eller `"deep"` |
+| `minWeightKg`, `maxWeightKg` | 0,01–1000, og max mindst lige så stor som min |
+| `minLengthCm`, `maxLengthCm` | 0,1–1000, og max mindst lige så stor som min |
+| `price` | 0–100000 |
+| `version` | Kun `PUT`: den `version`, arten havde, da formularen blev åbnet |
+
+**Fejl:**
+- `400` ved ugyldige felter eller en bane, der ikke findes (`errors.<felt>`)
+- `404` hvis arten ikke findes
+- `409` med titlen `Species has changed`, hvis en anden har gemt arten, efter formularen blev åbnet (`version` passer ikke længere). Intet bliver gemt, og arten skal hentes igen. `version` er PostgreSQL's `xmin`, som skifter ved hver ændring af rækken
+- `409` hvis navnet allerede er brugt på banen. Også `409`, hvis der er kastet efter arten: så kan den hverken slettes eller flyttes til en anden bane. Ret i stedet sjældenhed eller pris
+
+En ændring gælder kun nye kast. Fanget fisk beholder deres vægt og længde, og solgte fisk beholder prisen (`sold_for`).
+
+#### Resten af admin (S3.7, S3.8)
+
+<!-- FORSLAG | af: @Bmantaz | berører: S3.7 (#36), S3.8 (#37) | ejer: @Juuul999 | status: ikke besluttet -->
+> [!WARNING]
+> **FORSLAG fra Bjarke (@Bmantaz) – ikke besluttet.**
+> Berører S3.7 (#36) og S3.8 (#37, Frederik @Juuul999). Hele tabellen nedenfor er et forslag.
+
+| Metode | URL | Beskrivelse |
+|--------|-----|-------------|
 | `GET`, `PUT` | `/api/admin/catch-chances` | Fangstchancer og kast-multiplikatorer |
 | `PUT` | `/api/admin/equipment/{id}` | Ret pris på udstyr |
 | `PUT` | `/api/admin/levels/{id}` | Ret antal fisk pr. niveau |
