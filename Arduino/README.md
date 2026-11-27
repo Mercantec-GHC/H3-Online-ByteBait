@@ -4,6 +4,8 @@ Kode til Arduino-hardwaren.
 
 WiFi-koder og nøgler lægges i `arduino_secrets.h`, som er ignoreret af Git.
 
+`CARRIER_CASE` i [hardware.cpp](bytebait/hardware.cpp) er `true`, fordi Oplà'en sidder i sin case. Uden case skal den være `false`, ellers bliver touch-pads for følsomme. Skift den kun i din lokale fil, ikke i en commit.
+
 ## WiFi-prøve til opgave #4
 
 [Testsketchen](spike_wifi_https/spike_wifi_https.ino) måler HTTPS fra Oplà'en til
@@ -46,7 +48,7 @@ Round ended. Reset to repeat.
 
 ## Krogning over USB
 
-Brug spillets `bytebait.ino` med bevægelsesgenkendelsen fra [#17 / PR #100](https://github.com/Mercantec-GHC/H3-Online-ByteBait/pull/100) og `WIFI_THROW_PROBE=0`. Åbn Serial Monitor ved 115200 baud, lav et kast og giv derefter et kort ryk opad. Se efter `THROW:<styrke>` efterfulgt af `HOOK`. Luk Serial Monitor, så Chrome kan åbne samme port med **Connect USB**. [Afprøv nap og bid på spilsiden](../Frontend/README.md#hooking-a-fish-on-game)
+Brug spillets `bytebait.ino` med bevægelsesgenkendelsen fra [PR #110](https://github.com/Mercantec-GHC/H3-Online-ByteBait/pull/110) og `WIFI_THROW_PROBE=0`. Åbn Serial Monitor ved 115200 baud, lav et kast, hold stangen i ro et øjeblik, og giv derefter et kort ryk opad. Se efter `THROW:<styrke>` efterfulgt af `HOOK`. Luk Serial Monitor, så Chrome kan åbne samme port med **Connect USB**. [Afprøv nap og bid på spilsiden](../Frontend/README.md#hooking-a-fish-on-game)
 
 ## Ét fysisk kast over WiFi til browseren (4.4b)
 

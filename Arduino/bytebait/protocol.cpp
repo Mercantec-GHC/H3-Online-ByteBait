@@ -2,6 +2,8 @@
 #include "protocol.h"
 #include "config.h"
 #include "leds.h"
+#include "motion.h"
+#include "buzzer.h"
 
 #if __has_include("arduino_secrets.h")
 #include "arduino_secrets.h"
@@ -25,21 +27,46 @@ static void sendErr(const char* code) {
   Serial.println(code);
 }
 
-// Handle one complete line from the game
-static void handleLine(char* line) {
-  char* cmd = strtok(line, ":");
-  char* a1  = strtok(nullptr, ":");
-  if (!cmd) return;
-
-  if (!strcmp(cmd, "PING") && a1) {
-    Serial.print("PONG:");
-    Serial.println(a1);
-  } else if (!strcmp(cmd, "LED") && a1) {
-    if (!ledsSetByName(a1)) sendErr("RANGE");
-  // TODO(#19): } else if (!strcmp(cmd, "BUZZ") && a1) { BUZZ:LOST -> buzzerPlayLost()
-  } else {
-    sendErr("UNKNOWN");
+static bool isNumber(const char* s) {
+  for (; *s; s++) {
+    if (*s < '0' || *s > '9') return false;
   }
+  return true;
+}
+
+static void handlePing(const char* n) {
+  if (!isNumber(n)) { sendErr("RANGE"); return; }   // n is a counter (docs/protocol.md)
+  Serial.print("PONG:");
+  Serial.println(n);
+}
+
+static void handleLed(const char* color) {
+  if (!ledsSetByName(color)) { sendErr("RANGE"); return; }
+  // A new timing meter (red/yellow) means the next cast is coming: the fight is over.
+  if (!strcmp(color, "RED") || !strcmp(color, "YELLOW")) motionMeterStarted();
+}
+
+static void handleBuzz(const char* sound) {
+  if (strcmp(sound, "LOST")) { sendErr("RANGE"); return; }
+  buzzerPlayLost();
+  motionStopFight();                             // the fish is gone: back to cast mode
+}
+
+// Handle one complete line from the game. Every command from the game has exactly one argument.
+// Not strtok(): it skips empty and extra parts, so "LED::RED" and "LED:RED:EXTRA" would pass as LED:RED.
+static void handleLine(char* line) {
+  if (line[0] == 0) return;                      // an empty line is not a message
+
+  char* arg = strchr(line, ':');
+  if (arg) *arg++ = 0;                           // line is now the command, arg the rest
+
+  bool known = !strcmp(line, "PING") || !strcmp(line, "LED") || !strcmp(line, "BUZZ");
+  if (!known) { sendErr("UNKNOWN"); return; }
+  if (!arg || !*arg || strchr(arg, ':')) { sendErr("ARGS"); return; }   // missing, empty or extra parts
+
+  if      (!strcmp(line, "PING")) handlePing(arg);
+  else if (!strcmp(line, "LED"))  handleLed(arg);
+  else                            handleBuzz(arg);
 }
 
 void protocolPoll() {
@@ -73,26 +100,39 @@ void protocolSendThrow(int strength) {
 #else
   Serial.print("THROW:");
   Serial.println(strength);
+  motionStartFight();   // after a cast the motions (hook, tilt, hold, yank) take over
 #endif
 }
 
-// ---------- New messages from the Oplà to the game (#17) ----------
+// ---------- Motion messages from the Oplà to the game (#17) ----------
+// Not sent in the WiFi probe build: there Serial is only a log for the throw test.
 void protocolSendHook() {
-  // TODO(#17): send "HOOK"
+#if !WIFI_THROW_PROBE
+  Serial.println("HOOK");
+#endif
 }
 
 void protocolSendTilt(char dir) {
+#if !WIFI_THROW_PROBE
+  Serial.print("TILT:");
+  Serial.println(dir == 'L' ? "L" : "R");
+#else
   (void)dir;
-  // TODO(#17): send "TILT:L" or "TILT:R"
+#endif
 }
 
 void protocolSendHold(bool still) {
+#if !WIFI_THROW_PROBE
+  Serial.println(still ? "HOLD:1" : "HOLD:0");
+#else
   (void)still;
-  // TODO(#17): send "HOLD:1" (still) or "HOLD:0" (moving)
+#endif
 }
 
 void protocolSendYank() {
-  // TODO(#17): send "YANK"
+#if !WIFI_THROW_PROBE
+  Serial.println("YANK");
+#endif
 }
 
 // TODO(#38): everything that writes to / reads from Serial here must go through link* (link.h),
