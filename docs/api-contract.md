@@ -200,7 +200,7 @@ Sådan bruger spillet og Blazor det:
 <!-- BESLUTNING | af: @Bmantaz og @Juuul999 | berører: S2.4 (#20), S2.5 (#21), S2.14 (#77) | ejer af beslutningen: @Juuul999 og @Bmantaz (S2.13, #76) -->
 > [!NOTE]
 > **BESLUTNING fra Frederik (@Juuul999) og Bjarke (@Bmantaz) i S2.13 (#76).** Påvirker S2.4 (#20) og S2.5 (#21, Andreas @Zikka1987) og S2.14 (#77, Frederik @Juuul999).
-> Niveau, kast og fangst kræver login og antiforgery-token fra S2.13. Spillet skal logge ind og sende `X-XSRF-TOKEN` ved hvert `POST`. Uden login svarer API'et `401`. Login-siderne i Blazor leveres i #77.
+> Niveau, kast og fangst kræver login og antiforgery-token fra S2.13. Spillet skal logge ind og sende `X-XSRF-TOKEN` ved hvert `POST`. Uden login svarer API'et `401`, og Blazor sender spilleren til `/login` og tilbage til samme side bagefter (#77).
 
 For hvert bedømt kast henter `/game` et frisk token og sender det med kastets POST. Det gælder både øvekast og niveaukast. Den [lokale browsertest](../Frontend/README.md#cast-saving-tests-in-chrome) bruger HTTPS og en spiller oprettet via API'et i samme browserkontekst.
 

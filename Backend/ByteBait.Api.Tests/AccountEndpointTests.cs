@@ -219,7 +219,6 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
     }
 
-    // On Dokploy the request reaches the API as http, because Cloudflare handles HTTPS
     // On Dokploy, Cloudflare handles HTTPS and the container gets plain http, so CF-Visitor decides
     [Fact]
     public async Task Antiforgery_works_when_Cloudflare_says_https()
@@ -236,12 +235,25 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         Assert.Equal(HttpStatusCode.BadRequest, logout.StatusCode);
     }
 
-    // Plain http, through Cloudflare or straight to the container, is sent on to https instead of counting as https
+    // A player who typed http:// is sent on to https, with the path and query kept
+    [Fact]
+    public async Task Http_through_Cloudflare_is_redirected_to_https()
+    {
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add(CloudflareScheme.HeaderName, """{"scheme":"http"}""");
+
+        var response = await client.GetAsync("/game?levelId=2");
+
+        Assert.Equal(HttpStatusCode.TemporaryRedirect, response.StatusCode);
+        Assert.Equal("https://localhost/game?levelId=2", response.Headers.Location?.ToString());
+    }
+
+    // Without the header we can't know what the player used. Redirecting would loop forever if Cloudflare
+    // only talks http to us, so the page is served, but it doesn't count as https and gets no antiforgery token.
     [Theory]
-    [InlineData("""{"scheme":"http"}""")]
     [InlineData(null)]
     [InlineData("not json")]
-    public async Task Http_is_redirected_to_https(string? cloudflareVisitor)
+    public async Task Http_without_Cloudflare_is_served_but_does_not_count_as_https(string? cloudflareVisitor)
     {
         var client = CreateHttpClient();
         if (cloudflareVisitor is not null)
@@ -249,10 +261,12 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
             client.DefaultRequestHeaders.Add(CloudflareScheme.HeaderName, cloudflareVisitor);
         }
 
-        var response = await client.GetAsync("/api/account/antiforgery");
+        var page = await client.GetAsync("/");
+        var token = await client.GetAsync("/api/account/antiforgery");
 
-        Assert.Equal(HttpStatusCode.TemporaryRedirect, response.StatusCode);
-        Assert.Equal("https://localhost/api/account/antiforgery", response.Headers.Location?.ToString());
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.NotEqual(HttpStatusCode.OK, token.StatusCode);
+        Assert.Null(token.Headers.Location);
     }
 
     private HttpClient CreateHttpClient() =>

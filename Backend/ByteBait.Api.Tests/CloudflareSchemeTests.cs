@@ -5,15 +5,17 @@ namespace ByteBait.Api.Tests;
 public class CloudflareSchemeTests
 {
     [Theory]
-    [InlineData("""{"scheme":"https"}""", true)]
-    [InlineData("""{ "scheme": "https" }""", true)]
-    [InlineData("""{"scheme":"http"}""", false)]
-    [InlineData("""{"scheme":"HTTPS"}""", false)]
-    [InlineData("""{}""", false)]
-    [InlineData("""["https"]""", false)]
-    [InlineData("https", false)]
-    [InlineData("", false)]
-    [InlineData(null, false)]
-    public void Only_a_visitor_that_used_https_counts_as_https(string? headerValue, bool expected) =>
-        Assert.Equal(expected, CloudflareScheme.IsHttps(headerValue));
+    [InlineData("""{"scheme":"https"}""", "https")]
+    [InlineData("""{ "scheme": "https" }""", "https")]
+    [InlineData("""{"scheme":"http"}""", "http")]
+    [InlineData("""{"scheme":"HTTPS"}""", null)]
+    [InlineData("""{"scheme":"ftp"}""", null)]
+    [InlineData("""{"scheme":1}""", null)]
+    [InlineData("""{}""", null)]
+    [InlineData("""["https"]""", null)]
+    [InlineData("https", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void Reads_the_scheme_the_visitor_used(string? headerValue, string? expected) =>
+        Assert.Equal(expected, CloudflareScheme.SchemeFrom(headerValue));
 }

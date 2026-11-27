@@ -91,7 +91,7 @@ jobs:
             -e ConnectionStrings__Default="Host=localhost;Database=unused" \
             bytebait:ci
 
-          # Som på Dokploy: Cloudflare fortæller med CF-Visitor, at spilleren brugte HTTPS. Uden den sendes man videre til https.
+          # Som på Dokploy: Cloudflare fortæller med CF-Visitor, om spilleren brugte HTTPS
           CF='CF-Visitor: {"scheme":"https"}'
 
           for i in $(seq 1 30); do
@@ -101,8 +101,9 @@ jobs:
 
           curl -fsS -H "$CF" http://localhost:8080/ | grep -q 'blazor.webassembly.js'
           curl -fsS -H "$CF" -o /dev/null http://localhost:8080/_framework/blazor.webassembly.js
-          # Almindelig http uden headeren sendes videre til https
-          curl -sS -o /dev/null -w '%{http_code}' http://localhost:8080/ | grep -q '307'
+          # Http gennem Cloudflare sendes videre til https. Uden headeren vises siden, så der aldrig kan opstå en løkke.
+          curl -sS -H 'CF-Visitor: {"scheme":"http"}' -o /dev/null -w '%{http_code}' http://localhost:8080/ | grep -q '307'
+          curl -fsS -o /dev/null http://localhost:8080/
           echo "Containeren starter og udleverer spillet."
 
       - name: Containerens log
