@@ -22,6 +22,16 @@ public sealed class PlayerAuthenticationStateProvider(HttpClient http) : Authent
 
     public void LoggedOutNow() => Set(Task.FromResult(LoggedOut));
 
+    // The API answered 401, so the login cookie has expired. Only acts if the page still shows a player,
+    // so a wrong password or the first GET /api/account/me doesn't replace the state.
+    public void LoginExpired()
+    {
+        if (state is { IsCompletedSuccessfully: true } current && current.Result.User.Identity?.IsAuthenticated == true)
+        {
+            LoggedOutNow();
+        }
+    }
+
     private void Set(Task<AuthenticationState> newState)
     {
         state = newState;

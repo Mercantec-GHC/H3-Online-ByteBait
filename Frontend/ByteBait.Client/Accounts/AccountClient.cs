@@ -15,20 +15,24 @@ public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProv
 
     public Task<AccountError?> LoginAsync(AccountForm form) => SignInAsync("api/account/login", form);
 
-    public async Task LogoutAsync()
+    // Only logged out on this page once the API has removed the cookie. Otherwise the next person on a shared PC
+    // could reload the page and be logged in as this player.
+    public async Task<AccountError?> LogoutAsync()
     {
         try
         {
             using var response = await PostAsync("api/account/logout", content: null);
+            if (!response.IsSuccessStatusCode)
+            {
+                return LogoutFailed;
+            }
+
+            authentication.LoggedOutNow();
+            return null;
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
         {
-            // Nothing to show: the player is logged out on this page either way
-        }
-        finally
-        {
-            // The cookie may still be there if the request failed, but the page shouldn't act logged in
-            authentication.LoggedOutNow();
+            return LogoutFailed;
         }
     }
 
@@ -86,4 +90,6 @@ public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProv
     }
 
     private static readonly IReadOnlyDictionary<string, string[]> NoFieldErrors = new Dictionary<string, string[]>();
+
+    private static readonly AccountError LogoutFailed = new("Couldn't sign out, so you're still signed in. Try again.", NoFieldErrors);
 }

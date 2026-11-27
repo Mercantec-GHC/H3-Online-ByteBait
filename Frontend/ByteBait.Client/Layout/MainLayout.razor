@@ -11,7 +11,11 @@
             <AuthorizeView Roles="@Roles.Admin" Context="admin">
                 <a href="admin">Admin</a>
             </AuthorizeView>
-            <button type="button" @onclick="LogoutAsync">Sign out</button>
+            <button type="button" @onclick="LogoutAsync" disabled="@signingOut">@(signingOut ? "Signing out…" : "Sign out")</button>
+            @if (logoutError is not null)
+            {
+                <span class="account-error" role="alert">@logoutError.Message</span>
+            }
         </Authorized>
         <NotAuthorized>
             <a href="login">Sign in</a>
@@ -29,9 +33,25 @@
 </footer>
 
 @code {
+    private AccountError? logoutError;
+    private bool signingOut;
+
+    // Stays on the page with a message if the API didn't log the player out, so they can try again
     private async Task LogoutAsync()
     {
-        await Accounts.LogoutAsync();
-        Navigation.NavigateTo("/");
+        signingOut = true;
+        try
+        {
+            logoutError = await Accounts.LogoutAsync();
+        }
+        finally
+        {
+            signingOut = false;
+        }
+
+        if (logoutError is null)
+        {
+            Navigation.NavigateTo("/");
+        }
     }
 }

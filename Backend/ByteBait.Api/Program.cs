@@ -1,5 +1,6 @@
 using ByteBait.Api.Diagnostics;
 using ByteBait.Api.Game;
+using ByteBait.Api.Hosting;
 using ByteBait.Api.Players;
 using ByteBait.Api.Weather;
 using ByteBait.Data;
@@ -41,9 +42,14 @@ builder.Services.AddSingleton<WeatherService>();
 builder.Services.AddSingleton(new FishPicker(Random.Shared));
 builder.Services.AddSingleton(TimeProvider.System);
 
-// On Dokploy, Traefik handles HTTPS and passes the request on to the container as plain HTTP.
-// The X-Forwarded headers tell the API the original scheme and client IP, so HTTPS redirection
-// and Secure cookies see the request as HTTPS.
+// The container only sees port 80, so UseHttpsRedirection has to be told where https is
+if (!builder.Environment.IsDevelopment())
+{
+    builder.Services.AddHttpsRedirection(options => options.HttpsPort = 443);
+}
+
+// On Dokploy, Traefik passes the request on to the container. The X-Forwarded headers tell the API
+// the client IP and the scheme Traefik saw (CloudflareScheme corrects the scheme afterwards).
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -58,17 +64,8 @@ var app = builder.Build();
 // First, so everything after it sees the original scheme
 app.UseForwardedHeaders();
 
-// On Dokploy, Cloudflare handles HTTPS before the proxy, so X-Forwarded-Proto can't be trusted to say https.
-// Antiforgery only works over https, so outside Development every request counts as https.
-// Locally the https profile is used, so the request already is.
-if (!app.Environment.IsDevelopment())
-{
-    app.Use((context, next) =>
-    {
-        context.Request.Scheme = "https";
-        return next(context);
-    });
-}
+// Cloudflare tells us when the player used https (see CloudflareScheme)
+app.UseCloudflareScheme();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();

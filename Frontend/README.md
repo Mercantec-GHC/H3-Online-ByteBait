@@ -268,7 +268,9 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
 
 ## Browser checks
 
-1. Start the Release client with `dotnet run --project Frontend/ByteBait.Client --configuration Release --no-build --launch-profile http` and open <http://localhost:5173/game>.
+1. Start the API with the `https` profile (`dotnet run --project Backend/ByteBait.Api --launch-profile https`,
+   see the [backend setup](../Backend/README.md)) and open <https://localhost:7172>. Choose **Create account**,
+   then **Open game**. The standalone client on port 5173 can't sign in, so it never reaches **Connect USB**.
 2. Set the viewport to 1280 CSS pixels wide, then 390. At each width check that the complete
    upper semicircle fits inside the frame, with green at the top, red at both ends and no
    horizontal page scrolling. The black needle should be still at the left endpoint.
