@@ -10,8 +10,10 @@ const port = Number(process.env.BYTEBAIT_TEST_PORT ?? (realDatabase ? 7172 : 517
 const gameUrl = `${realDatabase ? "https" : "http"}://localhost:${port}/game`;
 const castUrl = new URL("/api/casts", gameUrl).href;
 const tokenUrl = new URL("/api/account/antiforgery", gameUrl).href;
+const meUrl = new URL("/api/account/me", gameUrl).href;
 
-async function openGame(t, query = "", connect = true) {
+// failedMeChecks: how many GET /api/account/me answer 503 first (mocked API only)
+async function openGame(t, query = "", connect = true, failedMeChecks = 0) {
     const browser = await chromium.launch({ channel: "chrome" });
     t.after(() => browser.close());
     // Only the real, loopback API uses the local ASP.NET development certificate.
@@ -57,6 +59,16 @@ async function openGame(t, query = "", connect = true) {
     });
     const epoch = Date.UTC(2026, 0, 1);
     await page.clock.install({ time: new Date(epoch) });
+    // /game needs a logged-in player (S2.14). The real API gets a new one, the mocked API answers for one.
+    // The token fetched before registering belongs to the anonymous visitor, so a test can replay it.
+    let anonymousToken = null;
+    if (realDatabase) {
+        anonymousToken = await registerTestPlayer(page);
+    } else {
+        const player = { id: randomUUID(), userName: "tester", roles: [], money: 0 };
+        let meChecks = 0;
+        await page.route(meUrl, route => route.fulfill(meChecks++ < failedMeChecks ? { status: 503, json: {} } : { json: player }));
+    }
     await page.goto(gameUrl + query);
     const visible = text => page.getByText(text, { exact: true }).waitFor();
     // Fetch and WebAssembly continuations cross real network and browser timer queues.
@@ -90,7 +102,19 @@ async function openGame(t, query = "", connect = true) {
         Object.defineProperty(document, "hidden", { configurable: true, value });
         document.dispatchEvent(new Event("visibilitychange"));
     }, hidden);
-    return { page, click, feed, visible, receipt, calibrate, hook, leds, signal, setHidden };
+    return { page, click, feed, visible, receipt, calibrate, hook, leds, signal, setHidden, anonymousToken };
+}
+
+// An expired login sends the player to /login, with the level they were on as the way back
+async function expectLoginPage(game, query) {
+    const { page } = game;
+    const login = new URL("/login", gameUrl);
+    login.searchParams.set("returnUrl", "/game" + query);
+    const deadline = Date.now() + 8000;
+    while (page.url() !== login.href && Date.now() < deadline) await page.clock.runFor(16);
+    assert.equal(page.url(), login.href);
+    await page.getByRole("heading", { name: "Sign in", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Sign in", exact: true }).waitFor();
 }
 
 // Hold each request until the test chooses its outcome, including out-of-order replies.
@@ -538,7 +562,6 @@ test("rejected, unexpected and lost replies each rearm the meter without replayi
     await game.calibrate();
     for (const [raw, status, message] of [
         [0, 400, "Cast rejected by the server."],
-        [55, 401, "Sign in to save your cast."],
         [100, 200, "Cast save could not be confirmed."],
         [30, null, "Cast save could not be confirmed."],
     ]) {
@@ -556,8 +579,39 @@ test("rejected, unexpected and lost replies each rearm the meter without replayi
     await game.click("Pause meter");
     await game.feed(31);
     await visible("Cast not scored. No meter history for this throw.");
-    await visible("Throws received: 5");
-    assert.equal(requests.length, 4);
+    await visible("Throws received: 4");
+    assert.equal(requests.length, 3);
+});
+
+test("a 401 sends the player to login and back to the same level afterwards", { skip: realDatabase }, async t => {
+    const game = await openGame(t, "?levelId=7");
+    const { page } = game;
+    const { send } = await interceptCasts(game);
+    await game.calibrate();
+    const route = await send(55);
+    await route.fulfill({ status: 401, json: {} });
+    await expectLoginPage(game, "?levelId=7");
+
+    await page.route(new URL("/api/account/login", gameUrl).href, route =>
+        route.fulfill({ json: { id: randomUUID(), userName: "tester", roles: [], money: 0 } }));
+    await page.locator("#userName").fill("tester");
+    await page.locator("#password").fill("password123");
+    await game.click("Sign in");
+    const deadline = Date.now() + 8000;
+    while (page.url() !== gameUrl + "?levelId=7" && Date.now() < deadline) await page.clock.runFor(16);
+    assert.equal(page.url(), gameUrl + "?levelId=7");
+    await game.visible("USB disconnected.");
+});
+
+test("a 503 from the login check keeps the player on the level until the check works", { skip: realDatabase }, async t => {
+    const game = await openGame(t, "?levelId=7", false, 1);
+    const { page } = game;
+    await page.getByRole("heading", { name: "Couldn't check your login", exact: true }).waitFor();
+    assert.equal(page.url(), gameUrl + "?levelId=7");
+
+    await game.click("Try again");
+    await game.visible("USB disconnected.");
+    assert.equal(page.url(), gameUrl + "?levelId=7");
 });
 
 test("late receipts cannot start the float after unplugging, reconnecting or leaving the page", async t => {
@@ -703,6 +757,14 @@ test("a token arriving after USB disconnect cannot send the abandoned cast", asy
     assert.equal(requests.length, 0);
 });
 
+// Logging out through the API leaves the game open, so its next cast is anonymous, like an expired cookie
+async function logoutTestPlayer(page) {
+    const api = page.context().request;
+    const { token } = await (await api.get(tokenUrl)).json();
+    const response = await api.post(new URL("/api/account/logout", gameUrl).href, { headers: { "X-XSRF-TOKEN": token } });
+    assert.equal(response.status(), 204);
+}
+
 // Registration signs a unique local player in. The browser and APIRequestContext share cookies.
 async function registerTestPlayer(page) {
     const api = page.context().request;
@@ -717,17 +779,25 @@ async function registerTestPlayer(page) {
     return token;
 }
 
-test("the API rejects an anonymous cast and a signed-in cast carrying the pre-login token", {
+test("the API rejects an anonymous cast and the page sends the player to login", {
+    skip: !realDatabase,
+}, async t => {
+    const game = await openGame(t);
+    await logoutTestPlayer(game.page);
+    await game.calibrate();
+    const unauthorized = game.page.waitForResponse(castUrl);
+    await game.feed(72);
+    // Waiting for the login page also runs the paused clock, which the cast's reply needs
+    await expectLoginPage(game, "");
+    assert.equal((await unauthorized).status(), 401);
+});
+
+test("the API rejects a signed-in cast carrying the pre-login token", {
     skip: !realDatabase,
 }, async t => {
     const game = await openGame(t);
     await game.calibrate();
-    const unauthorized = game.page.waitForResponse(castUrl);
-    await game.feed(72);
-    await game.receipt("Sign in to save your cast.");
-    assert.equal((await unauthorized).status(), 401);
-
-    const anonymousToken = await registerTestPlayer(game.page);
+    const { anonymousToken } = game;
     await game.page.route(tokenUrl, route => route.fulfill({ json: { token: anonymousToken } }));
     await game.page.clock.runFor(320);
     const rejected = game.page.waitForResponse(castUrl);
@@ -742,7 +812,6 @@ test("one simulated throw through the real API receives a database receipt", {
     skip: process.env.BYTEBAIT_TEST_CAST_DATABASE !== "1",
 }, async t => {
     const game = await openGame(t);
-    await registerTestPlayer(game.page);
     const requests = [];
     game.page.on("request", r => { if (r.url() === castUrl) requests.push(r); });
     await game.calibrate();
@@ -769,7 +838,6 @@ test("the fish from the real level endpoint reaches the hooked game state unchan
     assert.ok(Number.isInteger(levelId) && levelId > 0);
     const game = await openGame(t, "?levelId=" + levelId);
     const { page } = game;
-    await registerTestPlayer(page);
     const hooks = await watchHooks(page);
     const apiCalls = [];
     page.on("request", request => { if (new URL(request.url()).pathname.startsWith("/api/")) apiCalls.push(request.url()); });

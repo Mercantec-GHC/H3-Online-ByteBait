@@ -1,0 +1,9 @@
+@* Shown instead of a page that needs login when GET /api/account/me got no real answer.
+   The player may still be logged in, so they stay on the page and can ask again instead of logging in. *@
+@inject PlayerAuthenticationStateProvider Authentication
+
+<main class="account-page">
+    <h1>Couldn't check your login</h1>
+    <p role="alert">The server didn't answer. You may still be signed in.</p>
+    <button type="button" @onclick="Authentication.CheckAgain">Try again</button>
+</main>

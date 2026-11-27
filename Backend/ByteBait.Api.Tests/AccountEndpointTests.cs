@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using ByteBait.Api.Hosting;
 using ByteBait.Api.Players;
 using ByteBait.Data;
 using ByteBait.Data.Entities;
@@ -217,6 +218,59 @@ public sealed class AccountEndpointTests : IClassFixture<ApiFactory>, IAsyncLife
         Assert.Contains("secure", cookie, StringComparison.OrdinalIgnoreCase);
         Assert.Contains("samesite=strict", cookie, StringComparison.OrdinalIgnoreCase);
     }
+
+    // On Dokploy, Cloudflare handles HTTPS and the container gets plain http, so CF-Visitor decides
+    [Fact]
+    public async Task Antiforgery_works_when_Cloudflare_says_https()
+    {
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add(CloudflareScheme.HeaderName, """{"scheme":"https"}""");
+        client.DefaultRequestHeaders.Add("X-Forwarded-Proto", "http");
+
+        var token = await client.GetAsync("/api/account/antiforgery");
+        var logout = await client.PostAsync("/api/account/logout", null);
+
+        Assert.Equal(HttpStatusCode.OK, token.StatusCode);
+        // Without the token, so 400 and not 500
+        Assert.Equal(HttpStatusCode.BadRequest, logout.StatusCode);
+    }
+
+    // A player who typed http:// is sent on to https, with the path and query kept
+    [Fact]
+    public async Task Http_through_Cloudflare_is_redirected_to_https()
+    {
+        var client = CreateHttpClient();
+        client.DefaultRequestHeaders.Add(CloudflareScheme.HeaderName, """{"scheme":"http"}""");
+
+        var response = await client.GetAsync("/game?levelId=2");
+
+        Assert.Equal(HttpStatusCode.TemporaryRedirect, response.StatusCode);
+        Assert.Equal("https://localhost/game?levelId=2", response.Headers.Location?.ToString());
+    }
+
+    // Without the header we can't know what the player used. Redirecting would loop forever if Cloudflare
+    // only talks http to us, so the page is served, but it doesn't count as https and gets no antiforgery token.
+    [Theory]
+    [InlineData(null)]
+    [InlineData("not json")]
+    public async Task Http_without_Cloudflare_is_served_but_does_not_count_as_https(string? cloudflareVisitor)
+    {
+        var client = CreateHttpClient();
+        if (cloudflareVisitor is not null)
+        {
+            client.DefaultRequestHeaders.Add(CloudflareScheme.HeaderName, cloudflareVisitor);
+        }
+
+        var page = await client.GetAsync("/");
+        var token = await client.GetAsync("/api/account/antiforgery");
+
+        Assert.Equal(HttpStatusCode.OK, page.StatusCode);
+        Assert.NotEqual(HttpStatusCode.OK, token.StatusCode);
+        Assert.Null(token.Headers.Location);
+    }
+
+    private HttpClient CreateHttpClient() =>
+        _factory.CreateClient(new() { BaseAddress = new Uri("http://localhost"), AllowAutoRedirect = false });
 
     // Register and login are protected too, so another site can't log a player into its own account
     [Theory]

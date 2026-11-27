@@ -62,7 +62,7 @@ Spillet deployes på skolens Dokploy i projektet **H3-Online-ByteBait**:
 
 - Begge apps bygges fra `Dockerfile` i roden af repoet. API'et serverer også Blazor-filerne, så hver app er én container, der lytter på port 8080.
 - Deploy sker via Dokploys deploy-webhooks, som ligger som GitHub Secrets `DOKPLOY_WEBHOOK_TEST` og `DOKPLOY_WEBHOOK_PRO`. Workflowet kalder først webhooket, når CI er grøn, så der kun deployes kode, der har bestået CI. Autodeploy skal være slået til i begge apps, ellers afviser Dokploy webhooket med 400.
-- Dokploy (Traefik) står for HTTPS. Containeren får requesten som HTTP, og API'et læser den oprindelige protokol fra `X-Forwarded-Proto`.
+- Skolens Cloudflare står for HTTPS. Containeren får requesten som HTTP, så API'et læser Cloudflares header `CF-Visitor` for at se, om spilleren brugte HTTPS. Siger headeren HTTP, sendes spilleren videre til HTTPS, for login og antiforgery virker kun over HTTPS. Mangler headeren, sendes man ikke videre, da Cloudflare taler HTTP med serveren og det ellers ville give en løkke.
 - Domæner: Test-ByteBait kører på https://bytebait-test.mercantec.tech og Main-ByteBait på https://bytebait.mercantec.tech. Skolen står for HTTPS foran Dokploy (Cloudflare), så HTTPS er slået fra på domænerne i Dokploy.
 - Miljøvariabler sættes i Dokploy under **Environment** – aldrig i repoet:
   - `ASPNETCORE_ENVIRONMENT` (`Staging` i test, `Production` i produktion)

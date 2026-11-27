@@ -23,12 +23,36 @@ Local development uses HTTP on localhost, so no development certificate is neede
 Stop the server with `Ctrl+C`.
 
 The foundation page at `/` displays **ByteBait** and **Frontend foundation is ready.**
-Choose **Open game** to navigate to `/game`, or open <http://localhost:5173/game> directly.
-The meter, USB connection and LEDs work on the standalone client. To save a cast, run
-the API with a local PostgreSQL database and the `https` profile. Open
-<https://localhost:7172/game> in the signed-in browser. Until the account pages in
-#77 are available, use the [authenticated browser tests](#cast-saving-tests-in-chrome)
-to exercise the same flow with temporary local players. See the [backend setup](../Backend/README.md).
+Choose **Open game** to navigate to `/game`.
+
+`/game` needs a signed-in player (#77), and the standalone client has no API to sign in
+against, so it shows **Couldn't check your login**. To play, run the API with a local PostgreSQL
+database and the `https` profile, open <https://localhost:7172>, choose **Create account**
+and then **Open game**. The [browser tests](#cast-saving-tests-in-chrome) still use the
+standalone client: they answer `GET /api/account/me` themselves. See the
+[backend setup](../Backend/README.md).
+
+## Accounts
+
+The bar at the top shows who is signed in, with **Sign in** and **Create account** or
+**Sign out**. `/login` and `/register` use the account endpoints in the
+[API contract](../docs/api-contract.md). A page with `[Authorize]` sends a signed-out
+player to `/login` and back afterwards. `/admin` also needs the `admin` role; see the
+[backend setup](../Backend/README.md) for how to give it. The login cookie is `HttpOnly`,
+so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
+
+Only a real answer is kept: `200` (signed in) or `401` (signed out). If the check gets no answer, for example a
+timeout or a `503` while the API or the database is waking up, a page that needs login shows
+**Couldn't check your login** with **Try again** instead of sending the player to `/login`. The player may still be
+signed in, so **Try again** asks once more and opens the same page, also the same level.
+
+Every `401` from the API means the login cookie has expired (`LoginExpiredHandler`). The page then stops showing
+the player as signed in. If that happens during a cast, `/game` sends the player to `/login` and back to the same
+level afterwards. Leaving the game page releases USB, so choose **Connect USB** again after signing in.
+
+**Sign out** only signs the player out on the page once the API has confirmed it. If the API doesn't answer, the
+bar shows **Couldn't confirm that you're signed out. Try again.**, so the next person on a shared PC isn't left
+signed in as them.
 
 ## Cookie notice
 
@@ -166,7 +190,7 @@ strength on screen stays at 72. Throws without a score only update the local cou
 **Saving cast…** appears below the zone while the request is pending. **Cast saved.**
 means the API returned `201 Created` after writing to PostgreSQL. Both requests
 share one ten-second deadline. A failed token fetch shows **Cast was not sent.**
-A `401` shows **Sign in to save your cast.** A rejected POST (`400`) shows
+A `401` shows **Sign in to save your cast.** and sends the player to `/login` (see [Accounts](#accounts)). A rejected POST (`400`) shows
 **Cast rejected by the server.** An unexpected or lost POST response, including
 a timeout, shows **Cast save could not be confirmed.** The insert may already have
 succeeded, so the client never repeats the POST. After a failure the meter starts a fresh sweep
@@ -257,7 +281,9 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
 
 ## Browser checks
 
-1. Start the Release client with `dotnet run --project Frontend/ByteBait.Client --configuration Release --no-build --launch-profile http` and open <http://localhost:5173/game>.
+1. Start the API with the `https` profile (`dotnet run --project Backend/ByteBait.Api --launch-profile https`,
+   see the [backend setup](../Backend/README.md)) and open <https://localhost:7172>. Choose **Create account**,
+   then **Open game**. The standalone client on port 5173 can't sign in, so it never reaches **Connect USB**.
 2. Set the viewport to 1280 CSS pixels wide, then 390. At each width check that the complete
    upper semicircle fits inside the frame, with green at the top, red at both ends and no
    horizontal page scrolling. The black needle should be still at the left endpoint.

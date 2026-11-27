@@ -1,6 +1,28 @@
-@* Supplies the shared page layout: the cookie banner on the first visit and a link to the cookie policy at the bottom
-   of every page (S2.15). Individual pages own their visual theme. *@
+@* Supplies the shared page layout: a bar that shows who is logged in, the cookie banner on the first visit
+   and a link to the cookie policy at the bottom of every page (S2.14, S2.15). Individual pages own their visual theme. *@
 @inherits LayoutComponentBase
+@inject AccountClient Accounts
+@inject NavigationManager Navigation
+
+<nav class="account-bar" aria-label="Account">
+    <AuthorizeView>
+        <Authorized>
+            <span>Signed in as <strong>@context.User.Identity?.Name</strong></span>
+            <AuthorizeView Roles="@Roles.Admin" Context="admin">
+                <a href="admin">Admin</a>
+            </AuthorizeView>
+            <button type="button" @onclick="LogoutAsync" disabled="@signingOut">@(signingOut ? "Signing out…" : "Sign out")</button>
+            @if (logoutError is not null)
+            {
+                <span class="account-error" role="alert">@logoutError.Message</span>
+            }
+        </Authorized>
+        <NotAuthorized>
+            <a href="login">Sign in</a>
+            <a href="register">Create account</a>
+        </NotAuthorized>
+    </AuthorizeView>
+</nav>
 
 <CookieBanner />
 
@@ -9,3 +31,27 @@
 <footer class="site-footer">
     <a href="/cookies">Cookie policy</a>
 </footer>
+
+@code {
+    private AccountError? logoutError;
+    private bool signingOut;
+
+    // Stays on the page with a message if the API didn't log the player out, so they can try again
+    private async Task LogoutAsync()
+    {
+        signingOut = true;
+        try
+        {
+            logoutError = await Accounts.LogoutAsync();
+        }
+        finally
+        {
+            signingOut = false;
+        }
+
+        if (logoutError is null)
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+}
