@@ -476,7 +476,7 @@ Alle admin-endpoints kræver login og rollen `admin`: `401` uden login og `403` 
 **Fejl:**
 - `400` ved ugyldige felter eller en bane, der ikke findes (`errors.<felt>`)
 - `404` hvis arten ikke findes
-- `409` hvis navnet allerede er brugt på banen, eller hvis der er kastet efter arten, så den ikke kan slettes. Ret i stedet sjældenhed eller pris
+- `409` hvis navnet allerede er brugt på banen. Også `409`, hvis der er kastet efter arten: så kan den hverken slettes eller flyttes til en anden bane. Ret i stedet sjældenhed eller pris
 
 En ændring gælder kun nye kast. Fanget fisk beholder deres vægt og længde, og solgte fisk beholder prisen (`sold_for`).
 

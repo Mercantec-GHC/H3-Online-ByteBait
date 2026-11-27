@@ -170,6 +170,40 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
     }
 
     [PostgresFact]
+    public async Task Species_that_has_been_fished_can_still_be_edited_on_its_lane()
+    {
+        await CastOnTestLevelAsync();
+        var species = NewSpecies(_level.LaneId, name: "Old Carp");
+        species["price"] = 90;
+
+        var response = await Admin.PutAsJsonAsync($"/api/admin/species/{_level.Species!.Id}", species);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    // The old casts were made on this lane's level, so they would point to a fish from another lake
+    [PostgresFact]
+    public async Task Species_that_has_been_fished_cannot_move_to_another_lane()
+    {
+        await CastOnTestLevelAsync();
+        int otherLaneId;
+        using (var scope = _factory.Services.CreateScope())
+        {
+            otherLaneId = await scope.ServiceProvider.GetRequiredService<ByteBaitDbContext>().Lanes
+                .Where(l => l.Id != _level.LaneId)
+                .Select(l => l.Id)
+                .FirstAsync();
+        }
+
+        var response = await Admin.PutAsJsonAsync(
+            $"/api/admin/species/{_level.Species!.Id}", NewSpecies(otherLaneId, name: "Moved Carp"));
+
+        await AssertProblem(response, HttpStatusCode.Conflict);
+        var saved = await Admin.GetFromJsonAsync<JsonElement>($"/api/admin/species/{_level.Species.Id}");
+        Assert.Equal(_level.LaneId, saved.GetProperty("laneId").GetInt32());
+    }
+
+    [PostgresFact]
     public async Task Update_of_an_unknown_species_returns_404()
     {
         var response = await Admin.PutAsJsonAsync($"/api/admin/species/{int.MaxValue}", NewSpecies(_level.LaneId));
@@ -194,15 +228,7 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
     [PostgresFact]
     public async Task Species_that_has_been_fished_returns_409_and_stays()
     {
-        // The test lane's only species, so this cast hooks it
-        var cast = await Admin.PostAsJsonAsync("/api/casts", new
-        {
-            zone = "green",
-            strength = 0.8,
-            castAt = "2026-11-26T09:15:30Z",
-            levelId = _level.LevelId,
-        });
-        Assert.Equal(HttpStatusCode.Created, cast.StatusCode);
+        await CastOnTestLevelAsync();
 
         var response = await Admin.DeleteAsync($"/api/admin/species/{_level.Species!.Id}");
 
@@ -221,6 +247,19 @@ public sealed class AdminSpeciesEndpointTests : IClassFixture<ApiFactory>, IAsyn
     }
 
     // ---------- Helpers ----------
+
+    // The test lane has only one species, so the cast hooks it
+    private async Task CastOnTestLevelAsync()
+    {
+        var cast = await Admin.PostAsJsonAsync("/api/casts", new
+        {
+            zone = "green",
+            strength = 0.8,
+            castAt = "2026-11-26T09:15:30Z",
+            levelId = _level.LevelId,
+        });
+        Assert.Equal(HttpStatusCode.Created, cast.StatusCode);
+    }
 
     private static Dictionary<string, object> NewSpecies(int laneId, string name = "Crucian Carp") => new()
     {

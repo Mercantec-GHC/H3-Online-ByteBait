@@ -67,6 +67,13 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
             return LaneNotFound(dto.LaneId.Value);
         }
 
+        // Old casts were made on a level on this lane, so the species can't move away from them
+        if (dto.LaneId != species.LaneId && await db.Casts.AnyAsync(c => c.FishSpeciesId == id, cancellationToken))
+        {
+            return SpeciesHasBeenFished(
+                $"Species {id} has been cast for on its lane, so it can't move to another lane. Create it on the other lane instead.");
+        }
+
         // Fish that are already caught keep their weight and length, and old sales keep their price (sold_for)
         dto.CopyTo(species);
 
@@ -96,10 +103,7 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
         catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.ForeignKeyViolation })
         {
             // The catches and statistics point to it, so the database won't let it go (docs/data-model.md)
-            return Problem(
-                statusCode: StatusCodes.Status409Conflict,
-                title: "Species has been fished",
-                detail: $"Species {id} has been cast for, so it can't be deleted. Change its rarity or price instead.");
+            return SpeciesHasBeenFished($"Species {id} has been cast for, so it can't be deleted. Change its rarity or price instead.");
         }
 
         return NoContent();
@@ -130,6 +134,11 @@ public class AdminSpeciesController(ByteBaitDbContext db) : ControllerBase
         ModelState.AddModelError("laneId", $"There is no lane with id {laneId}.");
         return ValidationProblem(ModelState);
     }
+
+    private ObjectResult SpeciesHasBeenFished(string detail) => Problem(
+        statusCode: StatusCodes.Status409Conflict,
+        title: "Species has been fished",
+        detail: detail);
 
     private ObjectResult SpeciesNotFound(int id) => Problem(
         statusCode: StatusCodes.Status404NotFound,
