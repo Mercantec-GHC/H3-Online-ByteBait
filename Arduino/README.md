@@ -4,6 +4,8 @@ Kode til Arduino-hardwaren.
 
 WiFi-koder og nøgler lægges i `arduino_secrets.h`, som er ignoreret af Git.
 
+`CARRIER_CASE` i [hardware.cpp](bytebait/hardware.cpp) er `true`, fordi Oplà'en sidder i sin case. Uden case skal den være `false`, ellers bliver touch-pads for følsomme. Skift den kun i din lokale fil, ikke i en commit.
+
 ## WiFi-prøve til opgave #4
 
 [Testsketchen](spike_wifi_https/spike_wifi_https.ino) måler HTTPS fra Oplà'en til

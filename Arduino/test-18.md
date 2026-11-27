@@ -24,8 +24,16 @@ Skriv `LED:RED` først, hvis du lige har kastet.
 1. Pad 2: mere følsom. De lilla LED'er viser niveauet (1-5) i under 1 sek. Pad 1: mindre følsom. Standard er niveau 3.
 2. Skriv `LED:GREEN`, tryk pad 2, og vent. De grønne LED'er skal komme **tilbage** efter den lilla visning.
 3. Pad 3: kalibrér igen (gul). Skriv `PING:1` mens den er gul: `PONG:1` skal komme med det samme. Hold stille: grøn. Ryst i 6 sek.: rød, og standardpositionen bruges.
-4. **Timeout og standardposition:** Læg Oplà'en **på siden**, tryk pad 3, og ryst i 6 sek., til den blinker rødt. Kast, og lav derefter et ryk opad (i kamp). Gentag med Oplà'en liggende fladt. Skriv i skemaet, om `HOOK` kommer begge gange, og om du får uventede beskeder på siden. Standardpositionen er "liggende fladt", så på siden kan det opføre sig anderledes. Skriv det, du ser.
-5. **Kast og pad 3:** Skriv `LED:RED` først, så du er i kast-tilstand. Lav et kort kast-ryk, og tryk **straks** pad 3 (inden for ca. 0,3 sek.). Hold derefter Oplà'en stille, til den blinker grønt. Der må **ikke** komme `THROW` efter det grønne blink. Næste `THROW` kræver et nyt kast.
+4. **Timeout og standardposition:**
+   1. Læg Oplà'en **på siden**, tryk pad 3, og hold stille, til den blinker **grønt**. Den første kalibrering skal lykkes.
+   2. Tryk pad 3 igen, og ryst i 6 sek., til den blinker **rødt** (timeout, standardpositionen bruges).
+   3. Kast, og lav derefter et ryk opad (i kamp). Skriv, om `HOOK` kommer, og om du får uventede beskeder.
+   4. Gentag 1-3 med Oplà'en **liggende fladt**: en vellykket kalibrering, så timeout, så kast og samme ryk.
+
+   Standardpositionen er "liggende fladt", så på siden kan det opføre sig anderledes. Skriv det, du ser.
+5. **Kast og pad 3:** Skriv `LED:RED` først, så du er i kast-tilstand. Lav et kort kast-ryk, og tryk pad 3, **mens kastet stadig måles** (inden for 250 ms efter rykket, `WINDOW_MS` i `config.h`). Hold derefter Oplà'en stille, til den blinker grønt. Der må **ikke** komme `THROW` efter det grønne blink. Næste `THROW` kræver et nyt kast.
+6. **Ét kast giver kun `THROW`:** Skriv `LED:RED`. Lav ét sammenhængende, kraftigt ryk opad (ca. et kvart sekund), og hold Oplà'en helt stille i 2-3 sek. Der skal kun komme `THROW:<n>`, ikke også `HOOK`, `TILT` eller `YANK`. Lav derefter et separat, moderat ryk opad: det skal give `HOOK`.
+7. **Spillets farve under kalibrering:** Skriv `LED:RED`. Skriv `LED:GREEN` i Serial Monitor uden at trykke Enter. Tryk pad 3 (gul), og bliv ved med at bevæge Oplà'en, så kalibreringen ikke lykkes. Tryk Enter, mens lyset er gult. Lyset skal **blive gult**, til det blinker rødt, og først derefter vise spillets grønne farve. Gentag med `PING:1` mens lyset er gult: `PONG:1` skal komme med det samme.
 
 ### C. Kast (10 stk.) på dit niveau
 1. Kast, og se `THROW:<n>`. Skriv `LED:RED` før næste kast.
