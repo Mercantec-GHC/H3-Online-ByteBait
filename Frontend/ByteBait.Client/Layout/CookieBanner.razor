@@ -1,0 +1,62 @@
+@* Tells the player once which cookies ByteBait uses (S2.15). Only necessary cookies, so it is information, not a consent
+   request: login and antiforgery work without clicking it. "Got it" is remembered in the browser's local storage. *@
+@inject IJSRuntime JS
+
+@if (visible)
+{
+    <section class="cookie-banner" aria-label="Cookies">
+        <p>
+            ByteBait only uses the cookies needed for the site to work: one keeps you signed in, and one protects your account
+            against forged requests. No tracking or statistics. <a href="/cookies">Read the cookie policy</a>
+        </p>
+        <button type="button" @onclick="AcknowledgeAsync">Got it</button>
+    </section>
+}
+
+@code {
+    public const string StorageKey = "bytebait_cookie_notice";
+
+    // Raise it when the cookies change, so everyone sees the banner again
+    public const string PolicyVersion = "1";
+
+    private bool visible;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+        {
+            return;
+        }
+
+        if (await ReadAcknowledgedVersionAsync() != PolicyVersion)
+        {
+            visible = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AcknowledgeAsync()
+    {
+        visible = false;
+        try
+        {
+            await JS.InvokeVoidAsync("localStorage.setItem", StorageKey, PolicyVersion);
+        }
+        catch (JSException)
+        {
+            // Storage is blocked: the banner is hidden for now and shown again on the next visit
+        }
+    }
+
+    private async Task<string?> ReadAcknowledgedVersionAsync()
+    {
+        try
+        {
+            return await JS.InvokeAsync<string?>("localStorage.getItem", StorageKey);
+        }
+        catch (JSException)
+        {
+            return null;
+        }
+    }
+}

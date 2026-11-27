@@ -34,6 +34,7 @@ Beslutninger, som Bjarke har truffet i sine egne opgaver, men som påvirker andr
 | ID'er | Spillere har et `Guid`. Øvrige ID'er er heltal |
 | Login | Fra S2.13: ASP.NET Core Identity med cookie (`HttpOnly`, `Secure`, `SameSite=Strict`). Spil-endpoints arbejder altid på den spiller, der er logget ind – der sendes aldrig et spiller-ID i forespørgslen |
 | CSRF | Fra S2.13: endpoints, der ændrer data (`POST`, `PUT`, `PATCH`, `DELETE`), kræver et antiforgery-token i headeren `X-XSRF-TOKEN`, også `register` og `login`. Se [Antiforgery](#antiforgery-s213--lavet) |
+| Cookies | Kun teknisk nødvendige cookies: `bytebait_login` og `bytebait_antiforgery`. De kræver ikke samtykke, og et nyt cookie arver `HttpOnly`, `Secure` og `SameSite=Strict` fra cookiepolitikken. Tracking- eller statistikcookies kræver aktivt samtykke, før de sættes. Se siden `/cookies` (S2.15) |
 | Fejl | ProblemDetails (RFC 9457), se [Fejlsvar](#fejlsvar) |
 
 ## Fejlsvar

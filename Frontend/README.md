@@ -43,6 +43,14 @@ created, edited and deleted (#27). It needs the `admin` role; see the
 missing a rarity at a depth. The login cookie is `HttpOnly`,
 so the client asks `GET /api/account/me` who is signed in (`PlayerAuthenticationStateProvider`).
 
+## Cookie notice
+
+On the first visit every page shows a notice that ByteBait only uses necessary cookies, with **Got it** and a link
+to the cookie policy on `/cookies`. Every page also links to the policy at the bottom. **Got it** is remembered in
+local storage (`bytebait_cookie_notice`), so the notice stays away until the policy changes. Raise
+`CookieBanner.PolicyVersion` when a cookie is added or changed, and update the table on `/cookies`. Login and
+saving casts work without clicking the notice (S2.15).
+
 ## Casting meter
 
 Practice (`/game`) and both Nordborg levels (`/game?levelId=1` and `/game?levelId=2`) show
@@ -262,7 +270,9 @@ The [issue #7 frontend README](https://github.com/Mercantec-GHC/H3-Online-ByteBa
 
 ## Browser checks
 
-1. Start the Release client with `dotnet run --project Frontend/ByteBait.Client --configuration Release --no-build --launch-profile http` and open <http://localhost:5173/game>.
+1. Start the API with the `https` profile (`dotnet run --project Backend/ByteBait.Api --launch-profile https`,
+   see the [backend setup](../Backend/README.md)) and open <https://localhost:7172>. Choose **Create account**,
+   then **Open game**. The standalone client on port 5173 can't sign in, so it never reaches **Connect USB**.
 2. Set the viewport to 1280 CSS pixels wide, then 390. At each width check that the complete
    upper semicircle fits inside the frame, with green at the top, red at both ends and no
    horizontal page scrolling. The black needle should be still at the left endpoint.

@@ -7,25 +7,32 @@ namespace ByteBait.Client.Accounts;
 
 public sealed class AccountClient(HttpClient http, PlayerAuthenticationStateProvider authentication)
 {
+    private static readonly ApiError LogoutFailed =
+        new("Couldn't sign out, so you're still signed in. Try again.", new Dictionary<string, string[]>());
+
     // Null when it worked
     public Task<ApiError?> RegisterAsync(AccountForm form) => SignInAsync("api/account/register", form);
 
     public Task<ApiError?> LoginAsync(AccountForm form) => SignInAsync("api/account/login", form);
 
-    public async Task LogoutAsync()
+    // Only logged out on this page once the API has removed the cookie. Otherwise the next person on a shared PC
+    // could reload the page and be logged in as this player.
+    public async Task<ApiError?> LogoutAsync()
     {
         try
         {
             using var response = await http.SendWithTokenAsync(HttpMethod.Post, "api/account/logout");
+            if (!response.IsSuccessStatusCode)
+            {
+                return LogoutFailed;
+            }
+
+            authentication.LoggedOutNow();
+            return null;
         }
         catch (Exception ex) when (ex is HttpRequestException or JsonException or NotSupportedException)
         {
-            // Nothing to show: the player is logged out on this page either way
-        }
-        finally
-        {
-            // The cookie may still be there if the request failed, but the page shouldn't act logged in
-            authentication.LoggedOutNow();
+            return LogoutFailed;
         }
     }
 

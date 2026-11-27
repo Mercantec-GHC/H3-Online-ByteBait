@@ -2,6 +2,7 @@ using ByteBait.Data;
 using ByteBait.Data.Entities;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 
@@ -74,6 +75,19 @@ public static class PlayerAccountExtensions
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
+            // Needed to log in and save casts, so it doesn't wait for the cookie banner (S2.15)
+            options.Cookie.IsEssential = true;
+        });
+
+        // The cookie policy (S2.15, app.UseCookiePolicy in Program.cs). All our cookies are strictly necessary,
+        // so no consent is needed. The rules are a safety net: a cookie added later is still HttpOnly, Secure and Strict.
+        // A tracking or statistics cookie would need active consent first (see /cookies).
+        services.Configure<CookiePolicyOptions>(options =>
+        {
+            options.CheckConsentNeeded = _ => false;
+            options.MinimumSameSitePolicy = SameSiteMode.Strict;
+            options.Secure = CookieSecurePolicy.Always;
+            options.HttpOnly = HttpOnlyPolicy.Always;
         });
 
         // CurrentPlayer reads the logged-in player from the request

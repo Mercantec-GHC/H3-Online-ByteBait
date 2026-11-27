@@ -26,5 +26,5 @@
 
     private string RegisterLink => ReturnUrl is null ? "register" : $"register?returnUrl={Uri.EscapeDataString(ReturnUrl)}";
 
-    private void GoBack() => Navigation.NavigateTo(SafeReturnUrl.OrHome(ReturnUrl));
+    private void GoBack() => Navigation.NavigateTo(SafeReturnUrl.OrHome(ReturnUrl, new Uri(Navigation.BaseUri)));
 }

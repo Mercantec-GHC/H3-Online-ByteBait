@@ -11,7 +11,8 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+// LoginExpiredHandler notices when the API answers 401 (S2.14)
+builder.Services.AddScoped(sp => new HttpClient(new LoginExpiredHandler(sp)) { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 // Who is logged in, read from GET /api/account/me (S2.14)
 builder.Services.AddAuthorizationCore();
